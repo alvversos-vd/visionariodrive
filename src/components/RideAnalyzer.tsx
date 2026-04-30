@@ -29,26 +29,26 @@ export default function RideAnalyzer({ refresh }: Props) {
 
   const minIdealKm = costPerKm !== null ? costPerKm * settings.profitMargin : null;
 
-  const analyze = () => {
+  // Realtime calculation
+  useEffect(() => {
     setError('');
-    setVerdict(null);
-    setDetails(null);
-
     const val = parseFloat(rideValue);
     const km = parseFloat(rideKm);
 
     if (!val || !km || val <= 0 || km <= 0) {
-      setError('Preencha valor e distância corretamente.');
+      setVerdict(null);
+      setDetails(null);
       return;
     }
 
     if (costPerKm === null || minIdealKm === null) {
+      setVerdict(null);
+      setDetails(null);
       setError('Faça um cálculo diário primeiro para ter sua base de custo.');
       return;
     }
 
     const ridePerKm = val / km;
-
     let v: Verdict;
     if (ridePerKm >= minIdealKm) v = 'good';
     else if (ridePerKm >= costPerKm) v = 'ok';
@@ -56,7 +56,7 @@ export default function RideAnalyzer({ refresh }: Props) {
 
     setVerdict(v);
     setDetails({ costPerKm, minIdealKm, ridePerKm });
-  };
+  }, [rideValue, rideKm, costPerKm, minIdealKm]);
 
   const verdictConfig = {
     good: { bg: 'bg-profit', emoji: '🟢', label: 'Boa corrida — acima do mínimo ideal', text: 'text-profit' },
@@ -91,7 +91,10 @@ export default function RideAnalyzer({ refresh }: Props) {
 
       {/* Quick input */}
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
-        <p className="font-display font-semibold text-foreground">🚀 Analisar Corrida Rápida</p>
+        <div className="flex items-center justify-between">
+          <p className="font-display font-semibold text-foreground">🚀 Análise Rápida</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tempo real</p>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-sm text-muted-foreground">Valor da corrida</Label>
@@ -106,9 +109,6 @@ export default function RideAnalyzer({ refresh }: Props) {
           </div>
         </div>
         {error && <p className="text-destructive text-sm font-medium">{error}</p>}
-        <Button onClick={analyze} size="lg" className="w-full h-12 text-base font-display font-semibold">
-          Analisar Corrida
-        </Button>
       </div>
 
       {/* Verdict */}
