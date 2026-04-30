@@ -84,6 +84,19 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
             </p>
           </div>
 
+          {/* Previsão do dia */}
+          {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
+            <div className="bg-card rounded-lg p-4 border shadow-sm">
+              <p className="text-xs text-muted-foreground">🔮 Previsão para {settings.estimatedHours}h</p>
+              <p className="text-2xl font-display font-bold text-accent">
+                {fmt((today.totalEarnings / today.hoursWorked) * settings.estimatedHours)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Baseado no ritmo atual ({fmt(today.totalEarnings / today.hoursWorked)}/h)
+              </p>
+            </div>
+          )}
+
           {/* Goal progress */}
           {goals.daily > 0 && (
             <button
