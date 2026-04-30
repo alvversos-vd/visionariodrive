@@ -35,11 +35,13 @@ export interface DailyGoal {
 export interface AppSettings {
   profitMargin: number; // ex: 1.3 = 30%
   currency: string; // 'BRL'
+  estimatedHours: number; // jornada estimada do dia (para previsão)
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   profitMargin: 1.3,
   currency: 'BRL',
+  estimatedHours: 8,
 };
 
 export const DEFAULT_GOALS: Goals = {
