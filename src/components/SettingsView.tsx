@@ -14,13 +14,16 @@ interface Props {
 export default function SettingsView({ refresh, onChanged }: Props) {
   const initial = useMemo(() => getSettings(), [refresh]);
   const [marginPct, setMarginPct] = useState(String(((initial.profitMargin - 1) * 100).toFixed(0)));
+  const [estHours, setEstHours] = useState(String(initial.estimatedHours));
   const [confirmReset, setConfirmReset] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
     const pct = parseFloat(marginPct);
+    const hrs = parseFloat(estHours);
     if (isNaN(pct) || pct < 0 || pct > 500) return;
-    const next: AppSettings = { ...initial, profitMargin: 1 + pct / 100 };
+    if (isNaN(hrs) || hrs <= 0 || hrs > 24) return;
+    const next: AppSettings = { ...initial, profitMargin: 1 + pct / 100, estimatedHours: hrs };
     saveSettings(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
@@ -55,8 +58,31 @@ export default function SettingsView({ refresh, onChanged }: Props) {
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
           </div>
         </div>
+      </div>
+
+      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+        <p className="font-display font-semibold text-foreground">⏱️ Jornada estimada</p>
+        <p className="text-xs text-muted-foreground">
+          Quantas horas você planeja trabalhar por dia. Usado para calcular a previsão.
+        </p>
+        <div className="space-y-1.5">
+          <Label className="text-sm text-muted-foreground">Horas estimadas</Label>
+          <div className="relative">
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min="0"
+              max="24"
+              value={estHours}
+              onChange={e => setEstHours(e.target.value)}
+              className="pr-9 h-12 text-base"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">h</span>
+          </div>
+        </div>
         <Button onClick={handleSave} className="w-full h-11 font-display font-semibold">
-          {saved ? '✓ Salvo' : 'Salvar margem'}
+          {saved ? '✓ Salvo' : 'Salvar configurações'}
         </Button>
       </div>
 

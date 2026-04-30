@@ -7,9 +7,10 @@ import HistoryView from '@/components/HistoryView';
 import RideAnalyzer from '@/components/RideAnalyzer';
 import GoalsView from '@/components/GoalsView';
 import SettingsView from '@/components/SettingsView';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon } from 'lucide-react';
+import SimulatorView from '@/components/SimulatorView';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb } from 'lucide-react';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'settings';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'strategy' | 'settings';
 
 export default function Index() {
   const [tab, setTab] = useState<Tab>('home');
@@ -28,6 +29,7 @@ export default function Index() {
     { key: 'input', label: 'Calcular', icon: Calculator },
     { key: 'ride', label: 'Corrida', icon: Navigation },
     { key: 'goals', label: 'Metas', icon: Target },
+    { key: 'strategy', label: 'Estratégia', icon: Lightbulb },
     { key: 'history', label: 'Histórico', icon: BarChart3 },
   ];
 
@@ -82,6 +84,7 @@ export default function Index() {
         {tab === 'input' && result && <ResultsView entry={result} onBack={() => setResult(null)} />}
         {tab === 'ride' && <RideAnalyzer refresh={refresh} />}
         {tab === 'goals' && <GoalsView refresh={refresh} onSaved={triggerRefresh} />}
+        {tab === 'strategy' && <SimulatorView refresh={refresh} />}
         {tab === 'history' && <HistoryView refresh={refresh} onRefresh={triggerRefresh} />}
         {tab === 'settings' && <SettingsView refresh={refresh} onChanged={triggerRefresh} />}
       </main>
