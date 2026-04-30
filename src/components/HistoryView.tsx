@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { DailyEntry } from '@/lib/types';
-import { getEntries, deleteEntry } from '@/lib/storage';
-import { Trash2 } from 'lucide-react';
+import { getEntries, deleteEntry, getGoals } from '@/lib/storage';
+import { computeStats } from '@/lib/types';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar } from 'lucide-react';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -18,18 +18,8 @@ interface Props {
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
   const entries = useMemo(() => getEntries(), [refresh]);
-
-  const weekAvg = useMemo(() => {
-    const last7 = entries.slice(0, 7);
-    if (last7.length === 0) return 0;
-    return last7.reduce((s, e) => s + e.profit, 0) / last7.length;
-  }, [entries]);
-
-  const monthAvg = useMemo(() => {
-    const last30 = entries.slice(0, 30);
-    if (last30.length === 0) return 0;
-    return last30.reduce((s, e) => s + e.profit, 0) / last30.length;
-  }, [entries]);
+  const goals = useMemo(() => getGoals(), [refresh]);
+  const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
 
   const handleDelete = (id: string) => {
     deleteEntry(id);
@@ -46,22 +36,90 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     );
   }
 
+  const insights: { icon: string; text: string }[] = [];
+  if (stats.weekChangePct !== null) {
+    const up = stats.weekChangePct >= 0;
+    insights.push({
+      icon: up ? '📈' : '📉',
+      text: `Você ${up ? 'lucrou' : 'caiu'} ${Math.abs(stats.weekChangePct).toFixed(0)}% comparado à semana passada.`,
+    });
+  }
+  if (stats.costChangePct !== null && Math.abs(stats.costChangePct) >= 5) {
+    insights.push({
+      icon: stats.costChangePct > 0 ? '⚠️' : '✅',
+      text: `Seu custo ${stats.costChangePct > 0 ? 'aumentou' : 'reduziu'} ${Math.abs(stats.costChangePct).toFixed(0)}%.`,
+    });
+  }
+  if (stats.bestDayOfWeek && entries.length >= 3) {
+    insights.push({ icon: '🔥', text: `Você lucra mais às ${stats.bestDayOfWeek.day}s.` });
+  }
+
   return (
     <div className="space-y-4 animate-slide-up">
-      {/* Averages */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card rounded-lg p-4 border shadow-sm text-center">
-          <p className="text-xs text-muted-foreground">Média semanal</p>
-          <p className={`text-lg font-display font-bold ${weekAvg >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(weekAvg)}</p>
+      {/* Week summary */}
+      <div className="bg-card rounded-lg p-4 border shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-display font-semibold text-foreground flex items-center gap-1.5">
+            <Calendar size={14} /> Últimos 7 dias
+          </p>
+          {stats.weekChangePct !== null && (
+            <span
+              className={`text-xs font-semibold flex items-center gap-0.5 ${
+                stats.weekChangePct >= 0 ? 'text-profit' : 'text-loss'
+              }`}
+            >
+              {stats.weekChangePct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {stats.weekChangePct >= 0 ? '+' : ''}{stats.weekChangePct.toFixed(0)}%
+            </span>
+          )}
         </div>
-        <div className="bg-card rounded-lg p-4 border shadow-sm text-center">
-          <p className="text-xs text-muted-foreground">Média mensal</p>
-          <p className={`text-lg font-display font-bold ${monthAvg >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(monthAvg)}</p>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-[10px] text-muted-foreground">Ganho</p>
+            <p className="font-display font-bold text-sm text-foreground">{fmt(stats.weekTotal)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Lucro</p>
+            <p className={`font-display font-bold text-sm ${stats.weekProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
+              {fmt(stats.weekProfit)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground">Média/dia</p>
+            <p className={`font-display font-bold text-sm ${stats.weekAvgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
+              {fmt(stats.weekAvgProfit)}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* Records */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-card rounded-lg p-4 border shadow-sm text-center">
+          <Trophy size={18} className="mx-auto text-accent mb-1" />
+          <p className="text-xs text-muted-foreground">Recorde de lucro</p>
+          <p className="font-display font-bold text-profit">{fmt(stats.recordProfit)}</p>
+        </div>
+        <div className="bg-card rounded-lg p-4 border shadow-sm text-center">
+          <p className="text-lg">🔥</p>
+          <p className="text-xs text-muted-foreground">Sequência metas</p>
+          <p className="font-display font-bold text-foreground">{stats.streak} dia{stats.streak !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <div className="bg-accent/10 border border-accent/40 rounded-lg p-4 space-y-2">
+          <p className="text-xs font-display font-semibold text-foreground uppercase tracking-wide">💡 Insights</p>
+          {insights.map((i, idx) => (
+            <p key={idx} className="text-sm text-foreground">{i.icon} {i.text}</p>
+          ))}
+        </div>
+      )}
+
       {/* Entry list */}
       <div className="space-y-2">
+        <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">Histórico</p>
         {entries.map(entry => (
           <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
             <div className="flex-1">
@@ -72,10 +130,14 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)}
+                Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
               </p>
             </div>
-            <button onClick={() => handleDelete(entry.id)} className="p-2 text-muted-foreground hover:text-destructive transition-colors">
+            <button
+              onClick={() => handleDelete(entry.id)}
+              className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+              aria-label="Excluir registro"
+            >
               <Trash2 size={16} />
             </button>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { getEntries } from '@/lib/storage';
+import { getEntries, getSettings } from '@/lib/storage';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -22,11 +22,13 @@ export default function RideAnalyzer({ refresh }: Props) {
     return entries.length > 0 ? entries[0] : null;
   }, [refresh]);
 
+  const settings = useMemo(() => getSettings(), [refresh]);
+
   const costPerKm = latestEntry && latestEntry.kmDriven > 0
     ? latestEntry.totalCost / latestEntry.kmDriven
     : null;
 
-  const minIdealKm = costPerKm !== null ? costPerKm * 1.3 : null;
+  const minIdealKm = costPerKm !== null ? costPerKm * settings.profitMargin : null;
 
   const analyze = () => {
     setError('');
