@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { getEntries, deleteEntry, getGoals } from '@/lib/storage';
 import { computeStats } from '@/lib/types';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown } from 'lucide-react';
+import { exportHistoryPdf } from '@/lib/exportPdf';
+import { toast } from 'sonner';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
