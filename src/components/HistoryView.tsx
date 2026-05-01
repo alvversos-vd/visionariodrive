@@ -106,7 +106,10 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {fmt(stats.weekAvgProfit)}
             </p>
           </div>
-        </div>
+      </div>
+
+      {/* Charts */}
+      <HistoryCharts entries={entries} />
       </div>
 
       {/* Records */}
