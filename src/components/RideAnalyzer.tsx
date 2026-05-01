@@ -115,15 +115,33 @@ export default function RideAnalyzer({ refresh }: Props) {
             <Label className="text-sm text-muted-foreground">Valor da corrida</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-              <Input type="number" inputMode="decimal" step="any" min="0" value={rideValue} onChange={e => setRideValue(e.target.value)} placeholder="15" className="pl-9 h-12 text-base" />
+              <Input
+                type="number" inputMode="decimal" step="any" min="0"
+                value={rideValue}
+                onChange={e => handleNumber(setRideValue)(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, value: true }))}
+                placeholder="15"
+                aria-invalid={!!valueError}
+                className={`pl-9 h-12 text-base ${valueError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+              />
             </div>
+            {valueError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{valueError}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm text-muted-foreground">Distância (km)</Label>
-            <Input type="number" inputMode="decimal" step="any" min="0" value={rideKm} onChange={e => setRideKm(e.target.value)} placeholder="8" className="h-12 text-base" />
+            <Input
+              type="number" inputMode="decimal" step="any" min="0"
+              value={rideKm}
+              onChange={e => handleNumber(setRideKm)(e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, km: true }))}
+              placeholder="8"
+              aria-invalid={!!kmError}
+              className={`h-12 text-base ${kmError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+            />
+            {kmError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{kmError}</p>}
           </div>
         </div>
-        {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+        {error && <p className="text-destructive text-sm font-medium flex items-center gap-1"><AlertCircle size={14} />{error}</p>}
       </div>
 
       {/* Verdict */}
