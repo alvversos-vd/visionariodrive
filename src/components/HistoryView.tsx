@@ -5,6 +5,7 @@ import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown } from 'lu
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
+import PeriodComparison from './PeriodComparison';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -107,6 +108,9 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
             </p>
           </div>
       </div>
+
+      {/* Comparison */}
+      <PeriodComparison entries={entries} />
 
       {/* Charts */}
       <HistoryCharts entries={entries} />
