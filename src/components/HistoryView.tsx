@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { getEntries, deleteEntry, getGoals } from '@/lib/storage';
 import { computeStats } from '@/lib/types';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown } from 'lucide-react';
+import { exportHistoryPdf } from '@/lib/exportPdf';
+import { toast } from 'sonner';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -56,6 +58,19 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <button
+        onClick={() => {
+          try {
+            exportHistoryPdf(entries);
+            toast.success('Relatório PDF gerado com sucesso');
+          } catch (e) {
+            toast.error('Erro ao gerar PDF');
+          }
+        }}
+        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-display font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        <FileDown size={16} /> Exportar relatório PDF
+      </button>
       {/* Week summary */}
       <div className="bg-card rounded-lg p-4 border shadow-sm">
         <div className="flex items-center justify-between mb-3">
