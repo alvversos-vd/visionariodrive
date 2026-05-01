@@ -109,6 +109,9 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           </div>
       </div>
 
+      {/* Comparison */}
+      <PeriodComparison entries={entries} />
+
       {/* Charts */}
       <HistoryCharts entries={entries} />
       </div>
