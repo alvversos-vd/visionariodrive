@@ -16,6 +16,20 @@ export default function RideAnalyzer({ refresh }: Props) {
   const [verdict, setVerdict] = useState<Verdict>(null);
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
+
+  const valueError =
+    touched.value && rideValue === '' ? 'Informe o valor' :
+    rideValue !== '' && (Number.isNaN(Number(rideValue)) || Number(rideValue) <= 0) ? 'Deve ser maior que zero' :
+    undefined;
+  const kmError =
+    touched.km && rideKm === '' ? 'Informe a distância' :
+    rideKm !== '' && (Number.isNaN(Number(rideKm)) || Number(rideKm) <= 0) ? 'Deve ser maior que zero' :
+    undefined;
+
+  const handleNumber = (setter: (v: string) => void) => (raw: string) => {
+    if (raw === '' || parseFloat(raw) >= 0) setter(raw);
+  };
 
   const latestEntry = useMemo(() => {
     const entries = getEntries();
