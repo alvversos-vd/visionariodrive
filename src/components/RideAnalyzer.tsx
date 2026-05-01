@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { getEntries, getSettings } from '@/lib/storage';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AlertCircle } from 'lucide-react';
 
 interface Props {
   refresh: number;
@@ -15,6 +16,20 @@ export default function RideAnalyzer({ refresh }: Props) {
   const [verdict, setVerdict] = useState<Verdict>(null);
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
+
+  const valueError =
+    touched.value && rideValue === '' ? 'Informe o valor' :
+    rideValue !== '' && (Number.isNaN(Number(rideValue)) || Number(rideValue) <= 0) ? 'Deve ser maior que zero' :
+    undefined;
+  const kmError =
+    touched.km && rideKm === '' ? 'Informe a distância' :
+    rideKm !== '' && (Number.isNaN(Number(rideKm)) || Number(rideKm) <= 0) ? 'Deve ser maior que zero' :
+    undefined;
+
+  const handleNumber = (setter: (v: string) => void) => (raw: string) => {
+    if (raw === '' || parseFloat(raw) >= 0) setter(raw);
+  };
 
   const latestEntry = useMemo(() => {
     const entries = getEntries();
@@ -100,15 +115,33 @@ export default function RideAnalyzer({ refresh }: Props) {
             <Label className="text-sm text-muted-foreground">Valor da corrida</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-              <Input type="number" inputMode="decimal" step="any" min="0" value={rideValue} onChange={e => setRideValue(e.target.value)} placeholder="15" className="pl-9 h-12 text-base" />
+              <Input
+                type="number" inputMode="decimal" step="any" min="0"
+                value={rideValue}
+                onChange={e => handleNumber(setRideValue)(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, value: true }))}
+                placeholder="15"
+                aria-invalid={!!valueError}
+                className={`pl-9 h-12 text-base ${valueError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+              />
             </div>
+            {valueError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{valueError}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm text-muted-foreground">Distância (km)</Label>
-            <Input type="number" inputMode="decimal" step="any" min="0" value={rideKm} onChange={e => setRideKm(e.target.value)} placeholder="8" className="h-12 text-base" />
+            <Input
+              type="number" inputMode="decimal" step="any" min="0"
+              value={rideKm}
+              onChange={e => handleNumber(setRideKm)(e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, km: true }))}
+              placeholder="8"
+              aria-invalid={!!kmError}
+              className={`h-12 text-base ${kmError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+            />
+            {kmError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{kmError}</p>}
           </div>
         </div>
-        {error && <p className="text-destructive text-sm font-medium">{error}</p>}
+        {error && <p className="text-destructive text-sm font-medium flex items-center gap-1"><AlertCircle size={14} />{error}</p>}
       </div>
 
       {/* Verdict */}
