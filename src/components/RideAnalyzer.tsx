@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { getEntries, getSettings } from '@/lib/storage';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AlertCircle } from 'lucide-react';
 
 interface Props {
   refresh: number;
