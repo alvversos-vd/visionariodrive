@@ -4,6 +4,7 @@ import { computeStats } from '@/lib/types';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
+import HistoryCharts from './HistoryCharts';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -105,7 +106,10 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {fmt(stats.weekAvgProfit)}
             </p>
           </div>
-        </div>
+      </div>
+
+      {/* Charts */}
+      <HistoryCharts entries={entries} />
       </div>
 
       {/* Records */}
