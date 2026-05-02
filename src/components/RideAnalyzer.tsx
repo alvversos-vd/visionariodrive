@@ -1,8 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { getEntries, getSettings } from '@/lib/storage';
+import { getEntries, getSettings, getVehicles, getRideTypes, saveRide } from '@/lib/storage';
+import { RideEntry } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertCircle, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   refresh: number;
