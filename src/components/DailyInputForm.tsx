@@ -85,6 +85,10 @@ export default function DailyInputForm({ onCalculate }: Props) {
     installment: '', maintenance: '', insurance: '', otherCosts: '',
   });
   const [touched, setTouched] = useState<Partial<Record<FormKey, boolean>>>({});
+  const vehicles = useMemo(() => getVehicles(), []);
+  const rideTypes = useMemo(() => getRideTypes(), []);
+  const [vehicle, setVehicle] = useState<string>('');
+  const [rideType, setRideType] = useState<string>('');
 
   const set = (key: FormKey) => (v: string) => {
     setForm(prev => ({ ...prev, [key]: v }));
