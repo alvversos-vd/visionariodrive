@@ -199,6 +199,38 @@ export default function RideAnalyzer({ refresh }: Props) {
               <p className={`font-display font-bold text-sm ${verdictConfig[verdict].text}`}>{fmt(details.ridePerKm)}</p>
             </div>
           </div>
+
+          <Button
+            type="button"
+            onClick={() => {
+              if (!verdict || !details) return;
+              const val = parseFloat(rideValue);
+              const km = parseFloat(rideKm);
+              const ride: RideEntry = {
+                id: crypto.randomUUID(),
+                date: new Date().toISOString(),
+                value: val,
+                km,
+                costPerKm: details.costPerKm,
+                minIdealKm: details.minIdealKm,
+                ridePerKm: details.ridePerKm,
+                profit: val - details.costPerKm * km,
+                verdict,
+                vehicle: vehicle || undefined,
+                rideType: rideType || undefined,
+              };
+              saveRide(ride);
+              toast.success('Corrida salva no histórico');
+              setRideValue('');
+              setRideKm('');
+              setVerdict(null);
+              setDetails(null);
+              setTouched({ value: false, km: false });
+            }}
+            className="w-full h-11 font-display font-semibold gap-2"
+          >
+            <Save size={16} /> Salvar corrida no histórico
+          </Button>
         </div>
       )}
     </div>
