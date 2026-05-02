@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { getSettings, saveSettings, resetAllData } from '@/lib/storage';
+import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
 import { AppSettings } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import TagListEditor from './TagListEditor';
 
 interface Props {
   refresh: number;
