@@ -121,6 +121,8 @@ export default function DailyInputForm({ onCalculate }: Props) {
       fuelPrice: n('fuelPrice'), vehicleConsumption: n('vehicleConsumption'),
       installment: n('installment'), maintenance: n('maintenance'),
       insurance: n('insurance'), otherCosts: n('otherCosts'),
+      vehicle: vehicle || undefined,
+      rideType: rideType || undefined,
     });
 
     const entry: DailyEntry = {
