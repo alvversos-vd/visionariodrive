@@ -1,9 +1,12 @@
-import { DailyEntry, DailyGoal, Goals, DEFAULT_GOALS, AppSettings, DEFAULT_SETTINGS } from './types';
+import { DailyEntry, DailyGoal, Goals, DEFAULT_GOALS, AppSettings, DEFAULT_SETTINGS, RideEntry } from './types';
 
 const ENTRIES_KEY = 'lucro-delivery-entries';
+const RIDES_KEY = 'lucro-delivery-rides';
 const GOAL_KEY = 'lucro-delivery-goal'; // legacy single daily goal
 const GOALS_KEY = 'lucro-delivery-goals';
 const SETTINGS_KEY = 'lucro-delivery-settings';
+const VEHICLES_KEY = 'lucro-delivery-vehicles';
+const RIDE_TYPES_KEY = 'lucro-delivery-ride-types';
 
 export function saveEntry(entry: DailyEntry): void {
   const entries = getEntries();
