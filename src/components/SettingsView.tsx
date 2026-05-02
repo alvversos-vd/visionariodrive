@@ -100,6 +100,24 @@ export default function SettingsView({ refresh, onChanged }: Props) {
         </Button>
       </div>
 
+      <TagListEditor
+        title="Veículos"
+        emoji="🏍️"
+        description="Cadastre seus veículos para comparar lucro entre eles."
+        placeholder="Ex: Moto Honda, Carro Onix"
+        items={vehicles}
+        onChange={updateVehicles}
+      />
+
+      <TagListEditor
+        title="Tipos de corrida"
+        emoji="📦"
+        description="Apps ou categorias que você usa (iFood, Uber, particular...)."
+        placeholder="Ex: iFood, Uber, 99"
+        items={rideTypes}
+        onChange={updateRideTypes}
+      />
+
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
         <p className="font-display font-semibold text-foreground">💱 Moeda</p>
         <p className="text-sm text-muted-foreground">Real brasileiro (R$) — padrão.</p>
