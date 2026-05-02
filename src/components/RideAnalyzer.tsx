@@ -21,6 +21,10 @@ export default function RideAnalyzer({ refresh }: Props) {
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
   const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
+  const vehicles = useMemo(() => getVehicles(), [refresh]);
+  const rideTypes = useMemo(() => getRideTypes(), [refresh]);
+  const [vehicle, setVehicle] = useState<string>('');
+  const [rideType, setRideType] = useState<string>('');
 
   const valueError =
     touched.value && rideValue === '' ? 'Informe o valor' :
