@@ -149,6 +149,31 @@ export default function RideAnalyzer({ refresh }: Props) {
             {kmError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{kmError}</p>}
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Veículo</Label>
+            <Select value={vehicle} onValueChange={setVehicle}>
+              <SelectTrigger className="h-11 text-sm">
+                <SelectValue placeholder={vehicles.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+              </SelectTrigger>
+              <SelectContent>
+                {vehicles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Tipo</Label>
+            <Select value={rideType} onValueChange={setRideType}>
+              <SelectTrigger className="h-11 text-sm">
+                <SelectValue placeholder={rideTypes.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+              </SelectTrigger>
+              <SelectContent>
+                {rideTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         {error && <p className="text-destructive text-sm font-medium flex items-center gap-1"><AlertCircle size={14} />{error}</p>}
       </div>
 
