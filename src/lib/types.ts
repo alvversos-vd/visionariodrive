@@ -77,6 +77,8 @@ export function calculateEntry(input: {
   maintenance: number;
   insurance: number;
   otherCosts: number;
+  vehicle?: string;
+  rideType?: string;
 }): Omit<DailyEntry, 'id' | 'date'> {
   const litersConsumed = input.vehicleConsumption > 0 ? input.kmDriven / input.vehicleConsumption : 0;
   const fuelCost = litersConsumed * input.fuelPrice;
