@@ -18,6 +18,19 @@ export default function SettingsView({ refresh, onChanged }: Props) {
   const [estHours, setEstHours] = useState(String(initial.estimatedHours));
   const [confirmReset, setConfirmReset] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [vehicles, setVehicles] = useState<string[]>(() => getVehicles());
+  const [rideTypes, setRideTypes] = useState<string[]>(() => getRideTypes());
+
+  const updateVehicles = (list: string[]) => {
+    setVehicles(list);
+    saveVehicles(list);
+    onChanged();
+  };
+  const updateRideTypes = (list: string[]) => {
+    setRideTypes(list);
+    saveRideTypes(list);
+    onChanged();
+  };
 
   const handleSave = () => {
     const pct = parseFloat(marginPct);
