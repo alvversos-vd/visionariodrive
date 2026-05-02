@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
-import { saveEntry } from '@/lib/storage';
+import { saveEntry, getVehicles, getRideTypes } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -84,6 +85,10 @@ export default function DailyInputForm({ onCalculate }: Props) {
     installment: '', maintenance: '', insurance: '', otherCosts: '',
   });
   const [touched, setTouched] = useState<Partial<Record<FormKey, boolean>>>({});
+  const vehicles = useMemo(() => getVehicles(), []);
+  const rideTypes = useMemo(() => getRideTypes(), []);
+  const [vehicle, setVehicle] = useState<string>('');
+  const [rideType, setRideType] = useState<string>('');
 
   const set = (key: FormKey) => (v: string) => {
     setForm(prev => ({ ...prev, [key]: v }));
@@ -116,6 +121,8 @@ export default function DailyInputForm({ onCalculate }: Props) {
       fuelPrice: n('fuelPrice'), vehicleConsumption: n('vehicleConsumption'),
       installment: n('installment'), maintenance: n('maintenance'),
       insurance: n('insurance'), otherCosts: n('otherCosts'),
+      vehicle: vehicle || undefined,
+      rideType: rideType || undefined,
     });
 
     const entry: DailyEntry = {
@@ -136,6 +143,31 @@ export default function DailyInputForm({ onCalculate }: Props) {
           <Field label="Horas trabalhadas" value={form.hoursWorked} onChange={set('hoursWorked')} placeholder="8" error={showError('hoursWorked')} required />
           <Field label="Km rodados" value={form.kmDriven} onChange={set('kmDriven')} placeholder="120" error={showError('kmDriven')} required />
           <Field label="Ganho total do dia" value={form.totalEarnings} onChange={set('totalEarnings')} placeholder="200" prefix="R$" error={showError('totalEarnings')} required />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Veículo</Label>
+              <Select value={vehicle} onValueChange={setVehicle}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder={vehicles.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Tipo de corrida</Label>
+              <Select value={rideType} onValueChange={setRideType}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder={rideTypes.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rideTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 

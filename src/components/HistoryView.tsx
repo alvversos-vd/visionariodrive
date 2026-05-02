@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
-import { getEntries, deleteEntry, getGoals } from '@/lib/storage';
-import { computeStats } from '@/lib/types';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
+import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
 import PeriodComparison from './PeriodComparison';
+
+const WEEKDAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -15,22 +17,118 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+function weekday(iso: string) {
+  return WEEKDAYS_SHORT[new Date(iso).getDay()];
+}
+
 interface Props {
   refresh: number;
   onRefresh: () => void;
 }
 
+const ALL = '__all__';
+
+interface FilterBarProps {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}
+
+function FilterChips({ label, value, options, onChange }: FilterBarProps) {
+  if (options.length === 0) return null;
+  const all = [ALL, ...options];
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {all.map(opt => {
+          const active = value === opt;
+          const lbl = opt === ALL ? 'Todos' : opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className={`px-3 py-1 rounded-full text-xs font-display font-semibold transition-colors border ${
+                active
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-secondary text-muted-foreground border-transparent hover:text-foreground'
+              }`}
+            >
+              {lbl}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function HistoryView({ refresh, onRefresh }: Props) {
-  const entries = useMemo(() => getEntries(), [refresh]);
+  const allEntries = useMemo(() => getEntries(), [refresh]);
+  const allRides = useMemo(() => getRides(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
+
+  const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
+  const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
+
+  // Build option lists from data actually present
+  const vehicleOptions = useMemo(() => {
+    const set = new Set<string>();
+    allEntries.forEach(e => e.vehicle && set.add(e.vehicle));
+    allRides.forEach(r => r.vehicle && set.add(r.vehicle));
+    return Array.from(set).sort();
+  }, [allEntries, allRides]);
+
+  const rideTypeOptions = useMemo(() => {
+    const set = new Set<string>();
+    allEntries.forEach(e => e.rideType && set.add(e.rideType));
+    allRides.forEach(r => r.rideType && set.add(r.rideType));
+    return Array.from(set).sort();
+  }, [allEntries, allRides]);
+
+  const matches = (item: { vehicle?: string; rideType?: string }) => {
+    if (vehicleFilter !== ALL && item.vehicle !== vehicleFilter) return false;
+    if (rideTypeFilter !== ALL && item.rideType !== rideTypeFilter) return false;
+    return true;
+  };
+
+  const entries = useMemo(() => allEntries.filter(matches), [allEntries, vehicleFilter, rideTypeFilter]);
+  const rides = useMemo(() => allRides.filter(matches), [allRides, vehicleFilter, rideTypeFilter]);
+
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
 
-  const handleDelete = (id: string) => {
+  // Days worked in the last 7 / 30 days (filtered)
+  const { daysLast7, daysLast30, totalDays } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const set7 = new Set<string>();
+    const set30 = new Set<string>();
+    const setAll = new Set<string>();
+    entries.forEach(e => {
+      const d = new Date(e.date);
+      d.setHours(0, 0, 0, 0);
+      const key = d.toISOString().slice(0, 10);
+      setAll.add(key);
+      const diff = (today.getTime() - d.getTime()) / 86400000;
+      if (diff >= 0 && diff < 7) set7.add(key);
+      if (diff >= 0 && diff < 30) set30.add(key);
+    });
+    return { daysLast7: set7.size, daysLast30: set30.size, totalDays: setAll.size };
+  }, [entries]);
+
+  const handleDeleteEntry = (id: string) => {
     deleteEntry(id);
     onRefresh();
   };
 
-  if (entries.length === 0) {
+  const handleDeleteRide = (id: string) => {
+    deleteRide(id);
+    onRefresh();
+  };
+
+  if (allEntries.length === 0 && allRides.length === 0) {
     return (
       <div className="text-center py-16 text-muted-foreground animate-slide-up">
         <p className="text-4xl mb-3">📊</p>
@@ -58,6 +156,8 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     insights.push({ icon: '🔥', text: `Você lucra mais às ${stats.bestDayOfWeek.day}s.` });
   }
 
+  const hasFilter = vehicleFilter !== ALL || rideTypeFilter !== ALL;
+
   return (
     <div className="space-y-4 animate-slide-up">
       <button
@@ -69,52 +169,93 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
             toast.error('Erro ao gerar PDF');
           }
         }}
-        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-display font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors"
+        disabled={entries.length === 0}
+        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-display font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
       >
         <FileDown size={16} /> Exportar relatório PDF
       </button>
-      {/* Week summary */}
-      <div className="bg-card rounded-lg p-4 border shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-display font-semibold text-foreground flex items-center gap-1.5">
-            <Calendar size={14} /> Últimos 7 dias
-          </p>
-          {stats.weekChangePct !== null && (
-            <span
-              className={`text-xs font-semibold flex items-center gap-0.5 ${
-                stats.weekChangePct >= 0 ? 'text-profit' : 'text-loss'
-              }`}
-            >
-              {stats.weekChangePct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              {stats.weekChangePct >= 0 ? '+' : ''}{stats.weekChangePct.toFixed(0)}%
-            </span>
-          )}
+
+      {/* Filters */}
+      {(vehicleOptions.length > 0 || rideTypeOptions.length > 0) && (
+        <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="font-display font-semibold text-foreground text-sm flex items-center gap-1.5">
+              <Filter size={14} /> Filtros
+            </p>
+            {hasFilter && (
+              <button
+                onClick={() => { setVehicleFilter(ALL); setRideTypeFilter(ALL); }}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+          <FilterChips label="Veículo" value={vehicleFilter} options={vehicleOptions} onChange={setVehicleFilter} />
+          <FilterChips label="Tipo de corrida" value={rideTypeFilter} options={rideTypeOptions} onChange={setRideTypeFilter} />
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-[10px] text-muted-foreground">Ganho</p>
-            <p className="font-display font-bold text-sm text-foreground">{fmt(stats.weekTotal)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">Lucro</p>
-            <p className={`font-display font-bold text-sm ${stats.weekProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {fmt(stats.weekProfit)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground">Média/dia</p>
-            <p className={`font-display font-bold text-sm ${stats.weekAvgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {fmt(stats.weekAvgProfit)}
-            </p>
-          </div>
+      )}
+
+      {/* Days worked */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">7 dias</p>
+          <p className="font-display font-bold text-foreground">{daysLast7} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
+        </div>
+        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">30 dias</p>
+          <p className="font-display font-bold text-foreground">{daysLast30} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
+        </div>
+        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
+          <p className="text-[10px] text-muted-foreground uppercase">Total</p>
+          <p className="font-display font-bold text-foreground">{totalDays} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
+        </div>
       </div>
+
+      {/* Week summary */}
+      {entries.length > 0 && (
+        <div className="bg-card rounded-lg p-4 border shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-display font-semibold text-foreground flex items-center gap-1.5">
+              <Calendar size={14} /> Últimos 7 dias
+            </p>
+            {stats.weekChangePct !== null && (
+              <span
+                className={`text-xs font-semibold flex items-center gap-0.5 ${
+                  stats.weekChangePct >= 0 ? 'text-profit' : 'text-loss'
+                }`}
+              >
+                {stats.weekChangePct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                {stats.weekChangePct >= 0 ? '+' : ''}{stats.weekChangePct.toFixed(0)}%
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Ganho</p>
+              <p className="font-display font-bold text-sm text-foreground">{fmt(stats.weekTotal)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Lucro</p>
+              <p className={`font-display font-bold text-sm ${stats.weekProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
+                {fmt(stats.weekProfit)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Média/dia</p>
+              <p className={`font-display font-bold text-sm ${stats.weekAvgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
+                {fmt(stats.weekAvgProfit)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Comparison */}
       <PeriodComparison entries={entries} />
 
       {/* Charts */}
       <HistoryCharts entries={entries} />
-      </div>
 
       {/* Records */}
       <div className="grid grid-cols-2 gap-3">
@@ -140,32 +281,106 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         </div>
       )}
 
-      {/* Entry list */}
+      {/* Daily entry list */}
       <div className="space-y-2">
-        <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">Histórico</p>
-        {entries.map(entry => (
-          <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">{fmtDate(entry.date)}</span>
-                <span className={`text-base font-display font-bold ${entry.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
-                  {fmt(entry.profit)}
-                </span>
+        <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
+          Histórico diário {hasFilter && `· ${entries.length} de ${allEntries.length}`}
+        </p>
+        {entries.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-6">Nenhum registro com esse filtro.</p>
+        ) : (
+          entries.map((entry: DailyEntry) => (
+            <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                    {weekday(entry.date)}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">{fmtDate(entry.date)}</span>
+                  <span className={`text-base font-display font-bold ${entry.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {fmt(entry.profit)}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
+                </p>
+                {(entry.vehicle || entry.rideType) && (
+                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    {entry.vehicle && (
+                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
+                    )}
+                    {entry.rideType && (
+                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
+                    )}
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
-              </p>
+              <button
+                onClick={() => handleDeleteEntry(entry.id)}
+                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                aria-label="Excluir registro"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
-            <button
-              onClick={() => handleDelete(entry.id)}
-              className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-              aria-label="Excluir registro"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
+          ))
+        )}
       </div>
+
+      {/* Saved rides */}
+      {allRides.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
+            Corridas analisadas {hasFilter && `· ${rides.length} de ${allRides.length}`}
+          </p>
+          {rides.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-6">Nenhuma corrida com esse filtro.</p>
+          ) : (
+            rides.map((ride: RideEntry) => {
+              const verdictColor =
+                ride.verdict === 'good' ? 'text-profit' :
+                ride.verdict === 'ok' ? 'text-accent' : 'text-loss';
+              const verdictEmoji = ride.verdict === 'good' ? '🟢' : ride.verdict === 'ok' ? '🟡' : '🔴';
+              return (
+                <div key={ride.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base">{verdictEmoji}</span>
+                      <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                        {weekday(ride.date)}
+                      </span>
+                      <span className="text-sm font-medium text-muted-foreground">{fmtDate(ride.date)}</span>
+                      <span className={`text-sm font-display font-bold ${verdictColor}`}>
+                        {fmt(ride.value)} / {ride.km.toFixed(1)} km
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Lucro estimado: {fmt(ride.profit)} · {fmt(ride.ridePerKm)}/km
+                    </p>
+                    {(ride.vehicle || ride.rideType) && (
+                      <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                        {ride.vehicle && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {ride.vehicle}</span>
+                        )}
+                        {ride.rideType && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {ride.rideType}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteRide(ride.id)}
+                    className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label="Excluir corrida"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }

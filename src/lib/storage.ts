@@ -1,9 +1,12 @@
-import { DailyEntry, DailyGoal, Goals, DEFAULT_GOALS, AppSettings, DEFAULT_SETTINGS } from './types';
+import { DailyEntry, DailyGoal, Goals, DEFAULT_GOALS, AppSettings, DEFAULT_SETTINGS, RideEntry } from './types';
 
 const ENTRIES_KEY = 'lucro-delivery-entries';
+const RIDES_KEY = 'lucro-delivery-rides';
 const GOAL_KEY = 'lucro-delivery-goal'; // legacy single daily goal
 const GOALS_KEY = 'lucro-delivery-goals';
 const SETTINGS_KEY = 'lucro-delivery-settings';
+const VEHICLES_KEY = 'lucro-delivery-vehicles';
+const RIDE_TYPES_KEY = 'lucro-delivery-ride-types';
 
 export function saveEntry(entry: DailyEntry): void {
   const entries = getEntries();
@@ -64,7 +67,47 @@ export function saveSettings(settings: AppSettings): void {
 
 export function resetAllData(): void {
   localStorage.removeItem(ENTRIES_KEY);
+  localStorage.removeItem(RIDES_KEY);
   localStorage.removeItem(GOAL_KEY);
   localStorage.removeItem(GOALS_KEY);
   localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(VEHICLES_KEY);
+  localStorage.removeItem(RIDE_TYPES_KEY);
 }
+
+// --- Ride entries (Análise de Corrida) ---
+export function getRides(): RideEntry[] {
+  const raw = localStorage.getItem(RIDES_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function saveRide(ride: RideEntry): void {
+  const rides = getRides();
+  rides.unshift(ride);
+  localStorage.setItem(RIDES_KEY, JSON.stringify(rides));
+}
+
+export function deleteRide(id: string): void {
+  const rides = getRides().filter(r => r.id !== id);
+  localStorage.setItem(RIDES_KEY, JSON.stringify(rides));
+}
+
+// --- Vehicles & Ride Types (cadastro livre) ---
+export function getVehicles(): string[] {
+  const raw = localStorage.getItem(VEHICLES_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function saveVehicles(list: string[]): void {
+  localStorage.setItem(VEHICLES_KEY, JSON.stringify(list));
+}
+
+export function getRideTypes(): string[] {
+  const raw = localStorage.getItem(RIDE_TYPES_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function saveRideTypes(list: string[]): void {
+  localStorage.setItem(RIDE_TYPES_KEY, JSON.stringify(list));
+}
+

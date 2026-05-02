@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { getSettings, saveSettings, resetAllData } from '@/lib/storage';
+import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
 import { AppSettings } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
+import TagListEditor from './TagListEditor';
 
 interface Props {
   refresh: number;
@@ -17,6 +18,19 @@ export default function SettingsView({ refresh, onChanged }: Props) {
   const [estHours, setEstHours] = useState(String(initial.estimatedHours));
   const [confirmReset, setConfirmReset] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [vehicles, setVehicles] = useState<string[]>(() => getVehicles());
+  const [rideTypes, setRideTypes] = useState<string[]>(() => getRideTypes());
+
+  const updateVehicles = (list: string[]) => {
+    setVehicles(list);
+    saveVehicles(list);
+    onChanged();
+  };
+  const updateRideTypes = (list: string[]) => {
+    setRideTypes(list);
+    saveRideTypes(list);
+    onChanged();
+  };
 
   const handleSave = () => {
     const pct = parseFloat(marginPct);
@@ -85,6 +99,24 @@ export default function SettingsView({ refresh, onChanged }: Props) {
           {saved ? '✓ Salvo' : 'Salvar configurações'}
         </Button>
       </div>
+
+      <TagListEditor
+        title="Veículos"
+        emoji="🏍️"
+        description="Cadastre seus veículos para comparar lucro entre eles."
+        placeholder="Ex: Moto Honda, Carro Onix"
+        items={vehicles}
+        onChange={updateVehicles}
+      />
+
+      <TagListEditor
+        title="Tipos de corrida"
+        emoji="📦"
+        description="Apps ou categorias que você usa (iFood, Uber, particular...)."
+        placeholder="Ex: iFood, Uber, 99"
+        items={rideTypes}
+        onChange={updateRideTypes}
+      />
 
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
         <p className="font-display font-semibold text-foreground">💱 Moeda</p>

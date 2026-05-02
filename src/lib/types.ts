@@ -10,6 +10,9 @@ export interface DailyEntry {
   maintenance: number;
   insurance: number;
   otherCosts: number;
+  // Optional segmentation
+  vehicle?: string;
+  rideType?: string;
   // Calculated
   litersConsumed: number;
   fuelCost: number;
@@ -19,6 +22,20 @@ export interface DailyEntry {
   profit: number;
   profitPerHour: number;
   profitPerKm: number;
+}
+
+export interface RideEntry {
+  id: string;
+  date: string;
+  value: number;
+  km: number;
+  costPerKm: number;
+  minIdealKm: number;
+  ridePerKm: number;
+  profit: number; // value - costPerKm * km
+  verdict: 'good' | 'ok' | 'bad';
+  vehicle?: string;
+  rideType?: string;
 }
 
 export interface Goals {
@@ -60,6 +77,8 @@ export function calculateEntry(input: {
   maintenance: number;
   insurance: number;
   otherCosts: number;
+  vehicle?: string;
+  rideType?: string;
 }): Omit<DailyEntry, 'id' | 'date'> {
   const litersConsumed = input.vehicleConsumption > 0 ? input.kmDriven / input.vehicleConsumption : 0;
   const fuelCost = litersConsumed * input.fuelPrice;

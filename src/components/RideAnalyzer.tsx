@@ -1,8 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { getEntries, getSettings } from '@/lib/storage';
+import { getEntries, getSettings, getVehicles, getRideTypes, saveRide } from '@/lib/storage';
+import { RideEntry } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertCircle, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   refresh: number;
@@ -17,6 +21,10 @@ export default function RideAnalyzer({ refresh }: Props) {
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
   const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
+  const vehicles = useMemo(() => getVehicles(), [refresh]);
+  const rideTypes = useMemo(() => getRideTypes(), [refresh]);
+  const [vehicle, setVehicle] = useState<string>('');
+  const [rideType, setRideType] = useState<string>('');
 
   const valueError =
     touched.value && rideValue === '' ? 'Informe o valor' :
@@ -141,6 +149,31 @@ export default function RideAnalyzer({ refresh }: Props) {
             {kmError && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle size={12} />{kmError}</p>}
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Veículo</Label>
+            <Select value={vehicle} onValueChange={setVehicle}>
+              <SelectTrigger className="h-11 text-sm">
+                <SelectValue placeholder={vehicles.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+              </SelectTrigger>
+              <SelectContent>
+                {vehicles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-muted-foreground">Tipo</Label>
+            <Select value={rideType} onValueChange={setRideType}>
+              <SelectTrigger className="h-11 text-sm">
+                <SelectValue placeholder={rideTypes.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+              </SelectTrigger>
+              <SelectContent>
+                {rideTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
         {error && <p className="text-destructive text-sm font-medium flex items-center gap-1"><AlertCircle size={14} />{error}</p>}
       </div>
 
@@ -166,6 +199,38 @@ export default function RideAnalyzer({ refresh }: Props) {
               <p className={`font-display font-bold text-sm ${verdictConfig[verdict].text}`}>{fmt(details.ridePerKm)}</p>
             </div>
           </div>
+
+          <Button
+            type="button"
+            onClick={() => {
+              if (!verdict || !details) return;
+              const val = parseFloat(rideValue);
+              const km = parseFloat(rideKm);
+              const ride: RideEntry = {
+                id: crypto.randomUUID(),
+                date: new Date().toISOString(),
+                value: val,
+                km,
+                costPerKm: details.costPerKm,
+                minIdealKm: details.minIdealKm,
+                ridePerKm: details.ridePerKm,
+                profit: val - details.costPerKm * km,
+                verdict,
+                vehicle: vehicle || undefined,
+                rideType: rideType || undefined,
+              };
+              saveRide(ride);
+              toast.success('Corrida salva no histórico');
+              setRideValue('');
+              setRideKm('');
+              setVerdict(null);
+              setDetails(null);
+              setTouched({ value: false, km: false });
+            }}
+            className="w-full h-11 font-display font-semibold gap-2"
+          >
+            <Save size={16} /> Salvar corrida no histórico
+          </Button>
         </div>
       )}
     </div>
