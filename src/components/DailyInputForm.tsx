@@ -143,6 +143,31 @@ export default function DailyInputForm({ onCalculate }: Props) {
           <Field label="Horas trabalhadas" value={form.hoursWorked} onChange={set('hoursWorked')} placeholder="8" error={showError('hoursWorked')} required />
           <Field label="Km rodados" value={form.kmDriven} onChange={set('kmDriven')} placeholder="120" error={showError('kmDriven')} required />
           <Field label="Ganho total do dia" value={form.totalEarnings} onChange={set('totalEarnings')} placeholder="200" prefix="R$" error={showError('totalEarnings')} required />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Veículo</Label>
+              <Select value={vehicle} onValueChange={setVehicle}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder={vehicles.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-muted-foreground">Tipo de corrida</Label>
+              <Select value={rideType} onValueChange={setRideType}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder={rideTypes.length === 0 ? 'Cadastre em Config.' : 'Selecione'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rideTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </div>
 
