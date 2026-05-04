@@ -99,6 +99,32 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
 
+  // Breakdown by vehicle and ride type for the current filter scope
+  const breakdown = useMemo(() => {
+    const build = (key: 'vehicle' | 'rideType') => {
+      const map = new Map<string, { count: number; earnings: number; cost: number; profit: number; km: number }>();
+      entries.forEach(e => {
+        const k = (e[key] || '—') as string;
+        const cur = map.get(k) || { count: 0, earnings: 0, cost: 0, profit: 0, km: 0 };
+        cur.count += 1;
+        cur.earnings += e.totalEarnings;
+        cur.cost += e.totalCost;
+        cur.profit += e.profit;
+        cur.km += e.kmDriven;
+        map.set(k, cur);
+      });
+      return Array.from(map.entries())
+        .map(([name, v]) => ({
+          name,
+          ...v,
+          avgProfit: v.count ? v.profit / v.count : 0,
+          profitPerKm: v.km > 0 ? v.profit / v.km : 0,
+        }))
+        .sort((a, b) => b.profit - a.profit);
+    };
+    return { byVehicle: build('vehicle'), byRideType: build('rideType') };
+  }, [entries]);
+
   // Days worked in the last 7 / 30 days (filtered)
   const { daysLast7, daysLast30, totalDays } = useMemo(() => {
     const today = new Date();
