@@ -222,7 +222,28 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         </div>
       )}
 
-      {/* Days worked */}
+      {/* Empty filter state */}
+      {hasFilter && entries.length === 0 && rides.length === 0 && (
+        <div className="bg-card rounded-lg p-8 border shadow-sm text-center space-y-3">
+          <p className="text-4xl">🔍</p>
+          <p className="font-display font-semibold text-foreground">Nenhum dado para esse filtro</p>
+          <p className="text-sm text-muted-foreground">
+            Não há registros com{vehicleFilter !== ALL && <> veículo <span className="text-foreground font-semibold">{vehicleFilter}</span></>}
+            {vehicleFilter !== ALL && rideTypeFilter !== ALL && ' e'}
+            {rideTypeFilter !== ALL && <> tipo <span className="text-foreground font-semibold">{rideTypeFilter}</span></>}.
+          </p>
+          <button
+            onClick={() => { setVehicleFilter(ALL); setRideTypeFilter(ALL); }}
+            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-display font-semibold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors text-sm"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      )}
+
+      {!(hasFilter && entries.length === 0 && rides.length === 0) && (
+      <>
+
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
           <p className="text-[10px] text-muted-foreground uppercase">7 dias</p>
