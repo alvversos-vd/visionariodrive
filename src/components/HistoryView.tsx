@@ -428,6 +428,6 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           )}
         </div>
       )}
+      </>
+      )}
     </div>
-  );
-}
