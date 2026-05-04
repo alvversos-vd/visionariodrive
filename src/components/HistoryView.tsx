@@ -328,6 +328,83 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         </div>
       )}
 
+      {/* Breakdown by category */}
+      {entries.length > 0 && (breakdown.byVehicle.length > 1 || breakdown.byRideType.length > 1 || hasFilter) && (
+        <div className="bg-card rounded-lg p-4 border shadow-sm space-y-4">
+          <p className="font-display font-semibold text-foreground text-sm">📊 Resumo por categoria</p>
+
+          {breakdown.byVehicle.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">Por veículo</p>
+              {breakdown.byVehicle.map(b => (
+                <div key={'v' + b.name} className="rounded-md bg-secondary/50 p-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-display font-semibold text-foreground">🏍️ {b.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 text-center">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Ganho</p>
+                      <p className="text-xs font-display font-bold text-foreground">{fmt(b.earnings)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
+                      <p className="text-xs font-display font-bold text-loss">{fmt(b.cost)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Lucro</p>
+                      <p className={`text-xs font-display font-bold ${b.profit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.profit)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Méd/dia</p>
+                      <p className={`text-xs font-display font-bold ${b.avgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.avgProfit)}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                    Lucro/km: <span className={b.profitPerKm >= 0 ? 'text-profit' : 'text-loss'}>{fmt(b.profitPerKm)}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {breakdown.byRideType.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">Por tipo de corrida</p>
+              {breakdown.byRideType.map(b => (
+                <div key={'t' + b.name} className="rounded-md bg-secondary/50 p-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-display font-semibold text-foreground">📦 {b.name}</span>
+                    <span className="text-[10px] text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 text-center">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Ganho</p>
+                      <p className="text-xs font-display font-bold text-foreground">{fmt(b.earnings)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
+                      <p className="text-xs font-display font-bold text-loss">{fmt(b.cost)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Lucro</p>
+                      <p className={`text-xs font-display font-bold ${b.profit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.profit)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase">Méd/dia</p>
+                      <p className={`text-xs font-display font-bold ${b.avgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.avgProfit)}</p>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                    Lucro/km: <span className={b.profitPerKm >= 0 ? 'text-profit' : 'text-loss'}>{fmt(b.profitPerKm)}</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Daily entry list */}
       <div className="space-y-2">
         <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
