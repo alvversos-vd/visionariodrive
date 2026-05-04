@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Pencil, Check } from 'lucide-react';
 
 interface Props {
   title: string;
@@ -14,6 +14,8 @@ interface Props {
 
 export default function TagListEditor({ title, emoji, description, placeholder, items, onChange }: Props) {
   const [draft, setDraft] = useState('');
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
 
   const add = () => {
     const v = draft.trim();
@@ -27,6 +29,28 @@ export default function TagListEditor({ title, emoji, description, placeholder, 
   };
 
   const remove = (name: string) => onChange(items.filter(i => i !== name));
+
+  const startEdit = (idx: number) => {
+    setEditingIdx(idx);
+    setEditDraft(items[idx]);
+  };
+
+  const cancelEdit = () => {
+    setEditingIdx(null);
+    setEditDraft('');
+  };
+
+  const commitEdit = () => {
+    if (editingIdx === null) return;
+    const v = editDraft.trim();
+    if (!v) { cancelEdit(); return; }
+    const dupe = items.some((it, i) => i !== editingIdx && it.toLowerCase() === v.toLowerCase());
+    if (dupe) { cancelEdit(); return; }
+    const next = items.slice();
+    next[editingIdx] = v;
+    onChange(next);
+    cancelEdit();
+  };
 
   return (
     <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
@@ -64,24 +88,68 @@ export default function TagListEditor({ title, emoji, description, placeholder, 
       {items.length === 0 ? (
         <p className="text-xs text-muted-foreground italic">Nenhum item cadastrado.</p>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {items.map(item => (
-            <span
-              key={item}
-              className="inline-flex items-center gap-1.5 bg-secondary text-foreground rounded-full pl-3 pr-1 py-1 text-sm"
-            >
-              {item}
-              <button
-                type="button"
-                onClick={() => remove(item)}
-                className="rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive transition-colors"
-                aria-label={`Remover ${item}`}
+        <ul className="space-y-1.5">
+          {items.map((item, idx) => {
+            const isEditing = editingIdx === idx;
+            return (
+              <li
+                key={item + idx}
+                className="flex items-center gap-2 bg-secondary/60 rounded-md pl-3 pr-1 py-1"
               >
-                <X size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
+                {isEditing ? (
+                  <>
+                    <Input
+                      autoFocus
+                      value={editDraft}
+                      onChange={e => setEditDraft(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+                        if (e.key === 'Escape') { e.preventDefault(); cancelEdit(); }
+                      }}
+                      className="h-9 text-sm flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={commitEdit}
+                      className="p-1.5 rounded-md text-profit hover:bg-profit/10"
+                      aria-label="Salvar"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="p-1.5 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Cancelar"
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm text-foreground truncate">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(idx)}
+                      className="p-1.5 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                      aria-label={`Editar ${item}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove(item)}
+                      className="p-1.5 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Excluir ${item}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
