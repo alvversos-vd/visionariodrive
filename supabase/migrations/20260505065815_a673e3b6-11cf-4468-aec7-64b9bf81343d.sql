@@ -1,0 +1,1 @@
+ALTER TABLE public.user_data ADD COLUMN IF NOT EXISTS expenses jsonb NOT NULL DEFAULT '[]'::jsonb;

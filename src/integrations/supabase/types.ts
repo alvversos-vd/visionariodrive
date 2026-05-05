@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           created_at: string
           entries: Json
+          expenses: Json
           goals: Json
           ride_types: Json
           rides: Json
@@ -62,6 +63,7 @@ export type Database = {
         Insert: {
           created_at?: string
           entries?: Json
+          expenses?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json
@@ -73,6 +75,7 @@ export type Database = {
         Update: {
           created_at?: string
           entries?: Json
+          expenses?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json
