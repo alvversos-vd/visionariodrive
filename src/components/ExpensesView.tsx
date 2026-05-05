@@ -10,8 +10,11 @@ import { computeExpenseAnalytics } from '@/lib/expenseAnalytics';
 import { toast } from 'sonner';
 import {
   Trash2, Utensils, Wrench, AlertTriangle, Car, MoreHorizontal,
-  TrendingUp, TrendingDown, Flame, Trophy,
+  TrendingUp, TrendingDown, Flame, Trophy, Receipt, Fuel,
 } from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+} from 'recharts';
 
 interface Props {
   refresh: number;
@@ -21,6 +24,8 @@ interface Props {
 const CATEGORY_ICON: Record<ExpenseCategory, typeof Utensils> = {
   'Alimentação': Utensils,
   'Manutenção': Wrench,
+  'Pedágio': Receipt,
+  'Combustível extra': Fuel,
   'Emergência': AlertTriangle,
   'Transporte': Car,
   'Outros': MoreHorizontal,
@@ -94,8 +99,12 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
       text: `📈 ${a.outOfPattern.length} gasto${a.outOfPattern.length > 1 ? 's' : ''} acima do seu padrão diário.`,
     });
   }
-  for (const c of a.recurringCategories) {
-    alerts.push({ tone: 'accent', text: `🔁 Você está repetindo gastos de ${c} todos os dias.` });
+  for (const r of a.recurringGroups) {
+    const label = r.label.length > 30 ? r.label.slice(0, 30) + '…' : r.label;
+    alerts.push({
+      tone: 'accent',
+      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos 7 dias · média ${fmt(r.avg)}.`,
+    });
   }
   if (a.consciousnessMode) {
     alerts.push({
@@ -110,7 +119,7 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <h2 className="font-display font-bold text-foreground">+ Novo gasto</h2>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {EXPENSE_CATEGORIES.map(c => {
             const Icon = CATEGORY_ICON[c];
             const active = category === c;
@@ -263,7 +272,66 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
         </div>
       </div>
 
-      {/* Gamificação */}
+      {/* Tendência semanal — gastos */}
+      <div className="bg-card rounded-lg p-4 border shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-display font-bold text-foreground">📈 Gastos · últimos 7 dias</h3>
+          <span className="text-xs text-muted-foreground">{fmt(a.weekTotal)}</span>
+        </div>
+        <div className="h-36">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={a.weekSeries} margin={{ left: -20, right: 8, top: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--loss))" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="hsl(var(--loss))" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip
+                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+                formatter={(v: number) => fmt(v)}
+                labelFormatter={(l) => `Dia: ${l}`}
+              />
+              <Area type="monotone" dataKey="expenses" stroke="hsl(var(--loss))" fill="url(#expGrad)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Tendência de economia */}
+      {savingsGoal > 0 && (
+        <div className="bg-card rounded-lg p-4 border shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-display font-bold text-foreground">💚 Economia diária</h3>
+            <span className="text-xs text-muted-foreground">Meta {fmt(savingsGoal)}</span>
+          </div>
+          <div className="h-36">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={a.weekSeries} margin={{ left: -20, right: 8, top: 4, bottom: 0 }}>
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} width={32} />
+                <Tooltip
+                  contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: number) => fmt(v)}
+                />
+                <ReferenceLine y={0} stroke="hsl(var(--border))" />
+                <Bar
+                  dataKey="savings"
+                  radius={[4, 4, 0, 0]}
+                  fill="hsl(var(--profit))"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Barras positivas = economizou; negativas = ultrapassou a meta.
+          </p>
+        </div>
+      )}
+
+
       {savingsGoal > 0 && (a.controlStreak > 0 || a.bestSavingsDay) && (
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-card rounded-lg p-4 border shadow-sm text-center">

@@ -35,6 +35,8 @@ export interface ExpenseAnalytics {
   profile: 'Gasto impulsivo' | 'Custo operacional alto' | 'Controle saudável' | null;
   outOfPattern: Expense[];
   recurringCategories: ExpenseCategory[];
+  recurringGroups: { category: ExpenseCategory; label: string; days: number; avg: number }[];
+  weekSeries: { day: string; date: string; expenses: number; savings: number }[];
   bestDayWeek: { day: string; total: number } | null;
   worstDayWeek: { day: string; total: number } | null;
   controlStreak: number;
@@ -106,17 +108,47 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
     ? todayList.filter(e => e.value > dailyAvg * 0.5 && e.value > 0)
     : [];
 
-  // Recurring categories: appears every day of the last 7 days that have any expense
-  const daysWithExpense = new Set(weekList.map(e => startOfDay(new Date(e.date)).toISOString()));
-  const recurringCategories: ExpenseCategory[] = [];
-  if (daysWithExpense.size >= 3) {
-    for (const c of EXPENSE_CATEGORIES) {
-      const dayHasCat = new Set(
-        weekList.filter(e => e.category === c).map(e => startOfDay(new Date(e.date)).toISOString()),
-      );
-      if (dayHasCat.size === daysWithExpense.size) recurringCategories.push(c);
-    }
+  // Recurring detection: group similar expenses by category + normalized description.
+  // Avoid false positives by requiring ≥3 distinct days and value variance under 50%.
+  function normalizeDesc(s?: string) {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
   }
+  const groups = new Map<string, { category: ExpenseCategory; label: string; days: Set<string>; values: number[] }>();
+  for (const e of weekList) {
+    const desc = normalizeDesc(e.description);
+    const key = `${e.category}::${desc}`;
+    const dayKey = startOfDay(new Date(e.date)).toISOString();
+    const g = groups.get(key) ?? {
+      category: e.category,
+      label: e.description?.trim() || e.category,
+      days: new Set<string>(),
+      values: [],
+    };
+    g.days.add(dayKey);
+    g.values.push(e.value);
+    groups.set(key, g);
+  }
+  const recurringGroups: { category: ExpenseCategory; label: string; days: number; avg: number }[] = [];
+  for (const g of groups.values()) {
+    if (g.days.size < 3) continue;
+    const avg = g.values.reduce((s, v) => s + v, 0) / g.values.length;
+    if (avg <= 0) continue;
+    const min = Math.min(...g.values);
+    const max = Math.max(...g.values);
+    // similarity: max within 50% of avg
+    if ((max - min) / avg > 1.0) continue;
+    recurringGroups.push({ category: g.category, label: g.label, days: g.days.size, avg });
+  }
+  recurringGroups.sort((a, b) => b.days - a.days);
+  // Backwards compat: keep a flat category list (unique) of recurring items
+  const recurringCategories: ExpenseCategory[] = Array.from(
+    new Set(recurringGroups.map(r => r.category)),
+  );
 
   // Best / worst day in last 7 (by weekday)
   const totalsByDay: { dateKey: string; total: number; weekday: number }[] = [];
@@ -139,6 +171,21 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
         return { day: WEEKDAYS[max.weekday], total: max.total };
       })()
     : null;
+
+  // Daily series (last 7 days, oldest → newest) for charts
+  const weekSeries: { day: string; date: string; expenses: number; savings: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const dStart = today0 - i * DAY;
+    const dEnd = dStart + DAY;
+    const total = sumExpenses(expensesInRange(all, dStart, dEnd));
+    const wd = new Date(dStart).getDay();
+    weekSeries.push({
+      day: WEEKDAYS[wd].slice(0, 3),
+      date: new Date(dStart).toISOString(),
+      expenses: Number(total.toFixed(2)),
+      savings: savingsGoalDaily > 0 ? Number((savingsGoalDaily - total).toFixed(2)) : 0,
+    });
+  }
 
   // Control streak (days where expenses <= savings goal, going back from today)
   let controlStreak = 0;
@@ -205,6 +252,8 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
     profile,
     outOfPattern,
     recurringCategories,
+    recurringGroups,
+    weekSeries,
     bestDayWeek,
     worstDayWeek,
     controlStreak,

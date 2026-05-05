@@ -3,6 +3,8 @@ import { markDirty } from './cloudSync';
 export const EXPENSE_CATEGORIES = [
   'Alimentação',
   'Manutenção',
+  'Pedágio',
+  'Combustível extra',
   'Emergência',
   'Transporte',
   'Outros',
