@@ -10,8 +10,11 @@ import { computeExpenseAnalytics } from '@/lib/expenseAnalytics';
 import { toast } from 'sonner';
 import {
   Trash2, Utensils, Wrench, AlertTriangle, Car, MoreHorizontal,
-  TrendingUp, TrendingDown, Flame, Trophy,
+  TrendingUp, TrendingDown, Flame, Trophy, Receipt, Fuel,
 } from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+} from 'recharts';
 
 interface Props {
   refresh: number;
@@ -21,6 +24,8 @@ interface Props {
 const CATEGORY_ICON: Record<ExpenseCategory, typeof Utensils> = {
   'Alimentação': Utensils,
   'Manutenção': Wrench,
+  'Pedágio': Receipt,
+  'Combustível extra': Fuel,
   'Emergência': AlertTriangle,
   'Transporte': Car,
   'Outros': MoreHorizontal,
