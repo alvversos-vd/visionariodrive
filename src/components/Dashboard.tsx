@@ -124,12 +124,31 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
           </div>
 
           {expensesToday > 0 && (
-            <div className="bg-loss/10 border border-loss/30 rounded-lg p-4">
-              <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
-              <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Já incluídos no custo total e no lucro do dia
-              </p>
+            <div className="bg-loss/10 border border-loss/30 rounded-lg p-4 space-y-2">
+              <div>
+                <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
+                <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
+                <p className="text-xs text-muted-foreground">Já incluídos no custo total e no lucro do dia</p>
+              </div>
+              <div className="space-y-1 pt-1">
+                {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
+                  const pct = (expensesByCat[c].total / expensesToday) * 100;
+                  return (
+                    <div key={c}>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-foreground">{c}</span>
+                        <span className="font-semibold text-foreground">
+                          {fmt(expensesByCat[c].total)}
+                          <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                        </span>
+                      </div>
+                      <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden">
+                        <div className="h-full bg-loss rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
