@@ -137,6 +137,18 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
                   style={{ width: `${goalProgress}%` }}
                 />
               </div>
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <span className="text-muted-foreground">
+                  Lucro hoje: <span className="font-semibold text-foreground">{fmt(Math.max(0, today.profit))}</span>
+                </span>
+                {today.profit >= goals.daily ? (
+                  <span className="font-display font-bold text-profit">✓ Meta batida! +{fmt(today.profit - goals.daily)}</span>
+                ) : (
+                  <span className="font-display font-bold text-primary">
+                    Faltam {fmt(goals.daily - Math.max(0, today.profit))}
+                  </span>
+                )}
+              </div>
             </button>
           )}
         </>
