@@ -8,14 +8,20 @@ import RideAnalyzer from '@/components/RideAnalyzer';
 import GoalsView from '@/components/GoalsView';
 import SettingsView from '@/components/SettingsView';
 import SimulatorView from '@/components/SimulatorView';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb } from 'lucide-react';
+import ProfileView from '@/components/ProfileView';
+import ProRequired from '@/components/ProRequired';
+import { useAuth } from '@/contexts/AuthContext';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock } from 'lucide-react';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'strategy' | 'settings';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'strategy' | 'settings' | 'profile';
+
+const PRO_TABS: Tab[] = ['ride', 'history', 'strategy'];
 
 export default function Index() {
   const [tab, setTab] = useState<Tab>('home');
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const { isPro } = useAuth();
 
   const handleCalculate = (entry: DailyEntry) => {
     setResult(entry);
@@ -24,19 +30,51 @@ export default function Index() {
 
   const triggerRefresh = () => setRefresh(p => p + 1);
 
-  const tabs: { key: Tab; label: string; icon: typeof Home }[] = [
+  const tabs: { key: Tab; label: string; icon: typeof Home; pro?: boolean }[] = [
     { key: 'home', label: 'Início', icon: Home },
     { key: 'input', label: 'Calcular', icon: Calculator },
-    { key: 'ride', label: 'Corrida', icon: Navigation },
+    { key: 'ride', label: 'Corrida', icon: Navigation, pro: true },
     { key: 'goals', label: 'Metas', icon: Target },
-    { key: 'strategy', label: 'Estratégia', icon: Lightbulb },
-    { key: 'history', label: 'Histórico', icon: BarChart3 },
+    { key: 'strategy', label: 'Estratégia', icon: Lightbulb, pro: true },
+    { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
   ];
 
   const tabClass = (active: boolean) =>
-    `flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 text-[10px] font-display font-semibold transition-colors rounded-md min-w-0 flex-1 ${
+    `relative flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 text-[10px] font-display font-semibold transition-colors rounded-md min-w-0 flex-1 ${
       active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
     }`;
+
+  const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
+
+  const renderContent = () => {
+    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'settings' && tab !== 'profile' && isLocked(tab)) {
+      const labels: Partial<Record<Tab, string>> = {
+        ride: 'a análise de corridas',
+        history: 'o histórico completo',
+        strategy: 'as estratégias e simulador',
+      };
+      return <ProRequired feature={labels[tab]} />;
+    }
+
+    switch (tab) {
+      case 'home':
+        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} />;
+      case 'input':
+        return result ? <ResultsView entry={result} onBack={() => setResult(null)} /> : <DailyInputForm onCalculate={handleCalculate} />;
+      case 'ride':
+        return <RideAnalyzer refresh={refresh} />;
+      case 'goals':
+        return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
+      case 'strategy':
+        return <SimulatorView refresh={refresh} />;
+      case 'history':
+        return <HistoryView refresh={refresh} onRefresh={triggerRefresh} />;
+      case 'settings':
+        return <SettingsView refresh={refresh} onChanged={triggerRefresh} />;
+      case 'profile':
+        return <ProfileView onReset={triggerRefresh} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -46,13 +84,22 @@ export default function Index() {
             <h1 className="font-display text-xl font-bold text-foreground">Visionario Delivery Pro</h1>
             <p className="text-xs text-muted-foreground">Lucro real · Decisão rápida · Foco</p>
           </div>
-          <button
-            onClick={() => setTab('settings')}
-            className="p-2 rounded-lg bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            aria-label="Configurações"
-          >
-            <SettingsIcon size={20} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTab('profile')}
+              className={`p-2 rounded-lg transition-colors ${tab === 'profile' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+              aria-label="Perfil"
+            >
+              <User size={20} />
+            </button>
+            <button
+              onClick={() => setTab('settings')}
+              className={`p-2 rounded-lg transition-colors ${tab === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+              aria-label="Configurações"
+            >
+              <SettingsIcon size={20} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -69,24 +116,14 @@ export default function Index() {
             >
               <t.icon size={16} />
               <span className="truncate">{t.label}</span>
+              {t.pro && !isPro && (
+                <Lock size={8} className="absolute top-1 right-1 opacity-60" />
+              )}
             </button>
           ))}
         </nav>
 
-        {tab === 'home' && (
-          <Dashboard
-            refresh={refresh}
-            onGoToInput={() => setTab('input')}
-            onGoToGoals={() => setTab('goals')}
-          />
-        )}
-        {tab === 'input' && !result && <DailyInputForm onCalculate={handleCalculate} />}
-        {tab === 'input' && result && <ResultsView entry={result} onBack={() => setResult(null)} />}
-        {tab === 'ride' && <RideAnalyzer refresh={refresh} />}
-        {tab === 'goals' && <GoalsView refresh={refresh} onSaved={triggerRefresh} />}
-        {tab === 'strategy' && <SimulatorView refresh={refresh} />}
-        {tab === 'history' && <HistoryView refresh={refresh} onRefresh={triggerRefresh} />}
-        {tab === 'settings' && <SettingsView refresh={refresh} onChanged={triggerRefresh} />}
+        {renderContent()}
       </main>
     </div>
   );
