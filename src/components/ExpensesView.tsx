@@ -10,7 +10,7 @@ import { computeExpenseAnalytics } from '@/lib/expenseAnalytics';
 import { toast } from 'sonner';
 import {
   Trash2, Utensils, Wrench, AlertTriangle, Car, MoreHorizontal,
-  TrendingUp, TrendingDown, Flame, Trophy, Eye,
+  TrendingUp, TrendingDown, Flame, Trophy,
 } from 'lucide-react';
 
 interface Props {
