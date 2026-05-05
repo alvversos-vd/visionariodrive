@@ -407,7 +407,7 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
       )}
 
       {/* Breakdown de hoje (se diferente) */}
-      {todayTotal > 0 && windowDays !== 1 && (
+      {todayTotal > 0 && (
         <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
           <h3 className="font-display font-bold text-foreground mb-1">Por categoria · hoje</h3>
           {EXPENSE_CATEGORIES.filter(c => byCat[c].total > 0).map(c => {
