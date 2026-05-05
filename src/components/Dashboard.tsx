@@ -126,8 +126,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
               <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
               <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Reduziram seu lucro em <span className="font-bold text-loss">{fmt(expensesToday)}</span>
-                {' · '}Lucro ajustado: <span className={`font-bold ${(today.profit - expensesToday) >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(today.profit - expensesToday)}</span>
+                Já incluídos no custo total e no lucro do dia
               </p>
             </div>
           )}
