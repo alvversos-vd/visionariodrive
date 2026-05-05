@@ -111,7 +111,7 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
     const label = r.label.length > 30 ? r.label.slice(0, 30) + '…' : r.label;
     alerts.push({
       tone: 'accent',
-      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos 7 dias · média ${fmt(r.avg)}.`,
+      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos ${a.windowDays} dias · média ${fmt(r.avg)}.`,
     });
   }
   if (a.consciousnessMode) {
@@ -255,12 +255,32 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
         )}
       </div>
 
-      {/* Comparativo semanal + previsão */}
+      {/* Filtro de período */}
+      <div className="flex items-center justify-between bg-card border rounded-lg p-1.5">
+        <span className="text-xs text-muted-foreground px-2">Período</span>
+        <div className="flex gap-1">
+          {([7, 30, 90] as WindowDays[]).map(d => (
+            <button
+              key={d}
+              onClick={() => setWindowDays(d)}
+              className={`text-xs font-display font-semibold px-3 py-1.5 rounded-md transition-colors ${
+                windowDays === d
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Comparativo + previsão */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-lg p-4 border shadow-sm">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {a.weekVariation >= 0 ? <TrendingUp size={12} className="text-loss" /> : <TrendingDown size={12} className="text-profit" />}
-            7 dias vs anterior
+            {windowLabel} vs anterior
           </p>
           <p className={`text-lg font-display font-bold ${a.weekVariation >= 0 ? 'text-loss' : 'text-profit'}`}>
             {a.weekVariationPct === null
@@ -272,18 +292,18 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
           </p>
         </div>
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground">🔮 Previsão da semana</p>
+          <p className="text-xs text-muted-foreground">🔮 Previsão semanal</p>
           <p className="text-lg font-display font-bold text-foreground">{fmt(a.weekForecast)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Média de {fmt(a.dailyAvg)}/dia
+            Média de {fmt(a.dailyAvg)}/dia ({windowLabel})
           </p>
         </div>
       </div>
 
-      {/* Tendência semanal — gastos */}
+      {/* Tendência — gastos */}
       <div className="bg-card rounded-lg p-4 border shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-display font-bold text-foreground">📈 Gastos · últimos 7 dias</h3>
+          <h3 className="font-display font-bold text-foreground">📈 Gastos · últimos {windowDays} dias</h3>
           <span className="text-xs text-muted-foreground">{fmt(a.weekTotal)}</span>
         </div>
         <div className="h-36">
