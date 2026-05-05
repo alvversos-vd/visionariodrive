@@ -21,6 +21,8 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  dataReady: boolean;
+  dataVersion: number;
   isPro: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
