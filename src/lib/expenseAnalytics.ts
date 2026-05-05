@@ -111,8 +111,11 @@ export function computeExpenseAnalytics(
     ? todayList.filter(e => e.value > dailyAvg * 0.5 && e.value > 0)
     : [];
 
-  // Recurring detection: group similar expenses by category + normalized description.
-  // Avoid false positives by requiring ≥3 distinct days and value variance under 50%.
+  // Recurring detection v2
+  // - Normalize description and split into tokens
+  // - Cluster expenses (same category) when token-set Jaccard ≥ 0.5 OR one is empty
+  // - Require: occurrences on ≥3 distinct days AND coverage ≥ 30% of days-in-window
+  // - Tolerate value variability via median-based MAD; only flag if values are reasonably consistent
   function normalizeDesc(s?: string) {
     return (s || '')
       .toLowerCase()
@@ -121,34 +124,76 @@ export function computeExpenseAnalytics(
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
   }
-  const groups = new Map<string, { category: ExpenseCategory; label: string; days: Set<string>; values: number[] }>();
+  const STOP = new Set(['de', 'da', 'do', 'na', 'no', 'a', 'o', 'e', 'em', 'pra', 'para', 'um', 'uma']);
+  function tokens(s: string): Set<string> {
+    return new Set(s.split(' ').filter(t => t.length > 1 && !STOP.has(t)));
+  }
+  function jaccard(a: Set<string>, b: Set<string>): number {
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0.6; // empty desc considered loosely similar
+    let inter = 0;
+    for (const x of a) if (b.has(x)) inter++;
+    const union = a.size + b.size - inter;
+    return union === 0 ? 0 : inter / union;
+  }
+  function median(arr: number[]) {
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  type Cluster = {
+    category: ExpenseCategory;
+    label: string;
+    tokens: Set<string>;
+    days: Set<string>;
+    values: number[];
+  };
+  const clustersByCat = new Map<ExpenseCategory, Cluster[]>();
   for (const e of weekList) {
     const desc = normalizeDesc(e.description);
-    const key = `${e.category}::${desc}`;
-    const dayKey = startOfDay(new Date(e.date)).toISOString();
-    const g = groups.get(key) ?? {
-      category: e.category,
-      label: e.description?.trim() || e.category,
-      days: new Set<string>(),
-      values: [],
-    };
-    g.days.add(dayKey);
-    g.values.push(e.value);
-    groups.set(key, g);
+    const tk = tokens(desc);
+    const list = clustersByCat.get(e.category) ?? [];
+    let target = list.find(c => jaccard(c.tokens, tk) >= 0.5);
+    if (!target) {
+      target = {
+        category: e.category,
+        label: e.description?.trim() || e.category,
+        tokens: tk,
+        days: new Set<string>(),
+        values: [],
+      };
+      list.push(target);
+      clustersByCat.set(e.category, list);
+    } else {
+      // merge tokens; keep the most descriptive label (longer)
+      for (const t of tk) target.tokens.add(t);
+      const incoming = e.description?.trim() || '';
+      if (incoming.length > target.label.length) target.label = incoming;
+    }
+    target.days.add(startOfDay(new Date(e.date)).toISOString());
+    target.values.push(e.value);
   }
+
   const recurringGroups: { category: ExpenseCategory; label: string; days: number; avg: number }[] = [];
-  for (const g of groups.values()) {
-    if (g.days.size < 3) continue;
-    const avg = g.values.reduce((s, v) => s + v, 0) / g.values.length;
-    if (avg <= 0) continue;
-    const min = Math.min(...g.values);
-    const max = Math.max(...g.values);
-    // similarity: max within 50% of avg
-    if ((max - min) / avg > 1.0) continue;
-    recurringGroups.push({ category: g.category, label: g.label, days: g.days.size, avg });
+  const minDays = Math.max(3, Math.ceil(W * 0.3));
+  for (const list of clustersByCat.values()) {
+    for (const c of list) {
+      if (c.days.size < minDays) continue;
+      const med = median(c.values);
+      if (med <= 0) continue;
+      // MAD relative to median; allow up to 75% deviation
+      const mad = median(c.values.map(v => Math.abs(v - med)));
+      if (med > 0 && mad / med > 0.75) continue;
+      recurringGroups.push({
+        category: c.category,
+        label: c.label,
+        days: c.days.size,
+        avg: c.values.reduce((s, v) => s + v, 0) / c.values.length,
+      });
+    }
   }
   recurringGroups.sort((a, b) => b.days - a.days);
-  // Backwards compat: keep a flat category list (unique) of recurring items
   const recurringCategories: ExpenseCategory[] = Array.from(
     new Set(recurringGroups.map(r => r.category)),
   );
