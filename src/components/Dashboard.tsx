@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { getEntries, getGoals, getSettings } from '@/lib/storage';
+import { getTodayExpenses, sumExpenses } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
 
 interface Props {
   refresh: number;
@@ -18,6 +19,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
+  const expensesToday = useMemo(() => sumExpenses(getTodayExpenses()), [refresh]);
 
   const today = stats.todayEntry;
   const status: 'good' | 'ok' | 'bad' | 'none' = !today
