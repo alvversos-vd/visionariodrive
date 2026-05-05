@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { hydrateFromCloud, setSyncUser, subscribeRealtime, clearLocalCache } from '@/lib/cloudSync';
 
 export type UserPlan = 'FREE' | 'PRO';
 
