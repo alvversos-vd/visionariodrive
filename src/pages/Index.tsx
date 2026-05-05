@@ -9,11 +9,12 @@ import GoalsView from '@/components/GoalsView';
 import SettingsView from '@/components/SettingsView';
 import SimulatorView from '@/components/SimulatorView';
 import ProfileView from '@/components/ProfileView';
+import ExpensesView from '@/components/ExpensesView';
 import ProRequired from '@/components/ProRequired';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock } from 'lucide-react';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet } from 'lucide-react';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'strategy' | 'settings' | 'profile';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile';
 
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
@@ -38,6 +39,7 @@ export default function Index() {
     { key: 'home', label: 'Início', icon: Home },
     { key: 'input', label: 'Calcular', icon: Calculator },
     { key: 'ride', label: 'Corrida', icon: Navigation },
+    { key: 'expenses', label: 'Gastos', icon: Wallet },
     { key: 'goals', label: 'Metas', icon: Target },
     { key: 'strategy', label: 'Estratégia', icon: Lightbulb, pro: true },
     { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
@@ -51,7 +53,7 @@ export default function Index() {
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
   const renderContent = () => {
-    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'settings' && tab !== 'profile' && isLocked(tab)) {
+    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && isLocked(tab)) {
       const labels: Partial<Record<Tab, string>> = {
         ride: 'a análise de corridas',
         history: 'o histórico completo',
@@ -69,6 +71,8 @@ export default function Index() {
         return <RideAnalyzer refresh={refresh} />;
       case 'goals':
         return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
+      case 'expenses':
+        return <ExpensesView refresh={refresh} onChanged={triggerRefresh} />;
       case 'strategy':
         return <SimulatorView refresh={refresh} />;
       case 'history':

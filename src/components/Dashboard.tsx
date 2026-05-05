@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { getEntries, getGoals, getSettings } from '@/lib/storage';
+import { getTodayExpenses, sumExpenses } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
 
 interface Props {
   refresh: number;
@@ -18,6 +19,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
+  const expensesToday = useMemo(() => sumExpenses(getTodayExpenses()), [refresh]);
 
   const today = stats.todayEntry;
   const status: 'good' | 'ok' | 'bad' | 'none' = !today
@@ -103,6 +105,17 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
               Margem: {((settings.profitMargin - 1) * 100).toFixed(0)}%
             </p>
           </div>
+
+          {expensesToday > 0 && (
+            <div className="bg-loss/10 border border-loss/30 rounded-lg p-4">
+              <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
+              <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Reduziram seu lucro em <span className="font-bold text-loss">{fmt(expensesToday)}</span>
+                {' · '}Lucro ajustado: <span className={`font-bold ${(today.profit - expensesToday) >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(today.profit - expensesToday)}</span>
+              </p>
+            </div>
+          )}
 
           {/* Previsão do dia */}
           {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
