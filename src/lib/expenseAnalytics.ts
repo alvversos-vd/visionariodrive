@@ -198,9 +198,9 @@ export function computeExpenseAnalytics(
     new Set(recurringGroups.map(r => r.category)),
   );
 
-  // Best / worst day in last 7 (by weekday)
+  // Best / worst day in the window (by weekday)
   const totalsByDay: { dateKey: string; total: number; weekday: number }[] = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < W; i++) {
     const dStart = today0 - i * DAY;
     const dEnd = dStart + DAY;
     const total = sumExpenses(expensesInRange(all, dStart, dEnd));
@@ -220,16 +220,19 @@ export function computeExpenseAnalytics(
       })()
     : null;
 
-  // Daily series (last 7 days, oldest → newest) for charts
+  // Daily series for charts (oldest → newest); for long windows use date label
   const weekSeries: { day: string; date: string; expenses: number; savings: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = W - 1; i >= 0; i--) {
     const dStart = today0 - i * DAY;
     const dEnd = dStart + DAY;
     const total = sumExpenses(expensesInRange(all, dStart, dEnd));
-    const wd = new Date(dStart).getDay();
+    const d = new Date(dStart);
+    const label = W <= 14
+      ? WEEKDAYS[d.getDay()].slice(0, 3)
+      : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
     weekSeries.push({
-      day: WEEKDAYS[wd].slice(0, 3),
-      date: new Date(dStart).toISOString(),
+      day: label,
+      date: d.toISOString(),
       expenses: Number(total.toFixed(2)),
       savings: savingsGoalDaily > 0 ? Number((savingsGoalDaily - total).toFixed(2)) : 0,
     });
