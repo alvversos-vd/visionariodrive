@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getEntries, getGoals, getSettings } from '@/lib/storage';
-import { getTodayExpenses, sumExpenses } from '@/lib/expenses';
+import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
 
@@ -19,7 +19,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
-  const expensesToday = useMemo(() => sumExpenses(getTodayExpenses()), [refresh]);
+  const todayExpenses = useMemo(() => getTodayExpenses(), [refresh]);
+  const expensesToday = sumExpenses(todayExpenses);
+  const expensesByCat = useMemo(() => groupByCategory(todayExpenses), [todayExpenses]);
 
   const baseToday = stats.todayEntry;
   // Adjust today's totals to include extra expenses
