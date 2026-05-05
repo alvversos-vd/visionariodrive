@@ -21,7 +21,22 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
   const expensesToday = useMemo(() => sumExpenses(getTodayExpenses()), [refresh]);
 
-  const today = stats.todayEntry;
+  const baseToday = stats.todayEntry;
+  // Adjust today's totals to include extra expenses
+  const today = baseToday
+    ? {
+        ...baseToday,
+        totalCost: baseToday.totalCost + expensesToday,
+        profit: baseToday.profit - expensesToday,
+        profitPerHour: baseToday.hoursWorked > 0
+          ? (baseToday.profit - expensesToday) / baseToday.hoursWorked
+          : 0,
+        profitPerKm: baseToday.kmDriven > 0
+          ? (baseToday.profit - expensesToday) / baseToday.kmDriven
+          : 0,
+      }
+    : null;
+
   const status: 'good' | 'ok' | 'bad' | 'none' = !today
     ? 'none'
     : today.profit > 0 && (goals.daily === 0 || today.profit >= goals.daily * 0.7)
