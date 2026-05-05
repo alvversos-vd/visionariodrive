@@ -31,6 +31,8 @@ export interface ExpenseAnalytics {
   dailyAvg: number; // last 7 days average
   weekForecast: number;
   byCategoryToday: Record<ExpenseCategory, { total: number; count: number }>;
+  byCategoryWindow: Record<ExpenseCategory, { total: number; count: number }>;
+  windowDays: number;
   dominantCategory: ExpenseCategory | null;
   profile: 'Gasto impulsivo' | 'Custo operacional alto' | 'Controle saudável' | null;
   outOfPattern: Expense[];
@@ -82,6 +84,7 @@ export function computeExpenseAnalytics(
   const weekForecast = dailyAvg * 7;
 
   const byCategoryToday = groupByCategory(todayList);
+  const byCategoryWindow = groupByCategory(weekList);
 
   // Dominant category (today)
   let dominantCategory: ExpenseCategory | null = null;
