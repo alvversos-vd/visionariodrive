@@ -252,6 +252,8 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
     profile,
     outOfPattern,
     recurringCategories,
+    recurringGroups,
+    weekSeries,
     bestDayWeek,
     worstDayWeek,
     controlStreak,
