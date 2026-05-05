@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export type UserPlan = 'FREE' | 'PRO';
 
@@ -31,6 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const prevPlanRef = useRef<UserPlan | null>(null);
+
+  const applyProfile = (next: Profile | null) => {
+    const prev = prevPlanRef.current;
+    if (prev && next && prev !== 'PRO' && next.usuario_plano === 'PRO') {
+      toast({
+        title: '🎉 Bem-vindo ao modo Visionário!',
+        description: 'Suas funções premium foram liberadas. Aproveite!',
+      });
+    }
+    prevPlanRef.current = next?.usuario_plano ?? null;
+    setProfile(next);
+  };
 
   const loadProfile = async (uid: string) => {
     const { data } = await supabase
@@ -38,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('user_id', uid)
       .maybeSingle();
-    setProfile((data as Profile) ?? null);
+    applyProfile((data as Profile) ?? null);
   };
 
   useEffect(() => {
@@ -72,8 +86,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Realtime: detecta mudança de plano (ex.: upgrade para PRO)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` },
+        (payload) => applyProfile(payload.new as Profile),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
+    prevPlanRef.current = null;
     setProfile(null);
   };
 
