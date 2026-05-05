@@ -42,17 +42,37 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
     ? Math.min(100, (today.profit / goals.daily) * 100)
     : 0;
 
+  const smartMessage = today
+    ? today.profit < 0
+      ? { text: '⚠️ Atenção: você está perdendo dinheiro hoje', tone: 'loss' }
+      : goals.daily > 0 && today.profit >= goals.daily
+      ? { text: '🚀 Bom trabalho hoje! Meta atingida.', tone: 'profit' }
+      : today.profit > 0
+      ? { text: '💡 Você pode melhorar suas escolhas para lucrar mais', tone: 'accent' }
+      : null
+    : null;
+
   return (
     <div className="space-y-4 animate-slide-up">
       {/* Hero status */}
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
         <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
-        <p className="text-4xl font-display font-bold text-primary-foreground mt-2">
+        <p className={`text-4xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
           {today ? fmt(today.profit) : 'R$ 0,00'}
         </p>
         <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
       </div>
+
+      {smartMessage && (
+        <div className={`rounded-lg p-3 text-sm font-medium border ${
+          smartMessage.tone === 'profit' ? 'bg-profit/10 border-profit/30 text-profit' :
+          smartMessage.tone === 'loss' ? 'bg-loss/10 border-loss/30 text-loss' :
+          'bg-accent/10 border-accent/30 text-accent-foreground'
+        }`}>
+          {smartMessage.text}
+        </div>
+      )}
 
       {/* Today metrics */}
       {today ? (
