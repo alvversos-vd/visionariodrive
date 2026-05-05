@@ -11,10 +11,26 @@ import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
+function FullScreenLoader({ label }: { label: string }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-2xl shadow-lg animate-pulse">
+        VD
+      </div>
+      <p className="font-display text-lg font-bold text-foreground">Visionario Delivery Pro</p>
+      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+        <Loader2 className="animate-spin" size={16} />
+        <span>{label}</span>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  const { user, loading, dataReady } = useAuth();
+  if (loading) return <FullScreenLoader label="Iniciando..." />;
   if (!user) return <Navigate to="/auth" replace />;
+  if (!dataReady) return <FullScreenLoader label="Carregando seus dados..." />;
   return <>{children}</>;
 }
 

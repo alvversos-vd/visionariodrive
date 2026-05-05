@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_data: {
+        Row: {
+          created_at: string
+          entries: Json
+          goals: Json
+          ride_types: Json
+          rides: Json
+          settings: Json
+          updated_at: string
+          user_id: string
+          vehicles: Json
+        }
+        Insert: {
+          created_at?: string
+          entries?: Json
+          goals?: Json
+          ride_types?: Json
+          rides?: Json
+          settings?: Json
+          updated_at?: string
+          user_id: string
+          vehicles?: Json
+        }
+        Update: {
+          created_at?: string
+          entries?: Json
+          goals?: Json
+          ride_types?: Json
+          rides?: Json
+          settings?: Json
+          updated_at?: string
+          user_id?: string
+          vehicles?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

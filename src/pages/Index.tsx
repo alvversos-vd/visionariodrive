@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DailyEntry } from '@/lib/types';
 import Dashboard from '@/components/Dashboard';
 import DailyInputForm from '@/components/DailyInputForm';
@@ -21,7 +21,11 @@ export default function Index() {
   const [tab, setTab] = useState<Tab>('home');
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const { isPro } = useAuth();
+  const { isPro, dataVersion } = useAuth();
+
+  useEffect(() => {
+    setRefresh(p => p + 1);
+  }, [dataVersion]);
 
   const handleCalculate = (entry: DailyEntry) => {
     setResult(entry);
