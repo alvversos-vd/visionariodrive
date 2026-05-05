@@ -1,4 +1,5 @@
 import { DailyEntry, DailyGoal, Goals, DEFAULT_GOALS, AppSettings, DEFAULT_SETTINGS, RideEntry } from './types';
+import { markDirty } from './cloudSync';
 
 const ENTRIES_KEY = 'lucro-delivery-entries';
 const RIDES_KEY = 'lucro-delivery-rides';
