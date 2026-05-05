@@ -302,6 +302,8 @@ export function computeExpenseAnalytics(
     dailyAvg,
     weekForecast,
     byCategoryToday,
+    byCategoryWindow,
+    windowDays: W,
     dominantCategory,
     profile,
     outOfPattern,
