@@ -35,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
   const prevPlanRef = useRef<UserPlan | null>(null);
+
+  const bumpData = () => setDataVersion(v => v + 1);
 
   const applyProfile = (next: Profile | null) => {
     const prev = prevPlanRef.current;
