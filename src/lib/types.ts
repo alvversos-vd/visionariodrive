@@ -42,6 +42,7 @@ export interface Goals {
   daily: number;
   weekly: number;
   monthly: number;
+  savingsDaily?: number; // meta de economia diária (limite de gastos extras)
 }
 
 // Backwards compatibility
@@ -65,6 +66,7 @@ export const DEFAULT_GOALS: Goals = {
   daily: 0,
   weekly: 0,
   monthly: 0,
+  savingsDaily: 0,
 };
 
 export function calculateEntry(input: {
