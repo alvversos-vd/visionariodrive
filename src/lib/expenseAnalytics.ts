@@ -35,6 +35,8 @@ export interface ExpenseAnalytics {
   profile: 'Gasto impulsivo' | 'Custo operacional alto' | 'Controle saudável' | null;
   outOfPattern: Expense[];
   recurringCategories: ExpenseCategory[];
+  recurringGroups: { category: ExpenseCategory; label: string; days: number; avg: number }[];
+  weekSeries: { day: string; date: string; expenses: number; savings: number }[];
   bestDayWeek: { day: string; total: number } | null;
   worstDayWeek: { day: string; total: number } | null;
   controlStreak: number;
