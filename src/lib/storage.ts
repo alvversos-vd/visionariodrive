@@ -13,6 +13,7 @@ export function saveEntry(entry: DailyEntry): void {
   const entries = getEntries();
   entries.unshift(entry);
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+  markDirty();
 }
 
 export function getEntries(): DailyEntry[] {
@@ -23,6 +24,7 @@ export function getEntries(): DailyEntry[] {
 export function deleteEntry(id: string): void {
   const entries = getEntries().filter(e => e.id !== id);
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+  markDirty();
 }
 
 // Legacy single-goal API (kept for ResultsView/GoalSetting compatibility)
@@ -35,6 +37,7 @@ export function getGoal(): DailyGoal | null {
 
 export function saveGoal(goal: DailyGoal): void {
   localStorage.setItem(GOAL_KEY, JSON.stringify(goal));
+  markDirty();
   const current = getGoals();
   saveGoals({ ...current, daily: goal.amount });
 }
@@ -54,6 +57,7 @@ export function getGoals(): Goals {
 
 export function saveGoals(goals: Goals): void {
   localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  markDirty();
 }
 
 // Settings
@@ -64,16 +68,24 @@ export function getSettings(): AppSettings {
 
 export function saveSettings(settings: AppSettings): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  markDirty();
 }
 
 export function resetAllData(): void {
   localStorage.removeItem(ENTRIES_KEY);
+  markDirty();
   localStorage.removeItem(RIDES_KEY);
+  markDirty();
   localStorage.removeItem(GOAL_KEY);
+  markDirty();
   localStorage.removeItem(GOALS_KEY);
+  markDirty();
   localStorage.removeItem(SETTINGS_KEY);
+  markDirty();
   localStorage.removeItem(VEHICLES_KEY);
+  markDirty();
   localStorage.removeItem(RIDE_TYPES_KEY);
+  markDirty();
 }
 
 // --- Ride entries (Análise de Corrida) ---
@@ -86,11 +98,13 @@ export function saveRide(ride: RideEntry): void {
   const rides = getRides();
   rides.unshift(ride);
   localStorage.setItem(RIDES_KEY, JSON.stringify(rides));
+  markDirty();
 }
 
 export function deleteRide(id: string): void {
   const rides = getRides().filter(r => r.id !== id);
   localStorage.setItem(RIDES_KEY, JSON.stringify(rides));
+  markDirty();
 }
 
 // --- Vehicles & Ride Types (cadastro livre) ---
@@ -101,6 +115,7 @@ export function getVehicles(): string[] {
 
 export function saveVehicles(list: string[]): void {
   localStorage.setItem(VEHICLES_KEY, JSON.stringify(list));
+  markDirty();
 }
 
 export function getRideTypes(): string[] {
@@ -110,5 +125,6 @@ export function getRideTypes(): string[] {
 
 export function saveRideTypes(list: string[]): void {
   localStorage.setItem(RIDE_TYPES_KEY, JSON.stringify(list));
+  markDirty();
 }
 
