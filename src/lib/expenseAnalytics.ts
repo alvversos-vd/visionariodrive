@@ -47,15 +47,18 @@ export interface ExpenseAnalytics {
   profitImpact: number;
 }
 
-export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalytics {
+export function computeExpenseAnalytics(
+  savingsGoalDaily: number,
+  windowDays: number = 7,
+): ExpenseAnalytics {
   const all = getExpenses();
   const entries = getEntries();
   const now = new Date();
   const today0 = startOfDay(now).getTime();
-  const yesterday0 = today0 - DAY;
-  const weekStart = today0 - 6 * DAY; // last 7 days inc today
-  const prevWeekStart = today0 - 13 * DAY;
-  const prevWeekEnd = today0 - 6 * DAY;
+  const W = Math.max(1, windowDays);
+  const weekStart = today0 - (W - 1) * DAY; // last W days inc today
+  const prevWeekStart = today0 - (2 * W - 1) * DAY;
+  const prevWeekEnd = today0 - (W - 1) * DAY;
 
   const todayList = all.filter(e => isSameDay(new Date(e.date), now));
   const todayTotal = sumExpenses(todayList);
@@ -68,7 +71,7 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
   const weekVariation = weekTotal - prevWeekTotal;
   const weekVariationPct = prevWeekTotal > 0 ? (weekVariation / prevWeekTotal) * 100 : null;
 
-  // Daily average over last 7 days (only counting days with expenses)
+  // Daily average over the window (only counting days with expenses)
   const daySums: Record<string, number> = {};
   for (const e of weekList) {
     const k = startOfDay(new Date(e.date)).toISOString();
