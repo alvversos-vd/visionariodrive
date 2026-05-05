@@ -37,7 +37,7 @@ export default function Index() {
   const tabs: { key: Tab; label: string; icon: typeof Home; pro?: boolean }[] = [
     { key: 'home', label: 'Início', icon: Home },
     { key: 'input', label: 'Calcular', icon: Calculator },
-    { key: 'ride', label: 'Corrida', icon: Navigation, pro: true },
+    { key: 'ride', label: 'Corrida', icon: Navigation },
     { key: 'goals', label: 'Metas', icon: Target },
     { key: 'strategy', label: 'Estratégia', icon: Lightbulb, pro: true },
     { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
