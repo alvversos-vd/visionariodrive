@@ -15,7 +15,7 @@ import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIc
 
 type Tab = 'home' | 'input' | 'ride' | 'goals' | 'history' | 'strategy' | 'settings' | 'profile';
 
-const PRO_TABS: Tab[] = ['ride', 'history', 'strategy'];
+const PRO_TABS: Tab[] = ['history', 'strategy'];
 
 export default function Index() {
   const [tab, setTab] = useState<Tab>('home');
