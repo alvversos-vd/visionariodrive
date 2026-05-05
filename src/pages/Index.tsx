@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DailyEntry } from '@/lib/types';
 import Dashboard from '@/components/Dashboard';
 import DailyInputForm from '@/components/DailyInputForm';
