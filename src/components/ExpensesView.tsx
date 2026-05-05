@@ -35,19 +35,27 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+type WindowDays = 7 | 30 | 90;
+
 export default function ExpensesView({ refresh, onChanged }: Props) {
   const [value, setValue] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('Alimentação');
   const [description, setDescription] = useState('');
+  const [windowDays, setWindowDays] = useState<WindowDays>(7);
 
   const goals = useMemo(() => getGoals(), [refresh]);
   const savingsGoal = goals.savingsDaily ?? 0;
   const [savingsInput, setSavingsInput] = useState(String(savingsGoal || ''));
 
-  const a = useMemo(() => computeExpenseAnalytics(savingsGoal), [refresh, savingsGoal]);
+  const a = useMemo(
+    () => computeExpenseAnalytics(savingsGoal, windowDays),
+    [refresh, savingsGoal, windowDays],
+  );
 
   const todayTotal = a.todayTotal;
   const byCat = a.byCategoryToday;
+  const byCatWindow = a.byCategoryWindow;
+  const windowLabel = `${windowDays} dias`;
   const profitAdjusted = a.todayEntry ? a.todayEntry.profit - todayTotal : -todayTotal;
   const savings = savingsGoal - todayTotal;
   const dayStatus = savingsGoal > 0
