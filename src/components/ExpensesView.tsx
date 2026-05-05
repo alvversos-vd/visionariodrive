@@ -99,8 +99,12 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
       text: `📈 ${a.outOfPattern.length} gasto${a.outOfPattern.length > 1 ? 's' : ''} acima do seu padrão diário.`,
     });
   }
-  for (const c of a.recurringCategories) {
-    alerts.push({ tone: 'accent', text: `🔁 Você está repetindo gastos de ${c} todos os dias.` });
+  for (const r of a.recurringGroups) {
+    const label = r.label.length > 30 ? r.label.slice(0, 30) + '…' : r.label;
+    alerts.push({
+      tone: 'accent',
+      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos 7 dias · média ${fmt(r.avg)}.`,
+    });
   }
   if (a.consciousnessMode) {
     alerts.push({
@@ -115,7 +119,7 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <h2 className="font-display font-bold text-foreground">+ Novo gasto</h2>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {EXPENSE_CATEGORIES.map(c => {
             const Icon = CATEGORY_ICON[c];
             const active = category === c;
