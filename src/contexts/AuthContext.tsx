@@ -68,17 +68,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
-        // diferir chamadas ao supabase
+        const uid = newSession.user.id;
+        setSyncUser(uid);
+        setDataReady(false);
         setTimeout(() => {
-          loadProfile(newSession.user.id);
+          loadProfile(uid);
           supabase
             .from('profiles')
             .update({ ultimo_login: new Date().toISOString() })
-            .eq('user_id', newSession.user.id)
+            .eq('user_id', uid)
             .then(() => {});
+          hydrateFromCloud(uid)
+            .catch(() => {})
+            .finally(() => {
+              setDataReady(true);
+              bumpData();
+            });
         }, 0);
       } else {
+        setSyncUser(null);
         setProfile(null);
+        setDataReady(false);
       }
     });
 
@@ -86,7 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
-      if (existing?.user) loadProfile(existing.user.id);
+      if (existing?.user) {
+        const uid = existing.user.id;
+        setSyncUser(uid);
+        loadProfile(uid);
+        hydrateFromCloud(uid)
+          .catch(() => {})
+          .finally(() => {
+            setDataReady(true);
+            bumpData();
+          });
+      }
       setLoading(false);
     });
 
@@ -109,10 +129,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  // Realtime sync de user_data entre dispositivos
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeRealtime(user.id, () => bumpData());
+    return unsub;
+  }, [user]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     prevPlanRef.current = null;
     setProfile(null);
+    setSyncUser(null);
+    clearLocalCache();
+    setDataReady(false);
   };
 
   const refreshProfile = async () => {
@@ -126,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
+        dataReady,
+        dataVersion,
         isPro: profile?.usuario_plano === 'PRO',
         signOut,
         refreshProfile,
