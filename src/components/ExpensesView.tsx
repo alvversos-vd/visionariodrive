@@ -35,19 +35,27 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+type WindowDays = 7 | 30 | 90;
+
 export default function ExpensesView({ refresh, onChanged }: Props) {
   const [value, setValue] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('Alimentação');
   const [description, setDescription] = useState('');
+  const [windowDays, setWindowDays] = useState<WindowDays>(7);
 
   const goals = useMemo(() => getGoals(), [refresh]);
   const savingsGoal = goals.savingsDaily ?? 0;
   const [savingsInput, setSavingsInput] = useState(String(savingsGoal || ''));
 
-  const a = useMemo(() => computeExpenseAnalytics(savingsGoal), [refresh, savingsGoal]);
+  const a = useMemo(
+    () => computeExpenseAnalytics(savingsGoal, windowDays),
+    [refresh, savingsGoal, windowDays],
+  );
 
   const todayTotal = a.todayTotal;
   const byCat = a.byCategoryToday;
+  const byCatWindow = a.byCategoryWindow;
+  const windowLabel = `${windowDays} dias`;
   const profitAdjusted = a.todayEntry ? a.todayEntry.profit - todayTotal : -todayTotal;
   const savings = savingsGoal - todayTotal;
   const dayStatus = savingsGoal > 0
@@ -103,7 +111,7 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
     const label = r.label.length > 30 ? r.label.slice(0, 30) + '…' : r.label;
     alerts.push({
       tone: 'accent',
-      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos 7 dias · média ${fmt(r.avg)}.`,
+      text: `🔁 “${label}” (${r.category}) repetiu ${r.days}× nos últimos ${a.windowDays} dias · média ${fmt(r.avg)}.`,
     });
   }
   if (a.consciousnessMode) {
@@ -247,12 +255,32 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
         )}
       </div>
 
-      {/* Comparativo semanal + previsão */}
+      {/* Filtro de período */}
+      <div className="flex items-center justify-between bg-card border rounded-lg p-1.5">
+        <span className="text-xs text-muted-foreground px-2">Período</span>
+        <div className="flex gap-1">
+          {([7, 30, 90] as WindowDays[]).map(d => (
+            <button
+              key={d}
+              onClick={() => setWindowDays(d)}
+              className={`text-xs font-display font-semibold px-3 py-1.5 rounded-md transition-colors ${
+                windowDays === d
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Comparativo + previsão */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-lg p-4 border shadow-sm">
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             {a.weekVariation >= 0 ? <TrendingUp size={12} className="text-loss" /> : <TrendingDown size={12} className="text-profit" />}
-            7 dias vs anterior
+            {windowLabel} vs anterior
           </p>
           <p className={`text-lg font-display font-bold ${a.weekVariation >= 0 ? 'text-loss' : 'text-profit'}`}>
             {a.weekVariationPct === null
@@ -264,18 +292,18 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
           </p>
         </div>
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground">🔮 Previsão da semana</p>
+          <p className="text-xs text-muted-foreground">🔮 Previsão semanal</p>
           <p className="text-lg font-display font-bold text-foreground">{fmt(a.weekForecast)}</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            Média de {fmt(a.dailyAvg)}/dia
+            Média de {fmt(a.dailyAvg)}/dia ({windowLabel})
           </p>
         </div>
       </div>
 
-      {/* Tendência semanal — gastos */}
+      {/* Tendência — gastos */}
       <div className="bg-card rounded-lg p-4 border shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-display font-bold text-foreground">📈 Gastos · últimos 7 dias</h3>
+          <h3 className="font-display font-bold text-foreground">📈 Gastos · últimos {windowDays} dias</h3>
           <span className="text-xs text-muted-foreground">{fmt(a.weekTotal)}</span>
         </div>
         <div className="h-36">
@@ -349,10 +377,39 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
         </div>
       )}
 
-      {/* Por categoria */}
+      {/* Breakdown por categoria — janela selecionada */}
+      {a.weekTotal > 0 && (
+        <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-display font-bold text-foreground">Por categoria · {windowLabel}</h3>
+            <span className="text-xs text-muted-foreground">{fmt(a.weekTotal)}</span>
+          </div>
+          {EXPENSE_CATEGORIES.filter(c => byCatWindow[c].total > 0).map(c => {
+            const pct = (byCatWindow[c].total / a.weekTotal) * 100;
+            const Icon = CATEGORY_ICON[c];
+            return (
+              <div key={c}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-foreground">
+                    <Icon size={14} /> {c}
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {fmt(byCatWindow[c].total)} <span className="text-muted-foreground text-xs">({pct.toFixed(0)}%)</span>
+                  </span>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Breakdown de hoje (se diferente) */}
       {todayTotal > 0 && (
         <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
-          <h3 className="font-display font-bold text-foreground mb-1">Por categoria</h3>
+          <h3 className="font-display font-bold text-foreground mb-1">Por categoria · hoje</h3>
           {EXPENSE_CATEGORIES.filter(c => byCat[c].total > 0).map(c => {
             const pct = (byCat[c].total / todayTotal) * 100;
             const Icon = CATEGORY_ICON[c];
@@ -365,9 +422,6 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
                   <span className="font-semibold text-foreground">
                     {fmt(byCat[c].total)} <span className="text-muted-foreground text-xs">({pct.toFixed(0)}%)</span>
                   </span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-1.5 mt-1 overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );

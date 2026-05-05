@@ -31,6 +31,8 @@ export interface ExpenseAnalytics {
   dailyAvg: number; // last 7 days average
   weekForecast: number;
   byCategoryToday: Record<ExpenseCategory, { total: number; count: number }>;
+  byCategoryWindow: Record<ExpenseCategory, { total: number; count: number }>;
+  windowDays: number;
   dominantCategory: ExpenseCategory | null;
   profile: 'Gasto impulsivo' | 'Custo operacional alto' | 'Controle saudável' | null;
   outOfPattern: Expense[];
@@ -47,15 +49,18 @@ export interface ExpenseAnalytics {
   profitImpact: number;
 }
 
-export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalytics {
+export function computeExpenseAnalytics(
+  savingsGoalDaily: number,
+  windowDays: number = 7,
+): ExpenseAnalytics {
   const all = getExpenses();
   const entries = getEntries();
   const now = new Date();
   const today0 = startOfDay(now).getTime();
-  const yesterday0 = today0 - DAY;
-  const weekStart = today0 - 6 * DAY; // last 7 days inc today
-  const prevWeekStart = today0 - 13 * DAY;
-  const prevWeekEnd = today0 - 6 * DAY;
+  const W = Math.max(1, windowDays);
+  const weekStart = today0 - (W - 1) * DAY; // last W days inc today
+  const prevWeekStart = today0 - (2 * W - 1) * DAY;
+  const prevWeekEnd = today0 - (W - 1) * DAY;
 
   const todayList = all.filter(e => isSameDay(new Date(e.date), now));
   const todayTotal = sumExpenses(todayList);
@@ -68,7 +73,7 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
   const weekVariation = weekTotal - prevWeekTotal;
   const weekVariationPct = prevWeekTotal > 0 ? (weekVariation / prevWeekTotal) * 100 : null;
 
-  // Daily average over last 7 days (only counting days with expenses)
+  // Daily average over the window (only counting days with expenses)
   const daySums: Record<string, number> = {};
   for (const e of weekList) {
     const k = startOfDay(new Date(e.date)).toISOString();
@@ -79,6 +84,7 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
   const weekForecast = dailyAvg * 7;
 
   const byCategoryToday = groupByCategory(todayList);
+  const byCategoryWindow = groupByCategory(weekList);
 
   // Dominant category (today)
   let dominantCategory: ExpenseCategory | null = null;
@@ -108,8 +114,11 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
     ? todayList.filter(e => e.value > dailyAvg * 0.5 && e.value > 0)
     : [];
 
-  // Recurring detection: group similar expenses by category + normalized description.
-  // Avoid false positives by requiring ≥3 distinct days and value variance under 50%.
+  // Recurring detection v2
+  // - Normalize description and split into tokens
+  // - Cluster expenses (same category) when token-set Jaccard ≥ 0.5 OR one is empty
+  // - Require: occurrences on ≥3 distinct days AND coverage ≥ 30% of days-in-window
+  // - Tolerate value variability via median-based MAD; only flag if values are reasonably consistent
   function normalizeDesc(s?: string) {
     return (s || '')
       .toLowerCase()
@@ -118,41 +127,83 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
   }
-  const groups = new Map<string, { category: ExpenseCategory; label: string; days: Set<string>; values: number[] }>();
+  const STOP = new Set(['de', 'da', 'do', 'na', 'no', 'a', 'o', 'e', 'em', 'pra', 'para', 'um', 'uma']);
+  function tokens(s: string): Set<string> {
+    return new Set(s.split(' ').filter(t => t.length > 1 && !STOP.has(t)));
+  }
+  function jaccard(a: Set<string>, b: Set<string>): number {
+    if (a.size === 0 && b.size === 0) return 1;
+    if (a.size === 0 || b.size === 0) return 0.6; // empty desc considered loosely similar
+    let inter = 0;
+    for (const x of a) if (b.has(x)) inter++;
+    const union = a.size + b.size - inter;
+    return union === 0 ? 0 : inter / union;
+  }
+  function median(arr: number[]) {
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  type Cluster = {
+    category: ExpenseCategory;
+    label: string;
+    tokens: Set<string>;
+    days: Set<string>;
+    values: number[];
+  };
+  const clustersByCat = new Map<ExpenseCategory, Cluster[]>();
   for (const e of weekList) {
     const desc = normalizeDesc(e.description);
-    const key = `${e.category}::${desc}`;
-    const dayKey = startOfDay(new Date(e.date)).toISOString();
-    const g = groups.get(key) ?? {
-      category: e.category,
-      label: e.description?.trim() || e.category,
-      days: new Set<string>(),
-      values: [],
-    };
-    g.days.add(dayKey);
-    g.values.push(e.value);
-    groups.set(key, g);
+    const tk = tokens(desc);
+    const list = clustersByCat.get(e.category) ?? [];
+    let target = list.find(c => jaccard(c.tokens, tk) >= 0.5);
+    if (!target) {
+      target = {
+        category: e.category,
+        label: e.description?.trim() || e.category,
+        tokens: tk,
+        days: new Set<string>(),
+        values: [],
+      };
+      list.push(target);
+      clustersByCat.set(e.category, list);
+    } else {
+      // merge tokens; keep the most descriptive label (longer)
+      for (const t of tk) target.tokens.add(t);
+      const incoming = e.description?.trim() || '';
+      if (incoming.length > target.label.length) target.label = incoming;
+    }
+    target.days.add(startOfDay(new Date(e.date)).toISOString());
+    target.values.push(e.value);
   }
+
   const recurringGroups: { category: ExpenseCategory; label: string; days: number; avg: number }[] = [];
-  for (const g of groups.values()) {
-    if (g.days.size < 3) continue;
-    const avg = g.values.reduce((s, v) => s + v, 0) / g.values.length;
-    if (avg <= 0) continue;
-    const min = Math.min(...g.values);
-    const max = Math.max(...g.values);
-    // similarity: max within 50% of avg
-    if ((max - min) / avg > 1.0) continue;
-    recurringGroups.push({ category: g.category, label: g.label, days: g.days.size, avg });
+  const minDays = Math.max(3, Math.ceil(W * 0.3));
+  for (const list of clustersByCat.values()) {
+    for (const c of list) {
+      if (c.days.size < minDays) continue;
+      const med = median(c.values);
+      if (med <= 0) continue;
+      // MAD relative to median; allow up to 75% deviation
+      const mad = median(c.values.map(v => Math.abs(v - med)));
+      if (med > 0 && mad / med > 0.75) continue;
+      recurringGroups.push({
+        category: c.category,
+        label: c.label,
+        days: c.days.size,
+        avg: c.values.reduce((s, v) => s + v, 0) / c.values.length,
+      });
+    }
   }
   recurringGroups.sort((a, b) => b.days - a.days);
-  // Backwards compat: keep a flat category list (unique) of recurring items
   const recurringCategories: ExpenseCategory[] = Array.from(
     new Set(recurringGroups.map(r => r.category)),
   );
 
-  // Best / worst day in last 7 (by weekday)
+  // Best / worst day in the window (by weekday)
   const totalsByDay: { dateKey: string; total: number; weekday: number }[] = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < W; i++) {
     const dStart = today0 - i * DAY;
     const dEnd = dStart + DAY;
     const total = sumExpenses(expensesInRange(all, dStart, dEnd));
@@ -172,16 +223,19 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
       })()
     : null;
 
-  // Daily series (last 7 days, oldest → newest) for charts
+  // Daily series for charts (oldest → newest); for long windows use date label
   const weekSeries: { day: string; date: string; expenses: number; savings: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = W - 1; i >= 0; i--) {
     const dStart = today0 - i * DAY;
     const dEnd = dStart + DAY;
     const total = sumExpenses(expensesInRange(all, dStart, dEnd));
-    const wd = new Date(dStart).getDay();
+    const d = new Date(dStart);
+    const label = W <= 14
+      ? WEEKDAYS[d.getDay()].slice(0, 3)
+      : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
     weekSeries.push({
-      day: WEEKDAYS[wd].slice(0, 3),
-      date: new Date(dStart).toISOString(),
+      day: label,
+      date: d.toISOString(),
       expenses: Number(total.toFixed(2)),
       savings: savingsGoalDaily > 0 ? Number((savingsGoalDaily - total).toFixed(2)) : 0,
     });
@@ -248,6 +302,8 @@ export function computeExpenseAnalytics(savingsGoalDaily: number): ExpenseAnalyt
     dailyAvg,
     weekForecast,
     byCategoryToday,
+    byCategoryWindow,
+    windowDays: W,
     dominantCategory,
     profile,
     outOfPattern,
