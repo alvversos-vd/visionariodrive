@@ -87,6 +87,19 @@ export default function Auth() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <Label htmlFor="nome">Como você quer ser chamado? <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Input
+                  id="nome"
+                  type="text"
+                  maxLength={30}
+                  placeholder="Ex: Rafael, Rafa, Irmão…"
+                  value={nomeUsuario}
+                  onChange={e => setNomeUsuario(e.target.value)}
+                />
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting && <Loader2 className="animate-spin" />}
               {mode === 'login' ? 'Entrar' : 'Criar conta'}
