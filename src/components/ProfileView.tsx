@@ -15,13 +15,39 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export default function ProfileView({ onReset }: { onReset?: () => void }) {
-  const { profile, user, signOut, isPro } = useAuth();
+  const { profile, user, signOut, isPro, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [nome, setNome] = useState(profile?.nome_usuario ?? '');
+  const [saving, setSaving] = useState(false);
 
   const handleReset = () => {
     resetAllData();
     onReset?.();
     toast({ title: 'Dados apagados', description: 'Todos os dados locais do app foram removidos.' });
+  };
+
+  const startEdit = () => {
+    setNome(profile?.nome_usuario ?? '');
+    setEditing(true);
+  };
+
+  const saveNome = async () => {
+    if (!user) return;
+    const value = nome.trim().slice(0, 30);
+    setSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nome_usuario: value || null })
+      .eq('user_id', user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await refreshProfile();
+    setEditing(false);
+    toast({ title: 'Nome atualizado' });
   };
 
   const created = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR') : '—';
