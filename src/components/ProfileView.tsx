@@ -64,7 +64,35 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
+          <div className="space-y-1.5">
+            <Label htmlFor="nome-edit" className="text-muted-foreground text-xs">Nome / apelido</Label>
+            {editing ? (
+              <div className="flex gap-2">
+                <Input
+                  id="nome-edit"
+                  value={nome}
+                  onChange={e => setNome(e.target.value)}
+                  maxLength={30}
+                  placeholder="Ex: Rafael, Rafa…"
+                  autoFocus
+                />
+                <Button size="icon" onClick={saveNome} disabled={saving} aria-label="Salvar">
+                  <Check size={16} />
+                </Button>
+                <Button size="icon" variant="outline" onClick={() => setEditing(false)} disabled={saving} aria-label="Cancelar">
+                  <X size={16} />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{profile?.nome_usuario || <span className="text-muted-foreground italic">não definido</span>}</span>
+                <Button size="sm" variant="ghost" className="gap-1.5 h-8" onClick={startEdit}>
+                  <Pencil size={13} /> Editar nome
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">E-mail</span>
             <span className="font-medium truncate ml-2">{user?.email}</span>
