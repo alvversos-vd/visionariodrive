@@ -34,7 +34,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = schema.safeParse({ email, password });
+    const parsed = schema.safeParse({ email, password, nome_usuario: nomeUsuario || undefined });
     if (!parsed.success) {
       toast({ title: 'Erro', description: parsed.error.issues[0].message, variant: 'destructive' });
       return;
@@ -42,10 +42,14 @@ export default function Auth() {
     setSubmitting(true);
     try {
       if (mode === 'signup') {
+        const nome = parsed.data.nome_usuario?.trim();
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: nome ? { nome_usuario: nome } : {},
+          },
         });
         if (error) throw error;
         toast({ title: 'Conta criada', description: 'Você já pode usar o app.' });
