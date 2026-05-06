@@ -22,6 +22,7 @@ export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nomeUsuario, setNomeUsuario] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
