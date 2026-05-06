@@ -82,6 +82,24 @@ export default function RideAnalyzer({ refresh }: Props) {
     setDetails({ costPerKm, minIdealKm, ridePerKm });
   }, [rideValue, rideKm, costPerKm, minIdealKm]);
 
+  // Sensor de valor: mostra impacto em tempo real (1 toast por mudança de veredicto)
+  const lastVerdictRef = useRef<Verdict>(null);
+  useEffect(() => {
+    if (!verdict || verdict === lastVerdictRef.current) return;
+    lastVerdictRef.current = verdict;
+    if (verdict === 'good') {
+      toast.success('Essa corrida pode aumentar seu lucro');
+    } else if (verdict === 'bad') {
+      toast('Essa corrida pode te dar prejuízo', { icon: '⚠️' });
+      // Micro-win: evitou prejuízo (anti-spam: 1x a cada 6h)
+      const now = Date.now();
+      if (now - getLastAvoidAt() > 6 * 60 * 60 * 1000) {
+        markAvoidNow();
+        setTimeout(() => toast.success('Você evitou prejuízo agora'), 1200);
+      }
+    }
+  }, [verdict]);
+
   const verdictConfig = {
     good: { bg: 'bg-profit', emoji: '🟢', label: 'Boa corrida — acima do mínimo ideal', text: 'text-profit' },
     ok: { bg: 'bg-accent', emoji: '🟡', label: 'Corrida aceitável — lucro baixo', text: 'text-accent' },
