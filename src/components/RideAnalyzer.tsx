@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { getEntries, getSettings, getVehicles, getRideTypes, saveRide } from '@/lib/storage';
 import { RideEntry } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { getLastAvoidAt, markAvoidNow } from '@/lib/engagement';
 
 interface Props {
   refresh: number;
