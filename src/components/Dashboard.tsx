@@ -66,11 +66,11 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
 
   const smartMessage = today
     ? today.profit < 0
-      ? { text: '⚠️ Atenção: você está perdendo dinheiro hoje', tone: 'loss' }
+      ? { text: `⚠️ Atenção, ${displayName} — você está perdendo dinheiro hoje`, tone: 'loss' }
       : goals.daily > 0 && today.profit >= goals.daily
-      ? { text: '🚀 Bom trabalho hoje! Meta atingida.', tone: 'profit' }
+      ? { text: `🚀 Boa, ${displayName}! Meta batida hoje.`, tone: 'profit' }
       : today.profit > 0
-      ? { text: '💡 Você pode melhorar suas escolhas para lucrar mais', tone: 'accent' }
+      ? { text: `💡 Foco hoje, ${displayName} — dá pra lucrar mais`, tone: 'accent' }
       : null
     : null;
 
