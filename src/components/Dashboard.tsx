@@ -16,6 +16,8 @@ function fmt(v: number) {
 }
 
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) {
+  const { profile } = useAuth();
+  const displayName = getDisplayName(profile);
   const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
