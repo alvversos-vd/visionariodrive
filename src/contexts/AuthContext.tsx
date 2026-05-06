@@ -13,7 +13,12 @@ export interface Profile {
   usuario_plano: UserPlan;
   stripe_customer_id: string | null;
   ultimo_login: string | null;
+  nome_usuario: string | null;
   created_at: string;
+}
+
+export function getDisplayName(profile: Profile | null): string {
+  return profile?.nome_usuario?.trim() || 'motorista';
 }
 
 interface AuthContextValue {

@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 const schema = z.object({
   email: z.string().trim().email('E-mail inválido').max(255),
   password: z.string().min(6, 'Mínimo 6 caracteres').max(72),
+  nome_usuario: z.string().trim().max(30, 'Máximo 30 caracteres').optional(),
 });
 
 export default function Auth() {
@@ -21,6 +22,7 @@ export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nomeUsuario, setNomeUsuario] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = schema.safeParse({ email, password });
+    const parsed = schema.safeParse({ email, password, nome_usuario: nomeUsuario || undefined });
     if (!parsed.success) {
       toast({ title: 'Erro', description: parsed.error.issues[0].message, variant: 'destructive' });
       return;
@@ -40,10 +42,14 @@ export default function Auth() {
     setSubmitting(true);
     try {
       if (mode === 'signup') {
+        const nome = parsed.data.nome_usuario?.trim();
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: nome ? { nome_usuario: nome } : {},
+          },
         });
         if (error) throw error;
         toast({ title: 'Conta criada', description: 'Você já pode usar o app.' });
@@ -81,6 +87,19 @@ export default function Auth() {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
+            {mode === 'signup' && (
+              <div className="space-y-2">
+                <Label htmlFor="nome">Como você quer ser chamado? <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Input
+                  id="nome"
+                  type="text"
+                  maxLength={30}
+                  placeholder="Ex: Rafael, Rafa, Irmão…"
+                  value={nomeUsuario}
+                  onChange={e => setNomeUsuario(e.target.value)}
+                />
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting && <Loader2 className="animate-spin" />}
               {mode === 'login' ? 'Entrar' : 'Criar conta'}

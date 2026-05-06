@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getEntries, getGoals, getSettings } from '@/lib/storage';
 import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
+import { useAuth, getDisplayName } from '@/contexts/AuthContext';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
 
 interface Props {
@@ -15,6 +16,8 @@ function fmt(v: number) {
 }
 
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) {
+  const { profile } = useAuth();
+  const displayName = getDisplayName(profile);
   const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
@@ -63,16 +66,19 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
 
   const smartMessage = today
     ? today.profit < 0
-      ? { text: '⚠️ Atenção: você está perdendo dinheiro hoje', tone: 'loss' }
+      ? { text: `⚠️ Atenção, ${displayName} — você está perdendo dinheiro hoje`, tone: 'loss' }
       : goals.daily > 0 && today.profit >= goals.daily
-      ? { text: '🚀 Bom trabalho hoje! Meta atingida.', tone: 'profit' }
+      ? { text: `🚀 Boa, ${displayName}! Meta batida hoje.`, tone: 'profit' }
       : today.profit > 0
-      ? { text: '💡 Você pode melhorar suas escolhas para lucrar mais', tone: 'accent' }
+      ? { text: `💡 Foco hoje, ${displayName} — dá pra lucrar mais`, tone: 'accent' }
       : null
     : null;
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <div className="px-1">
+        <h1 className="font-display text-xl font-bold text-foreground">Boa, {displayName} 👊</h1>
+      </div>
       {/* Hero status */}
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>

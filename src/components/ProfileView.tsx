@@ -1,23 +1,53 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Trash2, CreditCard, Sparkles } from 'lucide-react';
+import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X } from 'lucide-react';
 import { resetAllData } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 export default function ProfileView({ onReset }: { onReset?: () => void }) {
-  const { profile, user, signOut, isPro } = useAuth();
+  const { profile, user, signOut, isPro, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [nome, setNome] = useState(profile?.nome_usuario ?? '');
+  const [saving, setSaving] = useState(false);
 
   const handleReset = () => {
     resetAllData();
     onReset?.();
     toast({ title: 'Dados apagados', description: 'Todos os dados locais do app foram removidos.' });
+  };
+
+  const startEdit = () => {
+    setNome(profile?.nome_usuario ?? '');
+    setEditing(true);
+  };
+
+  const saveNome = async () => {
+    if (!user) return;
+    const value = nome.trim().slice(0, 30);
+    setSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nome_usuario: value || null })
+      .eq('user_id', user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await refreshProfile();
+    setEditing(false);
+    toast({ title: 'Nome atualizado' });
   };
 
   const created = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR') : '—';
@@ -34,7 +64,35 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
+          <div className="space-y-1.5">
+            <Label htmlFor="nome-edit" className="text-muted-foreground text-xs">Nome / apelido</Label>
+            {editing ? (
+              <div className="flex gap-2">
+                <Input
+                  id="nome-edit"
+                  value={nome}
+                  onChange={e => setNome(e.target.value)}
+                  maxLength={30}
+                  placeholder="Ex: Rafael, Rafa…"
+                  autoFocus
+                />
+                <Button size="icon" onClick={saveNome} disabled={saving} aria-label="Salvar">
+                  <Check size={16} />
+                </Button>
+                <Button size="icon" variant="outline" onClick={() => setEditing(false)} disabled={saving} aria-label="Cancelar">
+                  <X size={16} />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{profile?.nome_usuario || <span className="text-muted-foreground italic">não definido</span>}</span>
+                <Button size="sm" variant="ghost" className="gap-1.5 h-8" onClick={startEdit}>
+                  <Pencil size={13} /> Editar nome
+                </Button>
+              </div>
+            )}
+          </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">E-mail</span>
             <span className="font-medium truncate ml-2">{user?.email}</span>
