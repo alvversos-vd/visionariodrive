@@ -1,9 +1,16 @@
-import { useMemo } from 'react';
-import { getEntries, getGoals, getSettings } from '@/lib/storage';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getEntries, getGoals, getSettings, getRides } from '@/lib/storage';
 import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
+import {
+  daysSinceLastOpen, markOpenedToday,
+  shouldCelebrateFirstProfit, markFirstProfitCelebrated,
+  shouldCelebrateRides5, markRides5Celebrated,
+  getFocusMode, setFocusMode,
+} from '@/lib/engagement';
+import { toast } from 'sonner';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass } from 'lucide-react';
 
 interface Props {
   refresh: number;
