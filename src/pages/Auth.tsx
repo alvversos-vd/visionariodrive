@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 const schema = z.object({
   email: z.string().trim().email('E-mail inválido').max(255),
   password: z.string().min(6, 'Mínimo 6 caracteres').max(72),
+  nome_usuario: z.string().trim().max(30, 'Máximo 30 caracteres').optional(),
 });
 
 export default function Auth() {
