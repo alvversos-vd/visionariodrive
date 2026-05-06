@@ -71,15 +71,66 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
     ? Math.min(100, (today.profit / goals.daily) * 100)
     : 0;
 
-  const smartMessage = today
-    ? today.profit < 0
-      ? { text: `⚠️ Atenção, ${displayName} — você está perdendo dinheiro hoje`, tone: 'loss' }
-      : goals.daily > 0 && today.profit >= goals.daily
-      ? { text: `🚀 Boa, ${displayName}! Meta batida hoje.`, tone: 'profit' }
-      : today.profit > 0
-      ? { text: `💡 Foco hoje, ${displayName} — dá pra lucrar mais`, tone: 'accent' }
-      : null
-    : null;
+  // Smart greeting (1x per screen — replaces previous smartMessage box)
+  const greeting = !today
+    ? `Bora começar, ${displayName}`
+    : today.profit > 0
+    ? `Boa, ${displayName} 👊 você já está no lucro hoje`
+    : today.profit < 0
+    ? `Atenção, ${displayName} — ajuste suas corridas hoje`
+    : `Bora começar, ${displayName}`;
+
+  const greetingTone: 'profit' | 'loss' | 'neutral' =
+    today && today.profit > 0 ? 'profit' : today && today.profit < 0 ? 'loss' : 'neutral';
+
+  // Focus mode
+  const [focus, setFocus] = useState<boolean>(() => getFocusMode());
+  const toggleFocus = () => {
+    const next = !focus;
+    setFocus(next);
+    setFocusMode(next);
+  };
+
+  // Realtime feedback when profit / minIdealKm change
+  const prevProfit = useRef<number | null>(null);
+  const prevMin = useRef<number | null>(null);
+  useEffect(() => {
+    const p = today?.profit ?? null;
+    const prev = prevProfit.current;
+    if (prev !== null && p !== null && Math.abs(p - prev) >= 0.5) {
+      if (p > prev) toast.success('Boa decisão — você aumentou seu lucro');
+      else toast('Cuidado — isso reduziu seu lucro', { icon: '⚠️' });
+    }
+    prevProfit.current = p;
+  }, [today?.profit]);
+
+  useEffect(() => {
+    const m = minIdealKm || 0;
+    const prev = prevMin.current;
+    if (prev !== null && m > prev + 0.01) {
+      toast('Seu mínimo ideal aumentou', { icon: '📈' });
+    }
+    prevMin.current = m;
+  }, [minIdealKm]);
+
+  // Micro-wins + return reminder (run once per mount)
+  useEffect(() => {
+    const days = daysSinceLastOpen();
+    markOpenedToday();
+    if (days !== null && days >= 1) {
+      toast('Você pode estar aceitando corridas sem saber o lucro', { icon: '👀' });
+    }
+    if (today && today.profit > 0 && shouldCelebrateFirstProfit()) {
+      markFirstProfitCelebrated();
+      toast.success('Primeiro dia no lucro 👊');
+    }
+    const ridesCount = getRides().length;
+    if (ridesCount >= 5 && shouldCelebrateRides5()) {
+      markRides5Celebrated();
+      toast.success('Você está tomando decisões melhores');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4 animate-slide-up">
