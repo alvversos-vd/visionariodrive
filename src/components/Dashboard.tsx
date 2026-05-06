@@ -76,6 +76,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <div className="px-1">
+        <h1 className="font-display text-xl font-bold text-foreground">Boa, {displayName} 👊</h1>
+      </div>
       {/* Hero status */}
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
