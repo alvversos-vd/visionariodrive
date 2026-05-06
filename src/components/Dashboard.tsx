@@ -1,9 +1,16 @@
-import { useMemo } from 'react';
-import { getEntries, getGoals, getSettings } from '@/lib/storage';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { getEntries, getGoals, getSettings, getRides } from '@/lib/storage';
 import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
+import {
+  daysSinceLastOpen, markOpenedToday,
+  shouldCelebrateFirstProfit, markFirstProfitCelebrated,
+  shouldCelebrateRides5, markRides5Celebrated,
+  getFocusMode, setFocusMode,
+} from '@/lib/engagement';
+import { toast } from 'sonner';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass } from 'lucide-react';
 
 interface Props {
   refresh: number;
@@ -64,22 +71,108 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
     ? Math.min(100, (today.profit / goals.daily) * 100)
     : 0;
 
-  const smartMessage = today
-    ? today.profit < 0
-      ? { text: `⚠️ Atenção, ${displayName} — você está perdendo dinheiro hoje`, tone: 'loss' }
-      : goals.daily > 0 && today.profit >= goals.daily
-      ? { text: `🚀 Boa, ${displayName}! Meta batida hoje.`, tone: 'profit' }
-      : today.profit > 0
-      ? { text: `💡 Foco hoje, ${displayName} — dá pra lucrar mais`, tone: 'accent' }
-      : null
-    : null;
+  // Smart greeting (1x per screen — replaces previous smartMessage box)
+  const greeting = !today
+    ? `Bora começar, ${displayName}`
+    : today.profit > 0
+    ? `Boa, ${displayName} 👊 você já está no lucro hoje`
+    : today.profit < 0
+    ? `Atenção, ${displayName} — ajuste suas corridas hoje`
+    : `Bora começar, ${displayName}`;
+
+  const greetingTone: 'profit' | 'loss' | 'neutral' =
+    today && today.profit > 0 ? 'profit' : today && today.profit < 0 ? 'loss' : 'neutral';
+
+  // Focus mode
+  const [focus, setFocus] = useState<boolean>(() => getFocusMode());
+  const toggleFocus = () => {
+    const next = !focus;
+    setFocus(next);
+    setFocusMode(next);
+  };
+
+  // Realtime feedback when profit / minIdealKm change
+  const prevProfit = useRef<number | null>(null);
+  const prevMin = useRef<number | null>(null);
+  useEffect(() => {
+    const p = today?.profit ?? null;
+    const prev = prevProfit.current;
+    if (prev !== null && p !== null && Math.abs(p - prev) >= 0.5) {
+      if (p > prev) toast.success('Boa decisão — você aumentou seu lucro');
+      else toast('Cuidado — isso reduziu seu lucro', { icon: '⚠️' });
+    }
+    prevProfit.current = p;
+  }, [today?.profit]);
+
+  useEffect(() => {
+    const m = minIdealKm || 0;
+    const prev = prevMin.current;
+    if (prev !== null && m > prev + 0.01) {
+      toast('Seu mínimo ideal aumentou', { icon: '📈' });
+    }
+    prevMin.current = m;
+  }, [minIdealKm]);
+
+  // Micro-wins + return reminder (run once per mount)
+  useEffect(() => {
+    const days = daysSinceLastOpen();
+    markOpenedToday();
+    if (days !== null && days >= 1) {
+      toast('Você pode estar aceitando corridas sem saber o lucro', { icon: '👀' });
+    }
+    if (today && today.profit > 0 && shouldCelebrateFirstProfit()) {
+      markFirstProfitCelebrated();
+      toast.success('Primeiro dia no lucro 👊');
+    }
+    const ridesCount = getRides().length;
+    if (ridesCount >= 5 && shouldCelebrateRides5()) {
+      markRides5Celebrated();
+      toast.success('Você está tomando decisões melhores');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="px-1">
-        <h1 className="font-display text-xl font-bold text-foreground">Boa, {displayName} 👊</h1>
+      <div className="px-1 flex items-center justify-between gap-3">
+        <h1 className={`font-display text-base font-bold leading-snug ${
+          greetingTone === 'profit' ? 'text-profit' :
+          greetingTone === 'loss' ? 'text-loss' :
+          'text-foreground'
+        }`}>
+          {greeting}
+        </h1>
+        <button
+          onClick={toggleFocus}
+          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-display font-semibold border transition-colors ${
+            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+          }`}
+          aria-pressed={focus}
+          aria-label="Modo foco"
+        >
+          <Focus size={13} /> {focus ? 'Modo foco ativo' : 'Modo foco'}
+        </button>
       </div>
-      {/* Hero status */}
+
+      {focus ? (
+        <div className="space-y-3">
+          <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
+            <p className="text-xs text-primary-foreground/80 uppercase tracking-wider">Lucro real hoje</p>
+            <p className={`text-5xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
+              {today ? fmt(today.profit) : 'R$ 0,00'}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-5 border shadow-sm text-center">
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5"><Compass size={12}/> Mínimo ideal por km</p>
+            <p className="text-3xl font-display font-bold text-primary mt-1">{fmt(minIdealKm)}</p>
+            <p className="text-xs text-muted-foreground mt-2">Aceite corridas acima de {fmt(minIdealKm)}/km</p>
+          </div>
+          <p className="text-center text-sm text-muted-foreground italic">
+            Foco hoje, {displayName}. Decisões melhores, mais lucro.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
         <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
@@ -89,15 +182,10 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
         <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
       </div>
 
-      {smartMessage && (
-        <div className={`rounded-lg p-3 text-sm font-medium border ${
-          smartMessage.tone === 'profit' ? 'bg-profit/10 border-profit/30 text-profit' :
-          smartMessage.tone === 'loss' ? 'bg-loss/10 border-loss/30 text-loss' :
-          'bg-accent/10 border-accent/30 text-accent-foreground'
-        }`}>
-          {smartMessage.text}
-        </div>
-      )}
+      <div className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
+        <Compass size={16} className="text-primary shrink-0" />
+        <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
+      </div>
 
       {/* Today metrics */}
       {today ? (
@@ -241,6 +329,8 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
             </p>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

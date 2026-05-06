@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { getEntries, getSettings, getVehicles, getRideTypes, saveRide } from '@/lib/storage';
 import { RideEntry } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { getLastAvoidAt, markAvoidNow } from '@/lib/engagement';
 
 interface Props {
   refresh: number;
@@ -80,6 +81,24 @@ export default function RideAnalyzer({ refresh }: Props) {
     setVerdict(v);
     setDetails({ costPerKm, minIdealKm, ridePerKm });
   }, [rideValue, rideKm, costPerKm, minIdealKm]);
+
+  // Sensor de valor: mostra impacto em tempo real (1 toast por mudança de veredicto)
+  const lastVerdictRef = useRef<Verdict>(null);
+  useEffect(() => {
+    if (!verdict || verdict === lastVerdictRef.current) return;
+    lastVerdictRef.current = verdict;
+    if (verdict === 'good') {
+      toast.success('Essa corrida pode aumentar seu lucro');
+    } else if (verdict === 'bad') {
+      toast('Essa corrida pode te dar prejuízo', { icon: '⚠️' });
+      // Micro-win: evitou prejuízo (anti-spam: 1x a cada 6h)
+      const now = Date.now();
+      if (now - getLastAvoidAt() > 6 * 60 * 60 * 1000) {
+        markAvoidNow();
+        setTimeout(() => toast.success('Você evitou prejuízo agora'), 1200);
+      }
+    }
+  }, [verdict]);
 
   const verdictConfig = {
     good: { bg: 'bg-profit', emoji: '🟢', label: 'Boa corrida — acima do mínimo ideal', text: 'text-profit' },
