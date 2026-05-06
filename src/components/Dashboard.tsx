@@ -330,6 +330,8 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
           </div>
         </div>
       )}
+        </>
+      )}
     </div>
   );
 }
