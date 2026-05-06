@@ -134,10 +134,45 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="px-1">
-        <h1 className="font-display text-xl font-bold text-foreground">Boa, {displayName} 👊</h1>
+      <div className="px-1 flex items-center justify-between gap-3">
+        <h1 className={`font-display text-base font-bold leading-snug ${
+          greetingTone === 'profit' ? 'text-profit' :
+          greetingTone === 'loss' ? 'text-loss' :
+          'text-foreground'
+        }`}>
+          {greeting}
+        </h1>
+        <button
+          onClick={toggleFocus}
+          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-display font-semibold border transition-colors ${
+            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+          }`}
+          aria-pressed={focus}
+          aria-label="Modo foco"
+        >
+          <Focus size={13} /> {focus ? 'Modo foco ativo' : 'Modo foco'}
+        </button>
       </div>
-      {/* Hero status */}
+
+      {focus ? (
+        <div className="space-y-3">
+          <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
+            <p className="text-xs text-primary-foreground/80 uppercase tracking-wider">Lucro real hoje</p>
+            <p className={`text-5xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
+              {today ? fmt(today.profit) : 'R$ 0,00'}
+            </p>
+          </div>
+          <div className="bg-card rounded-lg p-5 border shadow-sm text-center">
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5"><Compass size={12}/> Mínimo ideal por km</p>
+            <p className="text-3xl font-display font-bold text-primary mt-1">{fmt(minIdealKm)}</p>
+            <p className="text-xs text-muted-foreground mt-2">Aceite corridas acima de {fmt(minIdealKm)}/km</p>
+          </div>
+          <p className="text-center text-sm text-muted-foreground italic">
+            Foco hoje, {displayName}. Decisões melhores, mais lucro.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
         <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
@@ -147,15 +182,10 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
         <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
       </div>
 
-      {smartMessage && (
-        <div className={`rounded-lg p-3 text-sm font-medium border ${
-          smartMessage.tone === 'profit' ? 'bg-profit/10 border-profit/30 text-profit' :
-          smartMessage.tone === 'loss' ? 'bg-loss/10 border-loss/30 text-loss' :
-          'bg-accent/10 border-accent/30 text-accent-foreground'
-        }`}>
-          {smartMessage.text}
-        </div>
-      )}
+      <div className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
+        <Compass size={16} className="text-primary shrink-0" />
+        <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
+      </div>
 
       {/* Today metrics */}
       {today ? (
