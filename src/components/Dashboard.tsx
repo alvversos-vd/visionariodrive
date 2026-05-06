@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getEntries, getGoals, getSettings } from '@/lib/storage';
 import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
 import { computeStats } from '@/lib/types';
+import { useAuth, getDisplayName } from '@/contexts/AuthContext';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet } from 'lucide-react';
 
 interface Props {
