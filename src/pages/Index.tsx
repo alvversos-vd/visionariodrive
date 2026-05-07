@@ -65,7 +65,9 @@ export default function Index() {
 
     switch (tab) {
       case 'home':
-        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} />;
+        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
+      case 'upgrade':
+        return <UpgradeView onDismiss={() => setTab('home')} />;
       case 'input':
         return result ? <ResultsView entry={result} onBack={() => setResult(null)} /> : <DailyInputForm onCalculate={handleCalculate} />;
       case 'ride':
