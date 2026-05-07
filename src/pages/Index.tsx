@@ -71,7 +71,7 @@ export default function Index() {
       case 'input':
         return result ? <ResultsView entry={result} onBack={() => setResult(null)} /> : <DailyInputForm onCalculate={handleCalculate} />;
       case 'ride':
-        return <RideAnalyzer refresh={refresh} />;
+        return <RideAnalyzer refresh={refresh} onGoToUpgrade={() => setTab('upgrade')} />;
       case 'goals':
         return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
       case 'expenses':
