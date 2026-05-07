@@ -242,6 +242,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
                 rideType: rideType || undefined,
               };
               saveRide(ride);
+              incrementRidesAnalyzed();
               toast.success('Corrida salva no histórico');
               setRideValue('');
               setRideKm('');
