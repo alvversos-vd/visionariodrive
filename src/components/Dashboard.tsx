@@ -184,6 +184,25 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
       </div>
 
+      {/* Soft PRO trigger embaixo do lucro */}
+      {!isPro && today && (
+        <button
+          onClick={onGoToUpgrade}
+          className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
+        >
+          <p className="text-xs text-muted-foreground leading-snug">
+            {today.profit > 0
+              ? 'Você está no lucro… mas pode melhorar ainda mais'
+              : today.profit < 0
+              ? 'Seus custos podem estar te prejudicando'
+              : 'Você pode estar deixando dinheiro na mesa'}
+          </p>
+          <span className="text-xs font-display font-semibold text-primary flex items-center gap-1 shrink-0">
+            Ver como melhorar <ArrowRight size={12} />
+          </span>
+        </button>
+      )}
+
       <div className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
         <Compass size={16} className="text-primary shrink-0" />
         <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
