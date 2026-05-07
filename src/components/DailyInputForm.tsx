@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
 import { saveEntry, getVehicles, getRideTypes } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
