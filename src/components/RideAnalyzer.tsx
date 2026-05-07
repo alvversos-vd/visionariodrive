@@ -5,17 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, Save, Sparkles, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { getLastAvoidAt, markAvoidNow } from '@/lib/engagement';
+import { getLastAvoidAt, markAvoidNow, incrementRidesAnalyzed } from '@/lib/engagement';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   refresh: number;
+  onGoToUpgrade: () => void;
 }
 
 type Verdict = 'good' | 'ok' | 'bad' | null;
 
-export default function RideAnalyzer({ refresh }: Props) {
+export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
+  const { isPro } = useAuth();
   const [rideValue, setRideValue] = useState('');
   const [rideKm, setRideKm] = useState('');
   const [verdict, setVerdict] = useState<Verdict>(null);
