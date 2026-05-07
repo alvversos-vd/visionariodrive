@@ -24,8 +24,8 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) {
-  const { profile } = useAuth();
+export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
+  const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
   const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
