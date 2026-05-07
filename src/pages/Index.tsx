@@ -11,10 +11,11 @@ import SimulatorView from '@/components/SimulatorView';
 import ProfileView from '@/components/ProfileView';
 import ExpensesView from '@/components/ExpensesView';
 import ProRequired from '@/components/ProRequired';
+import UpgradeView from '@/components/UpgradeView';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet } from 'lucide-react';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
