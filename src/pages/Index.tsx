@@ -54,13 +54,13 @@ export default function Index() {
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
   const renderContent = () => {
-    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && isLocked(tab)) {
+    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && tab !== 'upgrade' && isLocked(tab)) {
       const labels: Partial<Record<Tab, string>> = {
         ride: 'a análise de corridas',
         history: 'o histórico completo',
         strategy: 'as estratégias e simulador',
       };
-      return <ProRequired feature={labels[tab]} />;
+      return <ProRequired feature={labels[tab]} onUpgrade={() => setTab('upgrade')} />;
     }
 
     switch (tab) {
