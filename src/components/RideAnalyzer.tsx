@@ -222,6 +222,26 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
             </div>
           </div>
 
+          {!isPro && (
+            <button
+              onClick={onGoToUpgrade}
+              className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground leading-snug">
+                  {verdict === 'bad'
+                    ? 'Você evitou prejuízo 👊 mas pode otimizar ainda mais suas escolhas'
+                    : verdict === 'good'
+                    ? 'Boa escolha 👊 mas você pode aumentar ainda mais seu lucro'
+                    : 'Você pode tomar decisões ainda melhores'}
+                </p>
+                <p className="text-[11px] text-primary font-display font-semibold flex items-center gap-1 mt-1">
+                  <Sparkles size={11} /> Ver análise completa (PRO) <ArrowRight size={11} />
+                </p>
+              </div>
+            </button>
+          )}
+
           <Button
             type="button"
             onClick={() => {
