@@ -5,17 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, Save } from 'lucide-react';
+import { AlertCircle, Save, Sparkles, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { getLastAvoidAt, markAvoidNow } from '@/lib/engagement';
+import { getLastAvoidAt, markAvoidNow, incrementRidesAnalyzed } from '@/lib/engagement';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   refresh: number;
+  onGoToUpgrade: () => void;
 }
 
 type Verdict = 'good' | 'ok' | 'bad' | null;
 
-export default function RideAnalyzer({ refresh }: Props) {
+export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
+  const { isPro } = useAuth();
   const [rideValue, setRideValue] = useState('');
   const [rideKm, setRideKm] = useState('');
   const [verdict, setVerdict] = useState<Verdict>(null);
@@ -219,6 +222,26 @@ export default function RideAnalyzer({ refresh }: Props) {
             </div>
           </div>
 
+          {!isPro && (
+            <button
+              onClick={onGoToUpgrade}
+              className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground leading-snug">
+                  {verdict === 'bad'
+                    ? 'Você evitou prejuízo 👊 mas pode otimizar ainda mais suas escolhas'
+                    : verdict === 'good'
+                    ? 'Boa escolha 👊 mas você pode aumentar ainda mais seu lucro'
+                    : 'Você pode tomar decisões ainda melhores'}
+                </p>
+                <p className="text-[11px] text-primary font-display font-semibold flex items-center gap-1 mt-1">
+                  <Sparkles size={11} /> Ver análise completa (PRO) <ArrowRight size={11} />
+                </p>
+              </div>
+            </button>
+          )}
+
           <Button
             type="button"
             onClick={() => {
@@ -239,6 +262,7 @@ export default function RideAnalyzer({ refresh }: Props) {
                 rideType: rideType || undefined,
               };
               saveRide(ride);
+              incrementRidesAnalyzed();
               toast.success('Corrida salva no histórico');
               setRideValue('');
               setRideKm('');

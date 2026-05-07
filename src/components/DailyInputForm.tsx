@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
 import { saveEntry, getVehicles, getRideTypes } from '@/lib/storage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus, ChevronUp } from 'lucide-react';
+import { toast } from 'sonner';
+import { shouldShowFixedCostsHint, markFixedCostsHintShown } from '@/lib/engagement';
 
 interface Props {
   onCalculate: (entry: DailyEntry) => void;
@@ -89,6 +91,20 @@ export default function DailyInputForm({ onCalculate }: Props) {
   const rideTypes = useMemo(() => getRideTypes(), []);
   const [vehicle, setVehicle] = useState<string>('');
   const [rideType, setRideType] = useState<string>('');
+  const [showFixed, setShowFixed] = useState(false);
+  const hintShownRef = useRef(false);
+
+  // Auto-expandir custos fixos se já houver algum valor (modo completo)
+  const hasAnyFixed = !!(form.installment || form.maintenance || form.insurance || form.otherCosts);
+  const sectionOpen = showFixed || hasAnyFixed;
+
+  useEffect(() => {
+    if (!sectionOpen && shouldShowFixedCostsHint()) {
+      markFixedCostsHintShown();
+      toast('Você pode adicionar custos fixos para ter um cálculo mais preciso', { icon: '💡' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const set = (key: FormKey) => (v: string) => {
     setForm(prev => ({ ...prev, [key]: v }));
@@ -179,15 +195,43 @@ export default function DailyInputForm({ onCalculate }: Props) {
         </div>
       </div>
 
-      <div>
-        <h2 className="font-display text-lg font-semibold text-foreground mb-3">🔧 Custos Fixos Mensais</h2>
-        <div className="bg-card rounded-lg p-4 space-y-3 shadow-sm border">
-          <Field label="Parcela do veículo" value={form.installment} onChange={set('installment')} placeholder="500" prefix="R$" error={showError('installment')} />
-          <Field label="Manutenção média" value={form.maintenance} onChange={set('maintenance')} placeholder="150" prefix="R$" error={showError('maintenance')} />
-          <Field label="Seguro" value={form.insurance} onChange={set('insurance')} placeholder="100" prefix="R$" error={showError('insurance')} />
-          <Field label="Outros custos" value={form.otherCosts} onChange={set('otherCosts')} placeholder="50" prefix="R$" error={showError('otherCosts')} />
+      {sectionOpen ? (
+        <div>
+          <h2 className="font-display text-lg font-semibold text-foreground mb-3">🔧 Custos Fixos Mensais <span className="text-xs text-muted-foreground font-normal">(opcional)</span></h2>
+          <div className="bg-card rounded-lg p-4 space-y-3 shadow-sm border">
+            <Field label="Parcela do veículo" value={form.installment} onChange={set('installment')} placeholder="500" prefix="R$" error={showError('installment')} />
+            <Field label="Manutenção média" value={form.maintenance} onChange={set('maintenance')} placeholder="150" prefix="R$" error={showError('maintenance')} />
+            <Field label="Seguro" value={form.insurance} onChange={set('insurance')} placeholder="100" prefix="R$" error={showError('insurance')} />
+            <Field label="Outros custos" value={form.otherCosts} onChange={set('otherCosts')} placeholder="50" prefix="R$" error={showError('otherCosts')} />
+            {!hasAnyFixed && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFixed(false)}
+                className="w-full text-muted-foreground gap-1.5"
+              >
+                <ChevronUp size={14} /> Ocultar custos fixos
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setShowFixed(true);
+            if (!hintShownRef.current && shouldShowFixedCostsHint()) {
+              hintShownRef.current = true;
+              markFixedCostsHintShown();
+            }
+          }}
+          className="w-full h-12 gap-2 border-dashed"
+        >
+          <Plus size={16} /> Adicionar custos fixos (opcional)
+        </Button>
+      )}
 
       {!isValid && Object.keys(touched).length > 0 && (
         <p className="text-destructive text-sm font-medium text-center flex items-center justify-center gap-1.5">

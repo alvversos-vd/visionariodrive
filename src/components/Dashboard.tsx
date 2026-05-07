@@ -8,22 +8,24 @@ import {
   shouldCelebrateFirstProfit, markFirstProfitCelebrated,
   shouldCelebrateRides5, markRides5Celebrated,
   getFocusMode, setFocusMode,
+  shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight } from 'lucide-react';
 
 interface Props {
   refresh: number;
   onGoToInput: () => void;
   onGoToGoals: () => void;
+  onGoToUpgrade: () => void;
 }
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) {
-  const { profile } = useAuth();
+export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
+  const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
   const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
@@ -182,6 +184,25 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
         <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
       </div>
 
+      {/* Soft PRO trigger embaixo do lucro */}
+      {!isPro && today && (
+        <button
+          onClick={onGoToUpgrade}
+          className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
+        >
+          <p className="text-xs text-muted-foreground leading-snug">
+            {today.profit > 0
+              ? 'Você está no lucro… mas pode melhorar ainda mais'
+              : today.profit < 0
+              ? 'Seus custos podem estar te prejudicando'
+              : 'Você pode estar deixando dinheiro na mesa'}
+          </p>
+          <span className="text-xs font-display font-semibold text-primary flex items-center gap-1 shrink-0">
+            Ver como melhorar <ArrowRight size={12} />
+          </span>
+        </button>
+      )}
+
       <div className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
         <Compass size={16} className="text-primary shrink-0" />
         <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
@@ -329,6 +350,45 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals }: Props) 
             </p>
           </div>
         </div>
+      )}
+
+      {/* PRO teasers — sempre visíveis (sem irritar) */}
+      {!isPro && (
+        <div className="space-y-2 pt-2">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-1">Funções PRO</p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: BarChart3, label: 'Relatórios' },
+              { icon: Wallet, label: 'Gastos+' },
+              { icon: Brain, label: 'Insights' },
+            ].map(t => (
+              <button
+                key={t.label}
+                onClick={onGoToUpgrade}
+                className="bg-card rounded-lg p-2.5 border text-center relative hover:border-primary/50 transition-colors"
+              >
+                <t.icon size={14} className="mx-auto text-primary mb-1" />
+                <p className="text-[10px] font-display font-semibold text-foreground">{t.label}</p>
+                <Lock size={9} className="absolute top-1 right-1 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prompt de upgrade no momento certo */}
+      {!isPro && shouldShowUpgradePrompt() && (
+        <button
+          onClick={onGoToUpgrade}
+          className="w-full rounded-xl p-4 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 text-left flex items-center gap-3 hover:from-primary/15 transition-colors"
+        >
+          <Sparkles className="text-primary shrink-0" size={20} />
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-sm text-foreground">Pronto para lucrar de verdade?</p>
+            <p className="text-xs text-muted-foreground">Veja exatamente onde está perdendo dinheiro.</p>
+          </div>
+          <ArrowRight size={16} className="text-primary shrink-0" />
+        </button>
       )}
         </>
       )}

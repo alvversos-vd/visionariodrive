@@ -11,10 +11,11 @@ import SimulatorView from '@/components/SimulatorView';
 import ProfileView from '@/components/ProfileView';
 import ExpensesView from '@/components/ExpensesView';
 import ProRequired from '@/components/ProRequired';
+import UpgradeView from '@/components/UpgradeView';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet } from 'lucide-react';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
@@ -53,22 +54,24 @@ export default function Index() {
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
   const renderContent = () => {
-    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && isLocked(tab)) {
+    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && tab !== 'upgrade' && isLocked(tab)) {
       const labels: Partial<Record<Tab, string>> = {
         ride: 'a análise de corridas',
         history: 'o histórico completo',
         strategy: 'as estratégias e simulador',
       };
-      return <ProRequired feature={labels[tab]} />;
+      return <ProRequired feature={labels[tab]} onUpgrade={() => setTab('upgrade')} />;
     }
 
     switch (tab) {
       case 'home':
-        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} />;
+        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
+      case 'upgrade':
+        return <UpgradeView onDismiss={() => setTab('home')} />;
       case 'input':
         return result ? <ResultsView entry={result} onBack={() => setResult(null)} /> : <DailyInputForm onCalculate={handleCalculate} />;
       case 'ride':
-        return <RideAnalyzer refresh={refresh} />;
+        return <RideAnalyzer refresh={refresh} onGoToUpgrade={() => setTab('upgrade')} />;
       case 'goals':
         return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
       case 'expenses':
