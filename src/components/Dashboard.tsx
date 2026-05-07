@@ -8,14 +8,16 @@ import {
   shouldCelebrateFirstProfit, markFirstProfitCelebrated,
   shouldCelebrateRides5, markRides5Celebrated,
   getFocusMode, setFocusMode,
+  shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight } from 'lucide-react';
 
 interface Props {
   refresh: number;
   onGoToInput: () => void;
   onGoToGoals: () => void;
+  onGoToUpgrade: () => void;
 }
 
 function fmt(v: number) {
