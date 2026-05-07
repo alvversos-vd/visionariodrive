@@ -98,6 +98,14 @@ export default function DailyInputForm({ onCalculate }: Props) {
   const hasAnyFixed = !!(form.installment || form.maintenance || form.insurance || form.otherCosts);
   const sectionOpen = showFixed || hasAnyFixed;
 
+  useEffect(() => {
+    if (!sectionOpen && shouldShowFixedCostsHint()) {
+      markFixedCostsHintShown();
+      toast('Você pode adicionar custos fixos para ter um cálculo mais preciso', { icon: '💡' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const set = (key: FormKey) => (v: string) => {
     setForm(prev => ({ ...prev, [key]: v }));
     setTouched(prev => ({ ...prev, [key]: true }));
