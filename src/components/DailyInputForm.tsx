@@ -91,6 +91,12 @@ export default function DailyInputForm({ onCalculate }: Props) {
   const rideTypes = useMemo(() => getRideTypes(), []);
   const [vehicle, setVehicle] = useState<string>('');
   const [rideType, setRideType] = useState<string>('');
+  const [showFixed, setShowFixed] = useState(false);
+  const hintShownRef = useRef(false);
+
+  // Auto-expandir custos fixos se já houver algum valor (modo completo)
+  const hasAnyFixed = !!(form.installment || form.maintenance || form.insurance || form.otherCosts);
+  const sectionOpen = showFixed || hasAnyFixed;
 
   const set = (key: FormKey) => (v: string) => {
     setForm(prev => ({ ...prev, [key]: v }));
