@@ -351,6 +351,45 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </div>
         </div>
       )}
+
+      {/* PRO teasers — sempre visíveis (sem irritar) */}
+      {!isPro && (
+        <div className="space-y-2 pt-2">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-1">Funções PRO</p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { icon: BarChart3, label: 'Relatórios' },
+              { icon: Wallet, label: 'Gastos+' },
+              { icon: Brain, label: 'Insights' },
+            ].map(t => (
+              <button
+                key={t.label}
+                onClick={onGoToUpgrade}
+                className="bg-card rounded-lg p-2.5 border text-center relative hover:border-primary/50 transition-colors"
+              >
+                <t.icon size={14} className="mx-auto text-primary mb-1" />
+                <p className="text-[10px] font-display font-semibold text-foreground">{t.label}</p>
+                <Lock size={9} className="absolute top-1 right-1 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prompt de upgrade no momento certo */}
+      {!isPro && shouldShowUpgradePrompt() && (
+        <button
+          onClick={onGoToUpgrade}
+          className="w-full rounded-xl p-4 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 text-left flex items-center gap-3 hover:from-primary/15 transition-colors"
+        >
+          <Sparkles className="text-primary shrink-0" size={20} />
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-sm text-foreground">Pronto para lucrar de verdade?</p>
+            <p className="text-xs text-muted-foreground">Veja exatamente onde está perdendo dinheiro.</p>
+          </div>
+          <ArrowRight size={16} className="text-primary shrink-0" />
+        </button>
+      )}
         </>
       )}
     </div>
