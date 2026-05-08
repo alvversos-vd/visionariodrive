@@ -6,6 +6,7 @@ import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
 import PeriodComparison from './PeriodComparison';
+import ShiftHistoryView from './ShiftHistoryView';
 
 const WEEKDAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -186,6 +187,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ShiftHistoryView refresh={refresh} />
       <button
         onClick={() => {
           try {
