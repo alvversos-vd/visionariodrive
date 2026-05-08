@@ -187,6 +187,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ShiftHistoryView refresh={refresh} />
       <button
         onClick={() => {
           try {
