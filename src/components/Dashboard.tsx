@@ -12,6 +12,7 @@ import {
 } from '@/lib/engagement';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight } from 'lucide-react';
+import ShiftMode from './ShiftMode';
 
 interface Props {
   refresh: number;
