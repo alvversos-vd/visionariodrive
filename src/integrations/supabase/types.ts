@@ -59,6 +59,7 @@ export type Database = {
           ride_types: Json
           rides: Json
           settings: Json
+          shifts: Json
           updated_at: string
           user_id: string
           vehicles: Json
@@ -71,6 +72,7 @@ export type Database = {
           ride_types?: Json
           rides?: Json
           settings?: Json
+          shifts?: Json
           updated_at?: string
           user_id: string
           vehicles?: Json
@@ -83,6 +85,7 @@ export type Database = {
           ride_types?: Json
           rides?: Json
           settings?: Json
+          shifts?: Json
           updated_at?: string
           user_id?: string
           vehicles?: Json
