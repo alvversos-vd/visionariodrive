@@ -157,6 +157,8 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </button>
       </div>
 
+      <ShiftMode />
+
       {focus ? (
         <div className="space-y-3">
           <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
