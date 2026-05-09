@@ -100,14 +100,9 @@ export default function SettingsView({ refresh, onChanged }: Props) {
         </Button>
       </div>
 
-      <TagListEditor
-        title="Veículos"
-        emoji="🏍️"
-        description="Cadastre seus veículos para comparar lucro entre eles."
-        placeholder="Ex: Moto Honda, Carro Onix"
-        items={vehicles}
-        onChange={updateVehicles}
-      />
+      <div className="bg-card rounded-lg p-4 border shadow-sm">
+        <VehiclesView onChange={onChanged} />
+      </div>
 
       <TagListEditor
         title="Tipos de corrida"
