@@ -1,0 +1,1 @@
+ALTER TABLE public.user_data ADD COLUMN IF NOT EXISTS vehicles_v2 JSONB NOT NULL DEFAULT '[]'::jsonb;
