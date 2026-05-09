@@ -1,5 +1,6 @@
 import { markDirty } from './cloudSync';
 import { getEntries, getSettings } from './storage';
+import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
@@ -13,16 +14,19 @@ export interface ShiftRide {
   km: number;
   valor_por_km: number;
   resultado: RideResult;
-  data_registro: string; // ISO
-  data_operacional: string; // YYYY-MM-DD
+  data_registro: string;
+  data_operacional: string;
 }
 
 export interface Shift {
   turno_id: string;
   status: ShiftStatus;
-  inicio_turno: string; // ISO
-  fim_turno?: string; // ISO
-  data_operacional: string; // YYYY-MM-DD
+  inicio_turno: string;
+  fim_turno?: string;
+  data_operacional: string;
+  veiculo_id?: string;
+  tipo_veiculo?: string;
+  app_utilizado?: string;
   rides: ShiftRide[];
 }
 
@@ -40,15 +44,29 @@ export function getActiveShift(): Shift | null {
   return getShifts().find(s => s.status === 'ativo') ?? null;
 }
 
-export function startShift(data_operacional: string): Shift {
+export interface StartShiftOptions {
+  data_operacional: string;
+  veiculo_id: string;
+  app_utilizado: AppEntrega | string;
+}
+
+export function startShift(opts: StartShiftOptions): Shift {
   const list = getShifts();
-  // garantir que não há outro ativo
-  list.forEach(s => { if (s.status === 'ativo') { s.status = 'finalizado'; s.fim_turno = new Date().toISOString(); } });
+  list.forEach(s => {
+    if (s.status === 'ativo') {
+      s.status = 'finalizado';
+      s.fim_turno = new Date().toISOString();
+    }
+  });
+  const v = getVehicleById(opts.veiculo_id);
   const shift: Shift = {
     turno_id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     status: 'ativo',
     inicio_turno: new Date().toISOString(),
-    data_operacional,
+    data_operacional: opts.data_operacional,
+    veiculo_id: opts.veiculo_id,
+    tipo_veiculo: v?.tipo_veiculo,
+    app_utilizado: opts.app_utilizado,
     rides: [],
   };
   list.unshift(shift);
@@ -66,8 +84,8 @@ export function endShift(turno_id: string): Shift | null {
   return s;
 }
 
+// Custo médio histórico (fallback quando não há veículo)
 export function getCostPerKm(): number {
-  // média dos últimos 7 lançamentos com km > 0; senão settings/3 fallback
   const entries = getEntries().filter(e => e.kmDriven > 0).slice(0, 7);
   if (entries.length === 0) return 0;
   const totalCost = entries.reduce((s, e) => s + e.totalCost, 0);
@@ -75,19 +93,26 @@ export function getCostPerKm(): number {
   return totalKm > 0 ? totalCost / totalKm : 0;
 }
 
-export function getMinIdealKm(): number {
-  const cpk = getCostPerKm();
+export function getShiftCostPerKm(shift: Shift | null | undefined): number {
+  if (shift?.veiculo_id) {
+    const v = getVehicleById(shift.veiculo_id);
+    if (v) return vehicleCostPerKm(v);
+  }
+  return getCostPerKm();
+}
+
+export function getMinIdealKm(shift?: Shift | null): number {
+  const cpk = getShiftCostPerKm(shift);
   const margin = getSettings().profitMargin || 1.3;
   return cpk * margin;
 }
 
-export function classifyRide(valor: number, km: number): { valor_por_km: number; resultado: RideResult } {
+export function classifyRide(valor: number, km: number, shift?: Shift | null): { valor_por_km: number; resultado: RideResult } {
   const valor_por_km = km > 0 ? valor / km : 0;
-  const cpk = getCostPerKm();
-  const min = getMinIdealKm();
+  const cpk = getShiftCostPerKm(shift);
+  const min = getMinIdealKm(shift);
   let resultado: RideResult;
   if (cpk <= 0) {
-    // sem base de custo — usa só valor/km com piso simples
     resultado = valor_por_km >= 2 ? 'boa' : valor_por_km >= 1.2 ? 'aceitavel' : 'ruim';
   } else if (valor_por_km >= min) resultado = 'boa';
   else if (valor_por_km >= cpk) resultado = 'aceitavel';
@@ -99,7 +124,7 @@ export function addRide(turno_id: string, valor: number, km: number): ShiftRide 
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s || s.status !== 'ativo') return null;
-  const { valor_por_km, resultado } = classifyRide(valor, km);
+  const { valor_por_km, resultado } = classifyRide(valor, km, s);
   const ride: ShiftRide = {
     corrida_id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     turno_id,
@@ -127,23 +152,41 @@ export interface ShiftTotals {
   ganho_total: number;
   km_total: number;
   corridas_total: number;
+  custo_combustivel: number;
+  custo_fixo_rateado: number;
   custo_total: number;
   lucro_total: number;
   tempo_online_minutos: number;
   media_por_km: number;
+  media_por_corrida: number;
 }
 
 export function computeTotals(shift: Shift): ShiftTotals {
   const ganho_total = shift.rides.reduce((s, r) => s + r.valor, 0);
   const km_total = shift.rides.reduce((s, r) => s + r.km, 0);
   const corridas_total = shift.rides.length;
-  const cpk = getCostPerKm();
-  const custo_total = cpk * km_total;
+
+  let v: Vehicle | null = null;
+  if (shift.veiculo_id) v = getVehicleById(shift.veiculo_id);
+
+  let custo_combustivel = 0;
+  let custo_fixo_rateado = 0;
+  if (v) {
+    if (v.km_por_litro && v.km_por_litro > 0) {
+      custo_combustivel = (km_total / v.km_por_litro) * (v.valor_combustivel_litro || 0);
+    }
+    custo_fixo_rateado = (v.custo_fixo_mensal || 0) / 30;
+  } else {
+    custo_combustivel = getCostPerKm() * km_total;
+  }
+  const custo_total = custo_combustivel + custo_fixo_rateado;
   const lucro_total = ganho_total - custo_total;
+
   const fim = shift.fim_turno ? new Date(shift.fim_turno).getTime() : Date.now();
   const tempo_online_minutos = Math.max(0, Math.round((fim - new Date(shift.inicio_turno).getTime()) / 60000));
   const media_por_km = km_total > 0 ? ganho_total / km_total : 0;
-  return { ganho_total, km_total, corridas_total, custo_total, lucro_total, tempo_online_minutos, media_por_km };
+  const media_por_corrida = corridas_total > 0 ? ganho_total / corridas_total : 0;
+  return { ganho_total, km_total, corridas_total, custo_combustivel, custo_fixo_rateado, custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida };
 }
 
 export function formatTempo(min: number): string {
