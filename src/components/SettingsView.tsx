@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 import TagListEditor from './TagListEditor';
+import VehiclesView from './VehiclesView';
 
 interface Props {
   refresh: number;
