@@ -11,6 +11,7 @@ const KEY_MAP = {
   'lucro-delivery-ride-types': 'ride_types',
   'lucro-delivery-expenses': 'expenses',
   'lucro-delivery-shifts': 'shifts',
+  'lucro-delivery-vehicles-v2': 'vehicles_v2',
 } as const;
 
 type LocalKey = keyof typeof KEY_MAP;
