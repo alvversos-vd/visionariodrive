@@ -140,7 +140,9 @@ export default function ShiftMode({ onChange }: Props) {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Ganho total</p><p className="font-display font-bold">{fmt(t.ganho_total)}</p></div>
           <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Custo total</p><p className="font-display font-bold">{fmt(t.custo_total)}</p></div>
-          <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Combustível</p><p className="font-display font-bold">{fmt(t.custo_combustivel)}</p></div>
+          {(t.custo_combustivel > 0 || (v && v.km_por_litro && v.km_por_litro > 0)) && (
+            <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Combustível</p><p className="font-display font-bold">{fmt(t.custo_combustivel)}</p></div>
+          )}
           <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Fixo rateado</p><p className="font-display font-bold">{fmt(t.custo_fixo_rateado)}</p></div>
           <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Km · Corridas</p><p className="font-display font-bold">{t.km_total.toFixed(1)} · {t.corridas_total}</p></div>
           <div className="bg-secondary/40 rounded p-3"><p className="text-xs text-muted-foreground">Online</p><p className="font-display font-bold">{formatTempo(t.tempo_online_minutos)}</p></div>
