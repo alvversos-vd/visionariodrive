@@ -1,0 +1,243 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { addVehicle, TipoVeiculo, setLastApp, AppEntrega, hasAnyVehicle } from '@/lib/vehicles';
+import { saveGoals, getGoals } from '@/lib/storage';
+import { toast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+type StepKey = 'welcome' | 'vehicle' | 'goal' | 'app' | 'objective' | 'done';
+
+const VEHICLES: { key: TipoVeiculo; label: string; emoji: string }[] = [
+  { key: 'moto', label: 'Moto', emoji: '🏍️' },
+  { key: 'carro', label: 'Carro', emoji: '🚗' },
+  { key: 'bike', label: 'Bike', emoji: '🚲' },
+  { key: 'bike_eletrica', label: 'Bike elétrica', emoji: '⚡' },
+];
+
+const GOALS = [100, 200, 300, 500];
+
+const APPS: AppEntrega[] = ['iFood', 'Uber', '99', 'Rappi', 'Lalamove', 'Mercado Livre', 'Outro'];
+
+const OBJECTIVES = [
+  { key: 'ganhar_mais', label: 'Ganhar mais', emoji: '💰' },
+  { key: 'controlar_gastos', label: 'Controlar gastos', emoji: '🧾' },
+  { key: 'evitar_prejuizo', label: 'Evitar prejuízo', emoji: '🛡️' },
+  { key: 'bater_metas', label: 'Bater metas', emoji: '🎯' },
+  { key: 'organizar_ganhos', label: 'Organizar meus ganhos', emoji: '📊' },
+];
+
+const STEP_ORDER: StepKey[] = ['welcome', 'vehicle', 'goal', 'app', 'objective', 'done'];
+
+export default function Onboarding({ onFinish }: { onFinish: () => void }) {
+  const { user, profile, refreshProfile } = useAuth();
+  const [step, setStep] = useState<StepKey>('welcome');
+  const [vehicle, setVehicle] = useState<TipoVeiculo | null>(null);
+  const [goal, setGoal] = useState<number | null>(null);
+  const [customGoal, setCustomGoal] = useState('');
+  const [app, setApp] = useState<AppEntrega | null>(null);
+  const [objective, setObjective] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const idx = STEP_ORDER.indexOf(step);
+  const progress = (idx / (STEP_ORDER.length - 1)) * 100;
+
+  const next = () => setStep(STEP_ORDER[Math.min(idx + 1, STEP_ORDER.length - 1)]);
+
+  const finalize = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      // Vehicle
+      if (vehicle && !hasAnyVehicle()) {
+        addVehicle({
+          tipo_veiculo: vehicle,
+          nome_veiculo: VEHICLES.find(v => v.key === vehicle)?.label || 'Meu veículo',
+          km_por_litro: vehicle === 'bike' || vehicle === 'bike_eletrica' ? null : 10,
+          tipo_combustivel: vehicle === 'bike' ? 'nenhum' : vehicle === 'bike_eletrica' ? 'eletrico' : 'gasolina',
+          valor_combustivel_litro: vehicle === 'bike' || vehicle === 'bike_eletrica' ? 0 : 6,
+          custo_fixo_mensal: 0,
+        });
+      }
+      // App
+      if (app) setLastApp(app);
+      // Goal
+      const finalGoal = goal ?? (customGoal ? Number(customGoal) : 0);
+      if (finalGoal > 0) {
+        const g = getGoals();
+        saveGoals({ ...g, daily: finalGoal });
+      }
+      // Profile
+      await supabase
+        .from('profiles')
+        .update({
+          tipo_veiculo_principal: vehicle,
+          meta_lucro_diaria: finalGoal || null,
+          app_principal: app,
+          objetivo_principal: objective,
+          onboarding_completo: true,
+        })
+        .eq('user_id', user.id);
+      await refreshProfile();
+      onFinish();
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e?.message ?? 'Tente novamente', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const skipAll = async () => {
+    if (!user) return;
+    setSaving(true);
+    await supabase.from('profiles').update({ onboarding_completo: true }).eq('user_id', user.id);
+    await refreshProfile();
+    onFinish();
+  };
+
+  const displayName = profile?.nome_usuario?.trim() || '';
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col px-4 py-6">
+      <div className="container max-w-md mx-auto w-full flex-1 flex flex-col">
+        {step !== 'welcome' && step !== 'done' && (
+          <div className="mb-6">
+            <Progress value={progress} className="h-1.5" />
+          </div>
+        )}
+
+        <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300" key={step}>
+          {step === 'welcome' && (
+            <div className="text-center space-y-6">
+              <div className="text-6xl">👊</div>
+              <div>
+                <h1 className="font-display text-3xl font-bold">Vamos montar seu painel</h1>
+                <p className="text-muted-foreground mt-2">
+                  Responda rápido e personalize sua experiência{displayName ? `, ${displayName}` : ''}.
+                </p>
+              </div>
+              <Button size="lg" className="w-full" onClick={next}>Começar</Button>
+              <button onClick={skipAll} className="text-sm text-muted-foreground hover:text-foreground">
+                Pular tudo
+              </button>
+            </div>
+          )}
+
+          {step === 'vehicle' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold">Qual seu veículo?</h2>
+                <p className="text-muted-foreground text-sm mt-1">Vamos calcular seus custos certinho.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {VEHICLES.map(v => (
+                  <Card
+                    key={v.key}
+                    onClick={() => { setVehicle(v.key); setTimeout(next, 150); }}
+                    className={`p-5 cursor-pointer transition-all hover:border-primary text-center ${vehicle === v.key ? 'border-primary ring-2 ring-primary' : ''}`}
+                  >
+                    <div className="text-4xl mb-2">{v.emoji}</div>
+                    <div className="font-display font-semibold">{v.label}</div>
+                  </Card>
+                ))}
+              </div>
+              <button onClick={next} className="text-sm text-muted-foreground hover:text-foreground w-full text-center">Pular</button>
+            </div>
+          )}
+
+          {step === 'goal' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold">Quanto quer lucrar por dia?</h2>
+                <p className="text-muted-foreground text-sm mt-1">Sua meta de lucro líquido.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {GOALS.map(g => (
+                  <Card
+                    key={g}
+                    onClick={() => { setGoal(g); setCustomGoal(''); setTimeout(next, 150); }}
+                    className={`p-5 cursor-pointer transition-all hover:border-primary text-center ${goal === g ? 'border-primary ring-2 ring-primary' : ''}`}
+                  >
+                    <div className="font-display text-2xl font-bold">R$ {g}</div>
+                  </Card>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Personalizado (R$)"
+                  value={customGoal}
+                  onChange={e => { setCustomGoal(e.target.value); setGoal(null); }}
+                />
+                <Button onClick={next} disabled={!customGoal && !goal}>OK</Button>
+              </div>
+              <button onClick={next} className="text-sm text-muted-foreground hover:text-foreground w-full text-center">Pular</button>
+            </div>
+          )}
+
+          {step === 'app' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold">Qual app você mais usa?</h2>
+                <p className="text-muted-foreground text-sm mt-1">Você pode mudar depois.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {APPS.map(a => (
+                  <Card
+                    key={a}
+                    onClick={() => { setApp(a); setTimeout(next, 150); }}
+                    className={`p-4 cursor-pointer transition-all hover:border-primary text-center ${app === a ? 'border-primary ring-2 ring-primary' : ''}`}
+                  >
+                    <div className="font-display font-semibold">{a}</div>
+                  </Card>
+                ))}
+              </div>
+              <button onClick={next} className="text-sm text-muted-foreground hover:text-foreground w-full text-center">Pular</button>
+            </div>
+          )}
+
+          {step === 'objective' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-display text-2xl font-bold">O que quer melhorar?</h2>
+                <p className="text-muted-foreground text-sm mt-1">Vamos focar no que importa pra você.</p>
+              </div>
+              <div className="grid gap-2">
+                {OBJECTIVES.map(o => (
+                  <Card
+                    key={o.key}
+                    onClick={() => { setObjective(o.key); setTimeout(next, 150); }}
+                    className={`p-4 cursor-pointer transition-all hover:border-primary flex items-center gap-3 ${objective === o.key ? 'border-primary ring-2 ring-primary' : ''}`}
+                  >
+                    <div className="text-2xl">{o.emoji}</div>
+                    <div className="font-display font-semibold">{o.label}</div>
+                  </Card>
+                ))}
+              </div>
+              <button onClick={next} className="text-sm text-muted-foreground hover:text-foreground w-full text-center">Pular</button>
+            </div>
+          )}
+
+          {step === 'done' && (
+            <div className="text-center space-y-6">
+              <div className="text-6xl">👊</div>
+              <div>
+                <h1 className="font-display text-3xl font-bold">Seu painel está pronto</h1>
+                <p className="text-muted-foreground mt-2">Bora começar.</p>
+              </div>
+              <Button size="lg" className="w-full" onClick={finalize} disabled={saving}>
+                {saving && <Loader2 className="animate-spin" />}
+                Começar turno
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

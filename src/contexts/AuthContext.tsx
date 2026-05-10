@@ -14,6 +14,11 @@ export interface Profile {
   stripe_customer_id: string | null;
   ultimo_login: string | null;
   nome_usuario: string | null;
+  tipo_veiculo_principal: string | null;
+  meta_lucro_diaria: number | null;
+  app_principal: string | null;
+  objetivo_principal: string | null;
+  onboarding_completo: boolean;
   created_at: string;
 }
 

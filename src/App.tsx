@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Onboarding from "./components/Onboarding.tsx";
 
 const queryClient = new QueryClient();
 
@@ -27,10 +28,11 @@ function FullScreenLoader({ label }: { label: string }) {
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, dataReady } = useAuth();
+  const { user, loading, dataReady, profile } = useAuth();
   if (loading) return <FullScreenLoader label="Iniciando..." />;
   if (!user) return <Navigate to="/auth" replace />;
   if (!dataReady) return <FullScreenLoader label="Carregando seus dados..." />;
+  if (profile && !profile.onboarding_completo) return <Onboarding onFinish={() => { /* re-render via refreshProfile */ }} />;
   return <>{children}</>;
 }
 
