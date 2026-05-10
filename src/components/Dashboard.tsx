@@ -11,8 +11,9 @@ import {
   shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle } from 'lucide-react';
 import ShiftMode from './ShiftMode';
+import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 interface Props {
   refresh: number;
@@ -74,14 +75,28 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     ? Math.min(100, (today.profit / goals.daily) * 100)
     : 0;
 
-  // Smart greeting (1x per screen — replaces previous smartMessage box)
-  const greeting = !today
+  // Objective-driven personalization (from onboarding)
+  const objective = (profile?.objetivo_principal as Objective | null) ?? null;
+  const objConfig = getObjectiveConfig(objective, {
+    displayName,
+    hasToday: !!today,
+    profit: today?.profit ?? 0,
+    totalCost: today?.totalCost ?? 0,
+    costPerKm: today && today.kmDriven > 0 ? today.totalCost / today.kmDriven : 0,
+    minIdealKm,
+    goalDaily: goals.daily,
+    goalProgress: goals.daily > 0 && today ? Math.min(100, (today.profit / goals.daily) * 100) : 0,
+  });
+
+  // Smart greeting (1x per screen) — objective overrides default greeting when set
+  const defaultGreeting = !today
     ? `Bora começar, ${displayName}`
     : today.profit > 0
     ? `Boa, ${displayName} 👊 você já está no lucro hoje`
     : today.profit < 0
     ? `Atenção, ${displayName} — ajuste suas corridas hoje`
     : `Bora começar, ${displayName}`;
+  const greeting = objConfig?.message ?? defaultGreeting;
 
   const greetingTone: 'profit' | 'loss' | 'neutral' =
     today && today.profit > 0 ? 'profit' : today && today.profit < 0 ? 'loss' : 'neutral';
@@ -178,6 +193,29 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </div>
       ) : (
         <>
+      {/* Destaque do objetivo (do onboarding) — borda sutil, sem mudar layout */}
+      {objConfig && (
+        <div
+          className={`rounded-lg p-3 border flex items-center gap-3 ${
+            objConfig.tone === 'profit'
+              ? 'border-profit/40 bg-profit/5'
+              : objConfig.tone === 'loss'
+              ? 'border-loss/40 bg-loss/5'
+              : 'border-primary/30 bg-primary/5'
+          }`}
+        >
+          {objConfig.alert ? (
+            <AlertTriangle size={16} className="text-loss shrink-0" />
+          ) : (
+            <Target size={16} className="text-primary shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-display font-semibold text-foreground leading-snug">
+              {objConfig.alert ?? objConfig.highlightHint ?? 'Foco do dia'}
+            </p>
+          </div>
+        </div>
+      )}
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
         <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
