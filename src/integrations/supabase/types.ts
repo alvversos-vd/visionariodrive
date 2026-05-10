@@ -16,33 +16,48 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          app_principal: string | null
           created_at: string
           email: string
           id: string
+          meta_lucro_diaria: number | null
           nome_usuario: string | null
+          objetivo_principal: string | null
+          onboarding_completo: boolean
           stripe_customer_id: string | null
+          tipo_veiculo_principal: string | null
           ultimo_login: string | null
           updated_at: string
           user_id: string
           usuario_plano: Database["public"]["Enums"]["user_plan"]
         }
         Insert: {
+          app_principal?: string | null
           created_at?: string
           email: string
           id?: string
+          meta_lucro_diaria?: number | null
           nome_usuario?: string | null
+          objetivo_principal?: string | null
+          onboarding_completo?: boolean
           stripe_customer_id?: string | null
+          tipo_veiculo_principal?: string | null
           ultimo_login?: string | null
           updated_at?: string
           user_id: string
           usuario_plano?: Database["public"]["Enums"]["user_plan"]
         }
         Update: {
+          app_principal?: string | null
           created_at?: string
           email?: string
           id?: string
+          meta_lucro_diaria?: number | null
           nome_usuario?: string | null
+          objetivo_principal?: string | null
+          onboarding_completo?: boolean
           stripe_customer_id?: string | null
+          tipo_veiculo_principal?: string | null
           ultimo_login?: string | null
           updated_at?: string
           user_id?: string
