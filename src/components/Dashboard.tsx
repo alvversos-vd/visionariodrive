@@ -75,14 +75,28 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     ? Math.min(100, (today.profit / goals.daily) * 100)
     : 0;
 
-  // Smart greeting (1x per screen — replaces previous smartMessage box)
-  const greeting = !today
+  // Objective-driven personalization (from onboarding)
+  const objective = (profile?.objetivo_principal as Objective | null) ?? null;
+  const objConfig = getObjectiveConfig(objective, {
+    displayName,
+    hasToday: !!today,
+    profit: today?.profit ?? 0,
+    totalCost: today?.totalCost ?? 0,
+    costPerKm: today && today.kmDriven > 0 ? today.totalCost / today.kmDriven : 0,
+    minIdealKm,
+    goalDaily: goals.daily,
+    goalProgress: goals.daily > 0 && today ? Math.min(100, (today.profit / goals.daily) * 100) : 0,
+  });
+
+  // Smart greeting (1x per screen) — objective overrides default greeting when set
+  const defaultGreeting = !today
     ? `Bora começar, ${displayName}`
     : today.profit > 0
     ? `Boa, ${displayName} 👊 você já está no lucro hoje`
     : today.profit < 0
     ? `Atenção, ${displayName} — ajuste suas corridas hoje`
     : `Bora começar, ${displayName}`;
+  const greeting = objConfig?.message ?? defaultGreeting;
 
   const greetingTone: 'profit' | 'loss' | 'neutral' =
     today && today.profit > 0 ? 'profit' : today && today.profit < 0 ? 'loss' : 'neutral';
