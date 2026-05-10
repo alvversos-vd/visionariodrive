@@ -11,8 +11,9 @@ import {
   shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle } from 'lucide-react';
 import ShiftMode from './ShiftMode';
+import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 interface Props {
   refresh: number;
