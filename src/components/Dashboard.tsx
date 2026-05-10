@@ -193,6 +193,29 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </div>
       ) : (
         <>
+      {/* Destaque do objetivo (do onboarding) — borda sutil, sem mudar layout */}
+      {objConfig && (
+        <div
+          className={`rounded-lg p-3 border flex items-center gap-3 ${
+            objConfig.tone === 'profit'
+              ? 'border-profit/40 bg-profit/5'
+              : objConfig.tone === 'loss'
+              ? 'border-loss/40 bg-loss/5'
+              : 'border-primary/30 bg-primary/5'
+          }`}
+        >
+          {objConfig.alert ? (
+            <AlertTriangle size={16} className="text-loss shrink-0" />
+          ) : (
+            <Target size={16} className="text-primary shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-display font-semibold text-foreground leading-snug">
+              {objConfig.alert ?? objConfig.highlightHint ?? 'Foco do dia'}
+            </p>
+          </div>
+        </div>
+      )}
       <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
         <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
         <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
