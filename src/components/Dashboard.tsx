@@ -130,35 +130,16 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     setFocusMode(next);
   };
 
-  // Realtime feedback when profit / minIdealKm change
+  // Realtime feedback when profit / minIdealKm change (silencioso — alerta único na tela cuida do resto)
   const prevProfit = useRef<number | null>(null);
-  const prevMin = useRef<number | null>(null);
   useEffect(() => {
-    const p = today?.profit ?? null;
-    const prev = prevProfit.current;
-    if (prev !== null && p !== null && Math.abs(p - prev) >= 0.5) {
-      if (p > prev) toast.success('Boa decisão — você aumentou seu lucro');
-      else toast('Cuidado — isso reduziu seu lucro', { icon: '⚠️' });
-    }
-    prevProfit.current = p;
+    prevProfit.current = today?.profit ?? null;
   }, [today?.profit]);
 
-  useEffect(() => {
-    const m = minIdealKm || 0;
-    const prev = prevMin.current;
-    if (prev !== null && m > prev + 0.01) {
-      toast('Seu mínimo ideal aumentou', { icon: '📈' });
-    }
-    prevMin.current = m;
-  }, [minIdealKm]);
-
-  // Micro-wins + return reminder (run once per mount)
+  // Micro-wins + return reminder (run once per mount) — sem alertas redundantes
   useEffect(() => {
     const days = daysSinceLastOpen();
     markOpenedToday();
-    if (days !== null && days >= 1) {
-      toast('Você pode estar aceitando corridas sem saber o lucro', { icon: '👀' });
-    }
     if (today && today.profit > 0 && shouldCelebrateFirstProfit()) {
       markFirstProfitCelebrated();
       toast.success('Primeiro dia no lucro 👊');
