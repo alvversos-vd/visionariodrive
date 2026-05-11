@@ -88,6 +88,27 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     goalProgress: goals.daily > 0 && today ? Math.min(100, (today.profit / goals.daily) * 100) : 0,
   });
 
+  // ÚNICO alerta inteligente da tela (prioridade: prejuízo > custo alto > média baixa)
+  type TopAlert = { tone: 'loss' | 'warn' | 'info'; title: string; hint?: string };
+  let topAlert: TopAlert | null = null;
+  if (today) {
+    const avgPerKm = today.kmDriven > 0 ? today.totalEarnings / today.kmDriven : 0;
+    if (today.profit < 0) {
+      topAlert = { tone: 'loss', title: 'Lucro negativo hoje', hint: 'Revise corridas abaixo do mínimo ideal' };
+    } else if (costPerKm > 0 && minIdealKm > 0 && costPerKm > minIdealKm * 0.7) {
+      topAlert = { tone: 'warn', title: 'Custo por km elevado', hint: `Hoje: ${fmt(costPerKm)}/km` };
+    } else if (avgPerKm > 0 && minIdealKm > 0 && avgPerKm < minIdealKm) {
+      topAlert = { tone: 'warn', title: 'Média por km abaixo do ideal', hint: `Aceite acima de ${fmt(minIdealKm)}/km` };
+    }
+  }
+  // Se não há alerta crítico, usar o destaque do objetivo (mesmo slot)
+  if (!topAlert && objConfig) {
+    topAlert = {
+      tone: objConfig.tone === 'loss' ? 'loss' : objConfig.tone === 'profit' ? 'info' : 'info',
+      title: objConfig.alert ?? objConfig.highlightHint ?? 'Foco do dia',
+    };
+  }
+
   // Smart greeting (1x per screen) — objective overrides default greeting when set
   const defaultGreeting = !today
     ? `Bora começar, ${displayName}`
