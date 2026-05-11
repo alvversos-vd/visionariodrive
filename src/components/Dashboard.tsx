@@ -214,178 +214,212 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </div>
       ) : (
         <>
-      {/* Destaque do objetivo (do onboarding) — borda sutil, sem mudar layout */}
-      {objConfig && (
+      {/* ALERTA ÚNICO da tela (substitui destaque + alertas dispersos) */}
+      {topAlert && (
         <div
           className={`rounded-lg p-3 border flex items-center gap-3 ${
-            objConfig.tone === 'profit'
-              ? 'border-profit/40 bg-profit/5'
-              : objConfig.tone === 'loss'
-              ? 'border-loss/40 bg-loss/5'
+            topAlert.tone === 'loss'
+              ? 'border-loss/50 bg-loss/10'
+              : topAlert.tone === 'warn'
+              ? 'border-accent/50 bg-accent/10'
               : 'border-primary/30 bg-primary/5'
           }`}
         >
-          {objConfig.alert ? (
-            <AlertTriangle size={16} className="text-loss shrink-0" />
+          {topAlert.tone === 'loss' || topAlert.tone === 'warn' ? (
+            <AlertTriangle size={16} className={topAlert.tone === 'loss' ? 'text-loss shrink-0' : 'text-accent shrink-0'} />
           ) : (
             <Target size={16} className="text-primary shrink-0" />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-display font-semibold text-foreground leading-snug">
-              {objConfig.alert ?? objConfig.highlightHint ?? 'Foco do dia'}
-            </p>
+            <p className="text-xs font-display font-semibold text-foreground leading-snug">{topAlert.title}</p>
+            {topAlert.hint && <p className="text-[11px] text-muted-foreground leading-snug">{topAlert.hint}</p>}
           </div>
         </div>
       )}
-      <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
-        <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
-        <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
-        <p className={`text-4xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
-          {today ? fmt(today.profit) : 'R$ 0,00'}
-        </p>
-        <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
-      </div>
 
-      {/* Soft PRO trigger embaixo do lucro */}
-      {!isPro && today && (
-        <button
-          onClick={onGoToUpgrade}
-          className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
-        >
-          <p className="text-xs text-muted-foreground leading-snug">
-            {today.profit > 0
-              ? 'Você está no lucro… mas pode melhorar ainda mais'
-              : today.profit < 0
-              ? 'Seus custos podem estar te prejudicando'
-              : 'Você pode estar deixando dinheiro na mesa'}
-          </p>
-          <span className="text-xs font-display font-semibold text-primary flex items-center gap-1 shrink-0">
-            Ver como melhorar <ArrowRight size={12} />
-          </span>
-        </button>
-      )}
-
-      <div className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
-        <Compass size={16} className="text-primary shrink-0" />
-        <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
-      </div>
-
-      {/* Today metrics */}
-      {today ? (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-xs text-muted-foreground">💰 Ganhos</p>
-              <p className="text-lg font-display font-bold text-foreground">{fmt(today.totalEarnings)}</p>
-            </div>
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-xs text-muted-foreground">💸 Custo total</p>
-              <p className="text-lg font-display font-bold text-foreground">{fmt(today.totalCost)}</p>
-            </div>
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-xs text-muted-foreground">🚗 Km rodados</p>
-              <p className="text-lg font-display font-bold text-foreground">{today.kmDriven.toFixed(0)} km</p>
-            </div>
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-xs text-muted-foreground">⚙️ Custo por km</p>
-              <p className="text-lg font-display font-bold text-foreground">{fmt(costPerKm)}</p>
-            </div>
-          </div>
-
-          <div className="bg-card rounded-lg p-4 border shadow-sm">
-            <p className="text-xs text-muted-foreground">🎯 Mínimo ideal por km</p>
-            <p className="text-2xl font-display font-bold text-primary">{fmt(minIdealKm)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Margem: {((settings.profitMargin - 1) * 100).toFixed(0)}%
+      {(() => {
+        // ===== Seções reordenáveis conforme objetivo do onboarding =====
+        const sectionHero = (
+          <div key="hero" className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
+            <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
+            <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
+            <p className={`text-4xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
+              {today ? fmt(today.profit) : 'R$ 0,00'}
             </p>
+            <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
           </div>
+        );
 
-          {expensesToday > 0 && (
-            <div className="bg-loss/10 border border-loss/30 rounded-lg p-4 space-y-2">
-              <div>
-                <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
-                <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
-                <p className="text-xs text-muted-foreground">Já incluídos no custo total e no lucro do dia</p>
-              </div>
-              <div className="space-y-1 pt-1">
-                {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
-                  const pct = (expensesByCat[c].total / expensesToday) * 100;
-                  return (
-                    <div key={c}>
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-foreground">{c}</span>
-                        <span className="font-semibold text-foreground">
-                          {fmt(expensesByCat[c].total)}
-                          <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
-                        </span>
-                      </div>
-                      <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden">
-                        <div className="h-full bg-loss rounded-full" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        const sectionUpgrade = !isPro && today ? (
+          <button
+            key="upgrade"
+            onClick={onGoToUpgrade}
+            className="w-full text-left rounded-lg p-3 bg-secondary/40 border border-border hover:border-primary/50 transition-colors flex items-center justify-between gap-3"
+          >
+            <p className="text-xs text-muted-foreground leading-snug">
+              {today.profit > 0
+                ? 'Você está no lucro… mas pode melhorar ainda mais'
+                : today.profit < 0
+                ? 'Seus custos podem estar te prejudicando'
+                : 'Você pode estar deixando dinheiro na mesa'}
+            </p>
+            <span className="text-xs font-display font-semibold text-primary flex items-center gap-1 shrink-0">
+              Ver como melhorar <ArrowRight size={12} />
+            </span>
+          </button>
+        ) : null;
 
-          {/* Previsão do dia */}
-          {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-xs text-muted-foreground">🔮 Previsão para {settings.estimatedHours}h</p>
-              <p className="text-2xl font-display font-bold text-accent">
-                {fmt((today.totalEarnings / today.hoursWorked) * settings.estimatedHours)}
+        const sectionMinKm = (
+          <div key="minkm" className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
+            <Compass size={16} className="text-primary shrink-0" />
+            <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
+          </div>
+        );
+
+        const sectionMeta = goals.daily > 0 ? (
+          <button
+            key="meta"
+            onClick={onGoToGoals}
+            className={`w-full rounded-lg p-4 border shadow-sm text-left transition-colors ${
+              objective === 'bater_metas'
+                ? 'bg-primary/5 border-primary/40 hover:bg-primary/10'
+                : 'bg-card hover:bg-secondary/40'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-display font-semibold text-foreground flex items-center gap-1.5">
+                <Target size={14} /> Meta diária: {fmt(goals.daily)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Baseado no ritmo atual ({fmt(today.totalEarnings / today.hoursWorked)}/h)
-              </p>
+              <p className="text-xs text-muted-foreground">{goalProgress.toFixed(0)}%</p>
             </div>
-          )}
-
-          {/* Goal progress */}
-          {goals.daily > 0 && (
-            <button
-              onClick={onGoToGoals}
-              className="w-full bg-card rounded-lg p-4 border shadow-sm text-left hover:bg-secondary/40 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-display font-semibold text-foreground flex items-center gap-1.5">
-                  <Target size={14} /> Meta diária: {fmt(goals.daily)}
-                </p>
-                <p className="text-xs text-muted-foreground">{goalProgress.toFixed(0)}%</p>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    today.profit >= goals.daily ? 'bg-profit' : 'bg-primary'
-                  }`}
-                  style={{ width: `${goalProgress}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between mt-2 text-xs">
-                <span className="text-muted-foreground">
-                  Lucro hoje: <span className="font-semibold text-foreground">{fmt(Math.max(0, today.profit))}</span>
+            <div className={`w-full bg-secondary rounded-full overflow-hidden ${objective === 'bater_metas' ? 'h-3' : 'h-2.5'}`}>
+              <div
+                className={`h-full rounded-full transition-all ${
+                  today && today.profit >= goals.daily ? 'bg-profit' : 'bg-primary'
+                }`}
+                style={{ width: `${goalProgress}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-2 text-xs">
+              <span className="text-muted-foreground">
+                Lucro hoje: <span className="font-semibold text-foreground">{fmt(Math.max(0, today?.profit ?? 0))}</span>
+              </span>
+              {today && today.profit >= goals.daily ? (
+                <span className="font-display font-bold text-profit">✓ Meta batida! +{fmt(today.profit - goals.daily)}</span>
+              ) : (
+                <span className="font-display font-bold text-primary">
+                  Faltam {fmt(goals.daily - Math.max(0, today?.profit ?? 0))}
                 </span>
-                {today.profit >= goals.daily ? (
-                  <span className="font-display font-bold text-profit">✓ Meta batida! +{fmt(today.profit - goals.daily)}</span>
-                ) : (
-                  <span className="font-display font-bold text-primary">
-                    Faltam {fmt(goals.daily - Math.max(0, today.profit))}
-                  </span>
-                )}
+              )}
+            </div>
+          </button>
+        ) : null;
+
+        const sectionMetrics = today ? (
+          <div key="metrics" className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-card rounded-lg p-4 border shadow-sm">
+                <p className="text-xs text-muted-foreground">💰 Ganhos</p>
+                <p className="text-lg font-display font-bold text-foreground">{fmt(today.totalEarnings)}</p>
               </div>
-            </button>
-          )}
-        </>
-      ) : (
-        <button
-          onClick={onGoToInput}
-          className="w-full bg-card rounded-lg p-6 border-2 border-dashed border-border text-center hover:border-primary transition-colors"
-        >
-          <p className="text-sm text-muted-foreground mb-1">Nenhum cálculo registrado hoje</p>
-          <p className="font-display font-bold text-primary">+ Fazer cálculo do dia</p>
-        </button>
-      )}
+              <div className={`rounded-lg p-4 border shadow-sm ${objective === 'controlar_gastos' ? 'bg-loss/5 border-loss/30' : 'bg-card'}`}>
+                <p className="text-xs text-muted-foreground">💸 Custo total</p>
+                <p className={`text-lg font-display font-bold ${objective === 'controlar_gastos' ? 'text-loss' : 'text-foreground'}`}>{fmt(today.totalCost)}</p>
+              </div>
+              <div className="bg-card rounded-lg p-4 border shadow-sm">
+                <p className="text-xs text-muted-foreground">🚗 Km rodados</p>
+                <p className="text-lg font-display font-bold text-foreground">{today.kmDriven.toFixed(0)} km</p>
+              </div>
+              <div className={`rounded-lg p-4 border shadow-sm ${objective === 'controlar_gastos' ? 'bg-loss/5 border-loss/30' : 'bg-card'}`}>
+                <p className="text-xs text-muted-foreground">⚙️ Custo por km</p>
+                <p className={`text-lg font-display font-bold ${objective === 'controlar_gastos' ? 'text-loss' : 'text-foreground'}`}>{fmt(costPerKm)}</p>
+              </div>
+            </div>
+
+            <div className={`rounded-lg p-4 border shadow-sm ${objective === 'evitar_prejuizo' ? 'bg-primary/5 border-primary/40' : 'bg-card'}`}>
+              <p className="text-xs text-muted-foreground">🎯 Mínimo ideal por km</p>
+              <p className="text-2xl font-display font-bold text-primary">{fmt(minIdealKm)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Margem: {((settings.profitMargin - 1) * 100).toFixed(0)}%
+              </p>
+            </div>
+
+            {expensesToday > 0 && (
+              <div className="bg-loss/10 border border-loss/30 rounded-lg p-4 space-y-2">
+                <div>
+                  <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
+                  <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
+                  <p className="text-xs text-muted-foreground">Já incluídos no custo total e no lucro do dia</p>
+                </div>
+                <div className="space-y-1 pt-1">
+                  {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
+                    const pct = (expensesByCat[c].total / expensesToday) * 100;
+                    return (
+                      <div key={c}>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-foreground">{c}</span>
+                          <span className="font-semibold text-foreground">
+                            {fmt(expensesByCat[c].total)}
+                            <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                          </span>
+                        </div>
+                        <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden">
+                          <div className="h-full bg-loss rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
+              <div className="bg-card rounded-lg p-4 border shadow-sm">
+                <p className="text-xs text-muted-foreground">🔮 Previsão para {settings.estimatedHours}h</p>
+                <p className="text-2xl font-display font-bold text-accent">
+                  {fmt((today.totalEarnings / today.hoursWorked) * settings.estimatedHours)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Baseado no ritmo atual ({fmt(today.totalEarnings / today.hoursWorked)}/h)
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            key="metrics-empty"
+            onClick={onGoToInput}
+            className="w-full bg-card rounded-lg p-6 border-2 border-dashed border-border text-center hover:border-primary transition-colors"
+          >
+            <p className="text-sm text-muted-foreground mb-1">Nenhum cálculo registrado hoje</p>
+            <p className="font-display font-bold text-primary">+ Fazer cálculo do dia</p>
+          </button>
+        );
+
+        // Ordem dos blocos (lucro primeiro sempre — é a hierarquia visual #1)
+        const orderMap: Record<Objective, string[]> = {
+          ganhar_mais:      ['hero', 'meta', 'minkm', 'metrics'],
+          controlar_gastos: ['hero', 'metrics', 'minkm', 'meta'],
+          evitar_prejuizo:  ['hero', 'minkm', 'metrics', 'meta'],
+          bater_metas:      ['hero', 'meta', 'minkm', 'metrics'],
+          organizar_ganhos: ['hero', 'metrics', 'meta', 'minkm'],
+        };
+        const order = (objective && orderMap[objective]) || ['hero', 'minkm', 'metrics', 'meta'];
+
+        const sectionMap: Record<string, React.ReactNode> = {
+          hero: sectionHero,
+          minkm: sectionMinKm,
+          meta: sectionMeta,
+          metrics: sectionMetrics,
+        };
+
+        return (
+          <>
+            {order.map(k => sectionMap[k]).filter(Boolean)}
+            {sectionUpgrade}
+          </>
+        );
+      })()}
 
       {/* Performance highlights */}
       {entries.length > 0 && (
