@@ -105,6 +105,48 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
             <span className="text-muted-foreground">Cadastro</span>
             <span className="font-medium">{created}</span>
           </div>
+
+          <div className="space-y-1.5 pt-2">
+            <Label className="text-muted-foreground text-xs">Objetivo principal</Label>
+            <p className="text-[11px] text-muted-foreground">Personaliza o destaque e a ordem dos cards do painel.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: 'ganhar_mais', label: '💰 Ganhar mais' },
+                { key: 'controlar_gastos', label: '🧮 Controlar gastos' },
+                { key: 'evitar_prejuizo', label: '🛡️ Evitar prejuízo' },
+                { key: 'bater_metas', label: '🎯 Bater metas' },
+                { key: 'organizar_ganhos', label: '📊 Organizar ganhos' },
+              ] as const).map(opt => {
+                const active = profile?.objetivo_principal === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={async () => {
+                      if (!user || active) return;
+                      const { error } = await supabase
+                        .from('profiles')
+                        .update({ objetivo_principal: opt.key })
+                        .eq('user_id', user.id);
+                      if (error) {
+                        toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+                        return;
+                      }
+                      await refreshProfile();
+                      toast({ title: 'Objetivo atualizado', description: 'Painel personalizado.' });
+                    }}
+                    className={`text-xs font-display font-semibold rounded-md border px-2 py-2 text-left transition-colors ${
+                      active
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2 pt-2 border-t">
