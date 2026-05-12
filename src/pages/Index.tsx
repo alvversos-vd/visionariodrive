@@ -137,6 +137,7 @@ export default function Index() {
 
         {renderContent()}
       </main>
+      <RegisterRideFab onChange={triggerRefresh} />
     </div>
   );
 }
