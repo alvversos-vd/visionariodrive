@@ -152,26 +152,74 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const saudacaoHora = (() => {
+    const h = new Date().getHours();
+    if (h < 6) return 'Boa madrugada';
+    if (h < 12) return 'Bom dia';
+    if (h < 18) return 'Boa tarde';
+    return 'Boa noite';
+  })();
+  const heroSubtext = today
+    ? today.profit > 0
+      ? `Hoje você já fez ${fmt(today.profit)} líquidos`
+      : today.profit < 0
+      ? `Atenção: lucro negativo hoje`
+      : `Comece bem o dia, ${displayName}`
+    : `Bora começar, ${displayName}`;
+
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="px-1 flex items-center justify-between gap-3">
-        <h1 className={`font-display text-base font-bold leading-snug ${
-          greetingTone === 'profit' ? 'text-profit' :
-          greetingTone === 'loss' ? 'text-loss' :
-          'text-foreground'
-        }`}>
-          {greeting}
-        </h1>
+      {/* HEADER humano */}
+      <div className="px-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">👋 {saudacaoHora}, <span className="text-foreground font-display font-semibold">{displayName}</span></p>
+          <p className="text-[13px] text-muted-foreground/90 mt-0.5 leading-snug">{heroSubtext}</p>
+        </div>
         <button
           onClick={toggleFocus}
-          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-display font-semibold border transition-colors ${
-            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-display font-semibold border transition-colors ${
+            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary/60 text-muted-foreground border-border hover:text-foreground'
           }`}
           aria-pressed={focus}
           aria-label="Modo foco"
         >
-          <Focus size={13} /> {focus ? 'Modo foco ativo' : 'Modo foco'}
+          <Focus size={12} /> {focus ? 'Foco ativo' : 'Foco'}
         </button>
+      </div>
+
+      {/* HERO PREMIUM — Lucro real (prioridade #1) */}
+      <div className="relative rounded-2xl p-6 bg-hero border border-border/60 shadow-premium overflow-hidden">
+        <div className={`absolute inset-x-0 top-0 h-1 ${today && today.profit < 0 ? 'bg-loss-gradient' : 'bg-profit-gradient'}`} />
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
+        <p className={`text-5xl font-display font-bold mt-1 number-tabular ${
+          today && today.profit < 0 ? 'text-loss' : today && today.profit > 0 ? 'text-profit' : 'text-foreground'
+        }`}>
+          {today ? fmt(today.profit) : 'R$ 0,00'}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
+          {goals.daily > 0 && (
+            <span className="flex items-center gap-1.5">
+              <Target size={12} className="text-primary" />
+              Meta: <span className="text-foreground font-display font-semibold">{fmt(goals.daily)}</span>
+            </span>
+          )}
+          {goals.daily > 0 && today && today.profit < goals.daily && (
+            <span className="flex items-center gap-1.5">
+              ⚡ Faltam <span className="text-foreground font-display font-semibold">{fmt(goals.daily - Math.max(0, today.profit))}</span>
+            </span>
+          )}
+          {goals.daily > 0 && today && today.profit >= goals.daily && (
+            <span className="text-profit font-display font-semibold">✓ Meta batida</span>
+          )}
+        </div>
+        {goals.daily > 0 && (
+          <div className="mt-3 h-1.5 bg-secondary/60 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${today && today.profit >= goals.daily ? 'bg-profit-gradient' : 'bg-info-gradient'}`}
+              style={{ width: `${goalProgress}%` }}
+            />
+          </div>
+        )}
       </div>
 
       <ShiftMode />
