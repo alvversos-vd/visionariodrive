@@ -160,9 +160,9 @@ export default function ShiftMode({ onChange }: Props) {
       <>
         <button
           onClick={openPicker}
-          className="w-full rounded-xl p-4 bg-profit hover:bg-profit/90 text-primary-foreground font-display font-bold text-base flex items-center justify-center gap-2 shadow-md transition-colors"
+          className="w-full rounded-2xl p-5 bg-info-gradient text-info-foreground font-display font-bold text-base flex items-center justify-center gap-2.5 shadow-premium active:scale-[0.99] transition-transform"
         >
-          <Play size={18} /> Iniciar turno
+          <Play size={20} fill="currentColor" /> Iniciar turno
         </button>
 
         {pickerOpen && (
@@ -268,31 +268,38 @@ export default function ShiftMode({ onChange }: Props) {
   const veh = getVehicleById(shift.veiculo_id);
   return (
     <>
-      <div className={`rounded-xl p-4 border-2 space-y-3 ${lucroOk ? 'border-profit/50 bg-profit/5' : 'border-loss/50 bg-loss/5'}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Turno · {formatOperationalDate(shift.data_operacional)}</p>
-            <p className={`text-3xl font-display font-bold ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
-            <p className="text-xs text-muted-foreground">Lucro parcial</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+      <div className={`relative rounded-2xl p-5 border-2 space-y-4 overflow-hidden ${lucroOk ? 'border-profit/40 bg-profit/5' : 'border-loss/50 bg-loss/5'} shadow-premium`}>
+        <div className={`absolute inset-x-0 top-0 h-1 ${lucroOk ? 'bg-profit-gradient' : 'bg-loss-gradient'}`} />
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className={`relative flex h-2 w-2 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
+                <span className={`absolute inline-flex h-full w-full rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'} opacity-60 animate-pulse-dot`} />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'}`} />
+              </span>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno ativo · {formatOperationalDate(shift.data_operacional)}</p>
+            </div>
+            <p className={`text-3xl font-display font-bold mt-1 number-tabular ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
+            <p className="text-[11px] text-muted-foreground">Lucro parcial em tempo real</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
               {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} ${veh.nome_veiculo}` : 'Sem veículo'}
               {shift.app_utilizado && ` · ${shift.app_utilizado}`}
             </p>
           </div>
-          <button onClick={handleEnd} className="px-3 py-2 rounded-lg bg-loss text-primary-foreground font-display font-semibold text-xs flex items-center gap-1.5">
-            <Square size={14} /> Finalizar
+          <button onClick={handleEnd} className="px-3 py-2 rounded-xl bg-loss/90 hover:bg-loss text-primary-foreground font-display font-semibold text-xs flex items-center gap-1.5 transition-colors">
+            <Square size={14} fill="currentColor" /> Finalizar
           </button>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-card rounded p-2 border"><Clock size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Online</p><p className="font-display font-bold text-xs">{formatTempo(t.tempo_online_minutos)}</p></div>
-          <div className="bg-card rounded p-2 border"><Wallet size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Ganho</p><p className="font-display font-bold text-xs">{fmt(t.ganho_total)}</p></div>
-          <div className="bg-card rounded p-2 border"><Navigation size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Km</p><p className="font-display font-bold text-xs">{t.km_total.toFixed(0)}</p></div>
-          <div className="bg-card rounded p-2 border"><p className="text-[10px] text-muted-foreground mt-2.5">Corridas</p><p className="font-display font-bold text-xs">{t.corridas_total}</p></div>
+          <div className="bg-card/70 rounded-xl p-2 border border-border/60"><Clock size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Online</p><p className="font-display font-bold text-xs number-tabular">{formatTempo(t.tempo_online_minutos)}</p></div>
+          <div className="bg-card/70 rounded-xl p-2 border border-border/60"><Wallet size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Ganho</p><p className="font-display font-bold text-xs number-tabular">{fmt(t.ganho_total)}</p></div>
+          <div className="bg-card/70 rounded-xl p-2 border border-border/60"><Navigation size={12} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground">Km</p><p className="font-display font-bold text-xs number-tabular">{t.km_total.toFixed(0)}</p></div>
+          <div className="bg-card/70 rounded-xl p-2 border border-border/60"><p className="text-[10px] text-muted-foreground mt-2.5">Corridas</p><p className="font-display font-bold text-xs number-tabular">{t.corridas_total}</p></div>
         </div>
         <p className={`text-xs text-center font-display ${lucroOk ? 'text-profit' : 'text-loss'}`}>
-          {t.corridas_total === 0 ? 'Registre sua primeira corrida' : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
+          {t.corridas_total === 0 ? 'Toque no + para registrar sua primeira corrida' : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
         </p>
-        <button onClick={() => setRideOpen(true)} className="w-full rounded-lg p-3 bg-primary text-primary-foreground font-display font-bold flex items-center justify-center gap-2">
+        <button onClick={() => setRideOpen(true)} className="w-full rounded-xl p-3 bg-primary text-primary-foreground font-display font-bold flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
           <Plus size={18} /> Registrar corrida
         </button>
 

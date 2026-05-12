@@ -152,41 +152,83 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const saudacaoHora = (() => {
+    const h = new Date().getHours();
+    if (h < 6) return 'Boa madrugada';
+    if (h < 12) return 'Bom dia';
+    if (h < 18) return 'Boa tarde';
+    return 'Boa noite';
+  })();
+  const heroSubtext = today
+    ? today.profit > 0
+      ? `Hoje você já fez ${fmt(today.profit)} líquidos`
+      : today.profit < 0
+      ? `Atenção: lucro negativo hoje`
+      : `Comece bem o dia, ${displayName}`
+    : `Bora começar, ${displayName}`;
+
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="px-1 flex items-center justify-between gap-3">
-        <h1 className={`font-display text-base font-bold leading-snug ${
-          greetingTone === 'profit' ? 'text-profit' :
-          greetingTone === 'loss' ? 'text-loss' :
-          'text-foreground'
-        }`}>
-          {greeting}
-        </h1>
+      {/* HEADER humano */}
+      <div className="px-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">👋 {saudacaoHora}, <span className="text-foreground font-display font-semibold">{displayName}</span></p>
+          <p className="text-[13px] text-muted-foreground/90 mt-0.5 leading-snug">{heroSubtext}</p>
+        </div>
         <button
           onClick={toggleFocus}
-          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-display font-semibold border transition-colors ${
-            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-display font-semibold border transition-colors ${
+            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary/60 text-muted-foreground border-border hover:text-foreground'
           }`}
           aria-pressed={focus}
           aria-label="Modo foco"
         >
-          <Focus size={13} /> {focus ? 'Modo foco ativo' : 'Modo foco'}
+          <Focus size={12} /> {focus ? 'Foco ativo' : 'Foco'}
         </button>
+      </div>
+
+      {/* HERO PREMIUM — Lucro real (prioridade #1) */}
+      <div className="relative rounded-2xl p-6 bg-hero border border-border/60 shadow-premium overflow-hidden">
+        <div className={`absolute inset-x-0 top-0 h-1 ${today && today.profit < 0 ? 'bg-loss-gradient' : 'bg-profit-gradient'}`} />
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
+        <p className={`text-5xl font-display font-bold mt-1 number-tabular ${
+          today && today.profit < 0 ? 'text-loss' : today && today.profit > 0 ? 'text-profit' : 'text-foreground'
+        }`}>
+          {today ? fmt(today.profit) : 'R$ 0,00'}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
+          {goals.daily > 0 && (
+            <span className="flex items-center gap-1.5">
+              <Target size={12} className="text-primary" />
+              Meta: <span className="text-foreground font-display font-semibold">{fmt(goals.daily)}</span>
+            </span>
+          )}
+          {goals.daily > 0 && today && today.profit < goals.daily && (
+            <span className="flex items-center gap-1.5">
+              ⚡ Faltam <span className="text-foreground font-display font-semibold">{fmt(goals.daily - Math.max(0, today.profit))}</span>
+            </span>
+          )}
+          {goals.daily > 0 && today && today.profit >= goals.daily && (
+            <span className="text-profit font-display font-semibold">✓ Meta batida</span>
+          )}
+        </div>
+        {goals.daily > 0 && (
+          <div className="mt-3 h-1.5 bg-secondary/60 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${today && today.profit >= goals.daily ? 'bg-profit-gradient' : 'bg-info-gradient'}`}
+              style={{ width: `${goalProgress}%` }}
+            />
+          </div>
+        )}
       </div>
 
       <ShiftMode />
 
       {focus ? (
         <div className="space-y-3">
-          <div className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
-            <p className="text-xs text-primary-foreground/80 uppercase tracking-wider">Lucro real hoje</p>
-            <p className={`text-5xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
-              {today ? fmt(today.profit) : 'R$ 0,00'}
-            </p>
-          </div>
-          <div className="bg-card rounded-lg p-5 border shadow-sm text-center">
+          <div className="rounded-2xl p-5 bg-card border border-primary/30 shadow-glow text-center">
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5"><Compass size={12}/> Mínimo ideal por km</p>
-            <p className="text-3xl font-display font-bold text-primary mt-1">{fmt(minIdealKm)}</p>
+            <p className="text-4xl font-display font-bold text-primary mt-1 number-tabular">{fmt(minIdealKm)}</p>
             <p className="text-xs text-muted-foreground mt-2">Aceite corridas acima de {fmt(minIdealKm)}/km</p>
           </div>
           <p className="text-center text-sm text-muted-foreground italic">
@@ -195,10 +237,10 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </div>
       ) : (
         <>
-      {/* ALERTA ÚNICO da tela (substitui destaque + alertas dispersos) */}
+      {/* ALERTA ÚNICO da tela */}
       {topAlert && (
         <div
-          className={`rounded-lg p-3 border flex items-center gap-3 ${
+          className={`rounded-xl p-3 border flex items-center gap-3 ${
             topAlert.tone === 'loss'
               ? 'border-loss/50 bg-loss/10'
               : topAlert.tone === 'warn'
@@ -219,17 +261,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       )}
 
       {(() => {
-        // ===== Seções reordenáveis conforme objetivo do onboarding =====
-        const sectionHero = (
-          <div key="hero" className={`rounded-xl p-6 text-center shadow-lg ${statusConfig[status].bg}`}>
-            <p className="text-3xl mb-1">{statusConfig[status].emoji}</p>
-            <p className="text-sm font-medium text-primary-foreground/90">{statusConfig[status].label}</p>
-            <p className={`text-4xl font-display font-bold mt-2 ${today && today.profit < 0 ? 'text-loss-foreground' : 'text-primary-foreground'}`}>
-              {today ? fmt(today.profit) : 'R$ 0,00'}
-            </p>
-            <p className="text-xs text-primary-foreground/80 mt-1">Lucro real de hoje</p>
-          </div>
-        );
+        // ===== Seções reordenáveis conforme objetivo (hero já está no topo) =====
 
         const sectionUpgrade = !isPro && today ? (
           <button
@@ -377,18 +409,17 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </button>
         );
 
-        // Ordem dos blocos (lucro primeiro sempre — é a hierarquia visual #1)
+        // Ordem dos blocos (hero já está fixo no topo da tela)
         const orderMap: Record<Objective, string[]> = {
-          ganhar_mais:      ['hero', 'meta', 'minkm', 'metrics'],
-          controlar_gastos: ['hero', 'metrics', 'minkm', 'meta'],
-          evitar_prejuizo:  ['hero', 'minkm', 'metrics', 'meta'],
-          bater_metas:      ['hero', 'meta', 'minkm', 'metrics'],
-          organizar_ganhos: ['hero', 'metrics', 'meta', 'minkm'],
+          ganhar_mais:      ['meta', 'minkm', 'metrics'],
+          controlar_gastos: ['metrics', 'minkm', 'meta'],
+          evitar_prejuizo:  ['minkm', 'metrics', 'meta'],
+          bater_metas:      ['meta', 'minkm', 'metrics'],
+          organizar_ganhos: ['metrics', 'meta', 'minkm'],
         };
-        const order = (objective && orderMap[objective]) || ['hero', 'minkm', 'metrics', 'meta'];
+        const order = (objective && orderMap[objective]) || ['minkm', 'metrics', 'meta'];
 
         const sectionMap: Record<string, React.ReactNode> = {
-          hero: sectionHero,
           minkm: sectionMinKm,
           meta: sectionMeta,
           metrics: sectionMetrics,

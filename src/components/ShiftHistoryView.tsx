@@ -192,61 +192,82 @@ export default function ShiftHistoryView({ refresh }: Props) {
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-card border-2 border-dashed rounded-lg p-8 text-center">
+        <div className="bg-card border-2 border-dashed rounded-xl p-8 text-center">
           <p className="text-sm text-muted-foreground">Nenhum turno no filtro atual</p>
         </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(s => {
-            const t = computeTotals(s);
-            const result = classifyDay(t.lucro_total, meta);
-            const style = RESULT_STYLE[result];
-            const open = openId === s.turno_id;
-            const v = getVehicleById(s.veiculo_id);
-            return (
-              <div key={s.turno_id} className="bg-card border rounded-lg overflow-hidden">
-                <button onClick={() => setOpenId(open ? null : s.turno_id)} className="w-full p-3 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors">
-                  <div className={`w-1 self-stretch rounded ${style.bg}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-display font-bold text-sm">{formatOperationalDate(s.data_operacional)}</p>
-                      <span className={`text-[10px] font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
+      ) : (() => {
+        // Agrupamento visual por Hoje / Ontem / Esta semana / Este mês / Anteriores
+        const today = new Date(); today.setHours(0,0,0,0);
+        const groups: Record<string, Shift[]> = { Hoje: [], Ontem: [], 'Esta semana': [], 'Este mês': [], Anteriores: [] };
+        filtered.forEach(s => {
+          const [y,m,d] = s.data_operacional.split('-').map(Number);
+          const date = new Date(y, m-1, d);
+          const diff = Math.floor((today.getTime() - date.getTime()) / 86400000);
+          if (diff === 0) groups['Hoje'].push(s);
+          else if (diff === 1) groups['Ontem'].push(s);
+          else if (diff < 7) groups['Esta semana'].push(s);
+          else if (diff < 30) groups['Este mês'].push(s);
+          else groups['Anteriores'].push(s);
+        });
+        const order = ['Hoje','Ontem','Esta semana','Este mês','Anteriores'];
+        return (
+          <div className="space-y-4">
+            {order.filter(k => groups[k].length > 0).map(label => (
+              <div key={label} className="space-y-2">
+                <p className="text-[10px] uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground px-1">{label} · {groups[label].length}</p>
+                {groups[label].map(s => {
+                  const t = computeTotals(s);
+                  const result = classifyDay(t.lucro_total, meta);
+                  const style = RESULT_STYLE[result];
+                  const open = openId === s.turno_id;
+                  const v = getVehicleById(s.veiculo_id);
+                  return (
+                    <div key={s.turno_id} className="bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm">
+                      <button onClick={() => setOpenId(open ? null : s.turno_id)} className="w-full p-3 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors">
+                        <div className={`w-1 self-stretch rounded-full ${style.bg}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-display font-bold text-sm">{formatOperationalDate(s.data_operacional)}</p>
+                            <span className={`text-[10px] font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : 'Sem veículo'}
+                            {s.app_utilizado && ` · ${s.app_utilizado}`}
+                          </p>
+                          <div className="flex items-center justify-between gap-2 mt-0.5">
+                            <p className={`font-display font-bold number-tabular ${t.lucro_total >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
+                            <p className="text-xs text-muted-foreground number-tabular">{t.corridas_total} corr · {formatTempo(t.tempo_online_minutos)} · {t.km_total.toFixed(0)} km</p>
+                          </div>
+                        </div>
+                        {open ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                      </button>
+                      {open && (
+                        <div className="border-t p-3 space-y-2 bg-secondary/20">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Clock size={10}/> Início</p><p className="font-semibold">{new Date(s.inicio_turno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Clock size={10}/> Fim</p><p className="font-semibold">{s.fim_turno ? new Date(s.fim_turno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Wallet size={10}/> Ganho</p><p className="font-semibold number-tabular">{fmt(t.ganho_total)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Combustível</p><p className="font-semibold number-tabular">{fmt(t.custo_combustivel)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Custo fixo</p><p className="font-semibold number-tabular">{fmt(t.custo_fixo_rateado)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Custo total</p><p className="font-semibold number-tabular">{fmt(t.custo_total)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Navigation size={10}/> Km</p><p className="font-semibold number-tabular">{t.km_total.toFixed(1)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Online</p><p className="font-semibold">{formatTempo(t.tempo_online_minutos)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Média/km</p><p className="font-semibold number-tabular">{fmt(t.media_por_km)}</p></div>
+                            <div className="bg-card rounded-lg p-2 border"><p className="text-muted-foreground">Média/corrida</p><p className="font-semibold number-tabular">{fmt(t.media_por_corrida)}</p></div>
+                          </div>
+                          {meta > 0 && result === 'excelente' && (
+                            <p className="text-xs text-profit flex items-center gap-1"><Trophy size={12}/> Bateu a meta de {fmt(meta)}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : 'Sem veículo'}
-                      {s.app_utilizado && ` · ${s.app_utilizado}`}
-                    </p>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <p className={`font-display font-bold ${t.lucro_total >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
-                      <p className="text-xs text-muted-foreground">{t.corridas_total} corr · {formatTempo(t.tempo_online_minutos)}</p>
-                    </div>
-                  </div>
-                  {open ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                </button>
-                {open && (
-                  <div className="border-t p-3 space-y-2 bg-secondary/20">
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Clock size={10}/> Início</p><p className="font-semibold">{new Date(s.inicio_turno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Clock size={10}/> Fim</p><p className="font-semibold">{s.fim_turno ? new Date(s.fim_turno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Wallet size={10}/> Ganho</p><p className="font-semibold">{fmt(t.ganho_total)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Combustível</p><p className="font-semibold">{fmt(t.custo_combustivel)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Custo fixo</p><p className="font-semibold">{fmt(t.custo_fixo_rateado)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Custo total</p><p className="font-semibold">{fmt(t.custo_total)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground flex items-center gap-1"><Navigation size={10}/> Km</p><p className="font-semibold">{t.km_total.toFixed(1)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Online</p><p className="font-semibold">{formatTempo(t.tempo_online_minutos)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Média/km</p><p className="font-semibold">{fmt(t.media_por_km)}</p></div>
-                      <div className="bg-card rounded p-2 border"><p className="text-muted-foreground">Média/corrida</p><p className="font-semibold">{fmt(t.media_por_corrida)}</p></div>
-                    </div>
-                    {meta > 0 && result === 'excelente' && (
-                      <p className="text-xs text-profit flex items-center gap-1"><Trophy size={12}/> Bateu a meta de {fmt(meta)}</p>
-                    )}
-                  </div>
-                )}
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

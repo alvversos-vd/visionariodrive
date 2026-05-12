@@ -18,7 +18,7 @@ function FullScreenLoader({ label }: { label: string }) {
       <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-2xl shadow-lg animate-pulse">
         VD
       </div>
-      <p className="font-display text-lg font-bold text-foreground">Visionario Delivery Pro</p>
+      <p className="font-display text-lg font-bold text-foreground">Visionario Drive</p>
       <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Loader2 className="animate-spin" size={16} />
         <span>{label}</span>
