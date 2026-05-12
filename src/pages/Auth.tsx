@@ -26,7 +26,7 @@ export default function Auth() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    document.title = mode === 'login' ? 'Entrar · Visionario Delivery Pro' : 'Criar conta · Visionario Delivery Pro';
+    document.title = mode === 'login' ? 'Entrar · Visionario Drive' : 'Criar conta · Visionario Drive';
   }, [mode]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -72,7 +72,8 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="font-display">Visionario Delivery Pro</CardTitle>
+          <CardTitle className="font-display">Visionario Drive</CardTitle>
+          <p className="text-[11px] text-muted-foreground -mt-1">Lucro real • Decisão rápida • Controle</p>
           <CardDescription>
             {mode === 'login' ? 'Entre para ver seus dados.' : 'Crie sua conta gratuita.'}
           </CardDescription>
