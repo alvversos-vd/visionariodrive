@@ -14,6 +14,7 @@ import ProRequired from '@/components/ProRequired';
 import UpgradeView from '@/components/UpgradeView';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
+import RegisterRideFab from '@/components/RegisterRideFab';
 
 type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
@@ -89,23 +90,23 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="bg-card border-b px-4 pt-6 pb-4">
+      <header className="bg-hero border-b border-border/60 px-4 pt-6 pb-4 shadow-premium">
         <div className="container max-w-lg mx-auto flex items-center justify-between">
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">Visionario Delivery Pro</h1>
-            <p className="text-xs text-muted-foreground">Lucro real · Decisão rápida · Foco</p>
+            <h1 className="font-display text-xl font-bold text-foreground tracking-tight">Visionario Drive</h1>
+            <p className="text-[11px] text-muted-foreground">Lucro real • Decisão rápida • Controle</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setTab('profile')}
-              className={`p-2 rounded-lg transition-colors ${tab === 'profile' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+              className={`p-2 rounded-xl transition-colors ${tab === 'profile' ? 'bg-primary text-primary-foreground' : 'bg-secondary/70 text-foreground hover:bg-secondary'}`}
               aria-label="Perfil"
             >
               <User size={20} />
             </button>
             <button
               onClick={() => setTab('settings')}
-              className={`p-2 rounded-lg transition-colors ${tab === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground'}`}
+              className={`p-2 rounded-xl transition-colors ${tab === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-secondary/70 text-foreground hover:bg-secondary'}`}
               aria-label="Configurações"
             >
               <SettingsIcon size={20} />
