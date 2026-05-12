@@ -409,18 +409,17 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </button>
         );
 
-        // Ordem dos blocos (lucro primeiro sempre — é a hierarquia visual #1)
+        // Ordem dos blocos (hero já está fixo no topo da tela)
         const orderMap: Record<Objective, string[]> = {
-          ganhar_mais:      ['hero', 'meta', 'minkm', 'metrics'],
-          controlar_gastos: ['hero', 'metrics', 'minkm', 'meta'],
-          evitar_prejuizo:  ['hero', 'minkm', 'metrics', 'meta'],
-          bater_metas:      ['hero', 'meta', 'minkm', 'metrics'],
-          organizar_ganhos: ['hero', 'metrics', 'meta', 'minkm'],
+          ganhar_mais:      ['meta', 'minkm', 'metrics'],
+          controlar_gastos: ['metrics', 'minkm', 'meta'],
+          evitar_prejuizo:  ['minkm', 'metrics', 'meta'],
+          bater_metas:      ['meta', 'minkm', 'metrics'],
+          organizar_ganhos: ['metrics', 'meta', 'minkm'],
         };
-        const order = (objective && orderMap[objective]) || ['hero', 'minkm', 'metrics', 'meta'];
+        const order = (objective && orderMap[objective]) || ['minkm', 'metrics', 'meta'];
 
         const sectionMap: Record<string, React.ReactNode> = {
-          hero: sectionHero,
           minkm: sectionMinKm,
           meta: sectionMeta,
           metrics: sectionMetrics,
