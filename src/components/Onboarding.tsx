@@ -102,10 +102,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const displayName = profile?.nome_usuario?.trim() || '';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col px-4 py-6">
+    <div className="min-h-screen bg-hero flex flex-col px-4 py-6">
       <div className="container max-w-md mx-auto w-full flex-1 flex flex-col">
         {step !== 'welcome' && step !== 'done' && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] font-display font-semibold text-muted-foreground">
+              <span>Visionario Drive</span>
+              <span className="number-tabular">{idx} / {STEP_ORDER.length - 1}</span>
+            </div>
             <Progress value={progress} className="h-1.5" />
           </div>
         )}
