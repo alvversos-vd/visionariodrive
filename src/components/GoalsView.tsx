@@ -4,7 +4,7 @@ import { computeStats, Goals } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, EyeOff, Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
 
 interface Props {
   refresh: number;
@@ -43,13 +43,11 @@ export default function GoalsView({ refresh, onSaved }: Props) {
 
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
   const today = stats.todayEntry;
-  const todayEarnings = today?.totalEarnings ?? 0;
   const todayProfit = today?.profit ?? 0;
 
   const dailyProgress = goals.daily > 0 ? Math.min(100, (todayProfit / goals.daily) * 100) : 0;
   const weeklyProgress = goals.weekly > 0 ? Math.min(100, (stats.weekProfit / goals.weekly) * 100) : 0;
 
-  // Monthly: last 30 days profit
   const monthProfit = useMemo(() => {
     const cutoff = Date.now() - 30 * 86400000;
     return entries.filter(e => new Date(e.date).getTime() >= cutoff).reduce((s, e) => s + e.profit, 0);
@@ -67,9 +65,9 @@ export default function GoalsView({ refresh, onSaved }: Props) {
     ? 'ok'
     : 'bad';
   const statusMsg = {
-    good: { emoji: '🟢', label: 'Dia excelente — meta batida!', bg: 'bg-profit' },
-    ok: { emoji: '🟡', label: 'Falta pouco', bg: 'bg-accent' },
-    bad: { emoji: '🔴', label: 'Ajuste sua estratégia', bg: 'bg-loss' },
+    good: { emoji: '🟢', label: 'Meta batida — dia excelente', cls: 'text-profit' },
+    ok: { emoji: '🟡', label: 'Falta pouco para bater a meta', cls: 'text-accent' },
+    bad: { emoji: '🔴', label: 'Ajuste sua estratégia', cls: 'text-loss' },
   }[status];
 
   const handleSave = () => {
@@ -79,124 +77,155 @@ export default function GoalsView({ refresh, onSaved }: Props) {
 
   if (focusMode) {
     return (
-      <div className="space-y-6 animate-slide-up text-center py-8">
+      <div className="space-y-6 animate-fade-in text-center py-6">
         <div className="flex justify-end">
           <Button variant="outline" size="sm" onClick={() => setFocusMode(false)} className="gap-1.5">
             <EyeOff size={14} /> Sair do Modo Foco
           </Button>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Meta diária</p>
-          <p className="text-2xl font-display font-bold text-foreground mt-1">{fmt(goals.daily)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
+          <p className="text-2xl font-display font-bold mt-1 number-tabular">{fmt(goals.daily)}</p>
         </div>
-        <div className="bg-card rounded-2xl p-8 border shadow-lg">
-          <p className="text-7xl font-display font-bold text-primary">{dailyProgress.toFixed(0)}%</p>
-          <div className="w-full bg-secondary rounded-full h-3 overflow-hidden mt-4">
-            <div className="h-full bg-primary transition-all" style={{ width: `${dailyProgress}%` }} />
+        <div className="bg-gradient-to-br from-card to-secondary/30 rounded-3xl p-8 border border-border/60 shadow-premium">
+          <p className={`text-7xl font-display font-bold number-tabular ${dailyProgress >= 100 ? 'text-profit' : 'text-primary'}`}>{dailyProgress.toFixed(0)}%</p>
+          <div className="w-full bg-secondary/60 rounded-full h-3 overflow-hidden mt-5">
+            <div className={`h-full transition-all duration-700 ${dailyProgress >= 100 ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${dailyProgress}%` }} />
           </div>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Faltam</p>
-          <p className="text-3xl font-display font-bold text-foreground mt-1">{fmt(missing)}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Faltam</p>
+          <p className="text-3xl font-display font-bold mt-1 number-tabular">{fmt(missing)}</p>
           {kmNeeded > 0 && (
             <p className="text-sm text-muted-foreground mt-2">≈ {kmNeeded.toFixed(0)} km no ritmo ideal</p>
           )}
         </div>
-        <p className="text-base font-display font-medium text-primary mt-8">{phrase}</p>
+        <p className="text-base font-display font-semibold text-primary mt-6 animate-pulse-dot">{phrase}</p>
       </div>
     );
   }
 
+  const ringDeg = Math.min(360, dailyProgress * 3.6);
+  const ringColor = dailyProgress >= 100 ? 'hsl(var(--profit))' : dailyProgress >= 70 ? 'hsl(var(--accent))' : 'hsl(var(--primary))';
+
   return (
     <div className="space-y-4 animate-slide-up">
+      {/* Hero diário com anel de progresso */}
+      <div className="relative overflow-hidden rounded-2xl bg-hero border border-border/60 p-5 shadow-premium">
+        <div className="flex items-center gap-4">
+          <div
+            className="relative h-24 w-24 rounded-full flex items-center justify-center shrink-0"
+            style={{
+              background: `conic-gradient(${ringColor} ${ringDeg}deg, hsl(var(--secondary)) ${ringDeg}deg)`,
+            }}
+          >
+            <div className="absolute inset-1.5 rounded-full bg-card flex flex-col items-center justify-center">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Hoje</p>
+              <p className="text-lg font-display font-bold number-tabular">{dailyProgress.toFixed(0)}%</p>
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1">
+              <Target size={10}/> Meta diária
+            </p>
+            {goals.daily > 0 ? (
+              <>
+                <p className="text-2xl font-display font-bold number-tabular leading-tight">{fmt(todayProfit)}</p>
+                <p className="text-[11px] text-muted-foreground number-tabular">de {fmt(goals.daily)}</p>
+                <p className={`text-[11px] font-display font-semibold mt-1 ${statusMsg.cls}`}>
+                  {statusMsg.emoji} {statusMsg.label}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">Defina sua meta diária abaixo.</p>
+            )}
+          </div>
+        </div>
+        {goals.daily > 0 && missing > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="bg-card/70 border border-border/40 rounded-lg p-2.5">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Faltam</p>
+              <p className="font-display font-bold number-tabular">{fmt(missing)}</p>
+            </div>
+            {kmNeeded > 0 && (
+              <div className="bg-card/70 border border-border/40 rounded-lg p-2.5">
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">≈ Km ideais</p>
+                <p className="font-display font-bold number-tabular">{kmNeeded.toFixed(0)} km</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <Button
         onClick={() => setFocusMode(true)}
         size="lg"
-        className="w-full h-12 font-display font-semibold gap-2"
-        variant="default"
+        className="w-full h-12 font-display font-semibold gap-2 bg-info-gradient text-info-foreground hover:opacity-90 shadow-premium"
       >
         <Sparkles size={18} /> Modo Visionário
       </Button>
 
-      {/* Daily progress */}
-      <div className="bg-card rounded-lg p-5 border shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <p className="font-display font-semibold text-foreground">📊 Hoje</p>
-          <p className="text-xs text-muted-foreground">{dailyProgress.toFixed(0)}%</p>
-        </div>
-        <div className="w-full bg-secondary rounded-full h-3 overflow-hidden mb-3">
-          <div
-            className={`h-full transition-all ${todayProfit >= goals.daily && goals.daily > 0 ? 'bg-profit' : 'bg-primary'}`}
-            style={{ width: `${dailyProgress}%` }}
-          />
-        </div>
-        {goals.daily > 0 ? (
-          <>
-            <p className="text-sm text-foreground">
-              <span className="font-display font-bold">{fmt(todayProfit)}</span>
-              <span className="text-muted-foreground"> de {fmt(goals.daily)}</span>
-            </p>
-            {missing > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                💰 Faltam <span className="text-foreground font-semibold">{fmt(missing)}</span>
-                {kmNeeded > 0 && <> · 🚗 ≈ {kmNeeded.toFixed(0)} km</>}
-              </p>
-            )}
-            <div className={`mt-3 rounded-md px-3 py-2 ${statusMsg.bg}`}>
-              <p className="text-sm font-medium text-primary-foreground">
-                {statusMsg.emoji} {statusMsg.label}
-              </p>
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">Defina sua meta diária abaixo.</p>
-        )}
-      </div>
-
-      {/* Week + Month */}
+      {/* Semana e mês */}
       <div className="grid grid-cols-1 gap-3">
-        <ProgressBlock label="📅 Semana" current={stats.weekProfit} goal={goals.weekly} progress={weeklyProgress} />
-        <ProgressBlock label="🗓️ Mês" current={monthProfit} goal={goals.monthly} progress={monthlyProgress} />
+        <ProgressBlock
+          label="Semana"
+          icon={Calendar}
+          current={stats.weekProfit}
+          goal={goals.weekly}
+          progress={weeklyProgress}
+        />
+        <ProgressBlock
+          label="Mês"
+          icon={CalendarDays}
+          current={monthProfit}
+          goal={goals.monthly}
+          progress={monthlyProgress}
+        />
       </div>
 
-      {/* Goal inputs */}
-      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
-        <p className="font-display font-semibold text-foreground">🎯 Definir metas</p>
+      {/* Definir metas */}
+      <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={16} className="text-primary"/>
+          <p className="font-display font-semibold">Definir metas</p>
+        </div>
         <GoalInput label="Meta diária" value={goals.daily} onChange={v => setGoals(g => ({ ...g, daily: v }))} />
         <GoalInput label="Meta semanal" value={goals.weekly} onChange={v => setGoals(g => ({ ...g, weekly: v }))} />
         <GoalInput label="Meta mensal" value={goals.monthly} onChange={v => setGoals(g => ({ ...g, monthly: v }))} />
         <Button onClick={handleSave} className="w-full h-11 font-display font-semibold">
-          Salvar Metas
+          Salvar metas
         </Button>
       </div>
     </div>
   );
 }
 
-function ProgressBlock({ label, current, goal, progress }: { label: string; current: number; goal: number; progress: number }) {
-  if (goal <= 0) {
-    return (
-      <div className="bg-card rounded-lg p-4 border shadow-sm">
-        <p className="text-sm font-display font-semibold text-foreground mb-1">{label}</p>
-        <p className="text-xs text-muted-foreground">Defina uma meta para acompanhar.</p>
-      </div>
-    );
-  }
+function ProgressBlock({
+  label, icon: Icon, current, goal, progress,
+}: { label: string; icon: typeof Target; current: number; goal: number; progress: number }) {
+  const empty = goal <= 0;
+  const done = current >= goal && goal > 0;
   return (
-    <div className="bg-card rounded-lg p-4 border shadow-sm">
-      <div className="flex items-center justify-between mb-1">
-        <p className="text-sm font-display font-semibold text-foreground">{label}</p>
-        <p className="text-xs text-muted-foreground">{progress.toFixed(0)}%</p>
+    <div className="bg-card rounded-xl p-4 border border-border/60 shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-display font-semibold flex items-center gap-1.5"><Icon size={14} className="text-muted-foreground"/> {label}</p>
+        {!empty && <p className={`text-xs font-display font-semibold number-tabular ${done ? 'text-profit' : 'text-muted-foreground'}`}>{progress.toFixed(0)}%</p>}
       </div>
-      <div className="w-full bg-secondary rounded-full h-2 overflow-hidden mb-1.5">
-        <div
-          className={`h-full transition-all ${current >= goal ? 'bg-profit' : 'bg-primary'}`}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <p className="text-xs text-muted-foreground">
-        <span className="font-bold text-foreground">{fmt(current)}</span> de {fmt(goal)}
-      </p>
+      {empty ? (
+        <p className="text-xs text-muted-foreground">Defina uma meta para acompanhar.</p>
+      ) : (
+        <>
+          <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 ${done ? 'bg-profit-gradient' : 'bg-info-gradient'}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-1.5 number-tabular">
+            <span className="font-bold text-foreground">{fmt(current)}</span> de {fmt(goal)}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -214,7 +243,7 @@ function GoalInput({ label, value, onChange }: { label: string; value: number; o
           min="0"
           value={value || ''}
           onChange={e => onChange(parseFloat(e.target.value) || 0)}
-          className="pl-9 h-10"
+          className="pl-9 h-10 number-tabular"
         />
       </div>
     </div>

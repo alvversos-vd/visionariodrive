@@ -102,10 +102,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const displayName = profile?.nome_usuario?.trim() || '';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col px-4 py-6">
+    <div className="min-h-screen bg-hero flex flex-col px-4 py-6">
       <div className="container max-w-md mx-auto w-full flex-1 flex flex-col">
         {step !== 'welcome' && step !== 'done' && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] font-display font-semibold text-muted-foreground">
+              <span>Visionario Drive</span>
+              <span className="number-tabular">{idx} / {STEP_ORDER.length - 1}</span>
+            </div>
             <Progress value={progress} className="h-1.5" />
           </div>
         )}
@@ -113,14 +117,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300" key={step}>
           {step === 'welcome' && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">👊</div>
+              <div className="text-6xl animate-pulse-dot">👊</div>
               <div>
-                <h1 className="font-display text-3xl font-bold">Vamos montar seu painel</h1>
+                <h1 className="font-display text-3xl font-bold bg-gradient-to-br from-primary to-foreground bg-clip-text text-transparent">Vamos montar seu painel</h1>
                 <p className="text-muted-foreground mt-2">
                   Responda rápido e personalize sua experiência{displayName ? `, ${displayName}` : ''}.
                 </p>
               </div>
-              <Button size="lg" className="w-full" onClick={next}>Começar</Button>
+              <Button size="lg" className="w-full bg-info-gradient text-info-foreground hover:opacity-90 shadow-premium" onClick={next}>Começar</Button>
               <button onClick={skipAll} className="text-sm text-muted-foreground hover:text-foreground">
                 Pular tudo
               </button>
@@ -225,12 +229,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
           {step === 'done' && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">👊</div>
+              <div className="text-6xl animate-pulse-dot">👊</div>
               <div>
-                <h1 className="font-display text-3xl font-bold">Seu painel está pronto</h1>
+                <h1 className="font-display text-3xl font-bold bg-gradient-to-br from-profit to-foreground bg-clip-text text-transparent">Seu painel está pronto</h1>
                 <p className="text-muted-foreground mt-2">Bora começar.</p>
               </div>
-              <Button size="lg" className="w-full" onClick={finalize} disabled={saving}>
+              <Button size="lg" className="w-full bg-profit-gradient text-primary-foreground hover:opacity-90 shadow-premium" onClick={finalize} disabled={saving}>
                 {saving && <Loader2 className="animate-spin" />}
                 Começar turno
               </Button>
