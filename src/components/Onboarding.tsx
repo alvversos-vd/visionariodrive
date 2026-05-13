@@ -117,14 +117,14 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300" key={step}>
           {step === 'welcome' && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">👊</div>
+              <div className="text-6xl animate-pulse-dot">👊</div>
               <div>
-                <h1 className="font-display text-3xl font-bold">Vamos montar seu painel</h1>
+                <h1 className="font-display text-3xl font-bold bg-gradient-to-br from-primary to-foreground bg-clip-text text-transparent">Vamos montar seu painel</h1>
                 <p className="text-muted-foreground mt-2">
                   Responda rápido e personalize sua experiência{displayName ? `, ${displayName}` : ''}.
                 </p>
               </div>
-              <Button size="lg" className="w-full" onClick={next}>Começar</Button>
+              <Button size="lg" className="w-full bg-info-gradient text-info-foreground hover:opacity-90 shadow-premium" onClick={next}>Começar</Button>
               <button onClick={skipAll} className="text-sm text-muted-foreground hover:text-foreground">
                 Pular tudo
               </button>
@@ -229,12 +229,12 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
           {step === 'done' && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">👊</div>
+              <div className="text-6xl animate-pulse-dot">👊</div>
               <div>
-                <h1 className="font-display text-3xl font-bold">Seu painel está pronto</h1>
+                <h1 className="font-display text-3xl font-bold bg-gradient-to-br from-profit to-foreground bg-clip-text text-transparent">Seu painel está pronto</h1>
                 <p className="text-muted-foreground mt-2">Bora começar.</p>
               </div>
-              <Button size="lg" className="w-full" onClick={finalize} disabled={saving}>
+              <Button size="lg" className="w-full bg-profit-gradient text-primary-foreground hover:opacity-90 shadow-premium" onClick={finalize} disabled={saving}>
                 {saving && <Loader2 className="animate-spin" />}
                 Começar turno
               </Button>
