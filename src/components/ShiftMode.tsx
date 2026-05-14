@@ -21,11 +21,10 @@ interface Props { onChange?: () => void }
 export default function ShiftMode({ onChange }: Props) {
   const [shift, setShift] = useState<Shift | null>(() => getActiveShift());
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('date');
+  const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('vehicle');
   const [pickedDate, setPickedDate] = useState<string>(todayOperationalDate());
   const [pickedVehicleId, setPickedVehicleId] = useState<string | null>(null);
   const [pickedApp, setPickedApp] = useState<AppEntrega | null>(null);
-  const [customDate, setCustomDate] = useState(todayOperationalDate());
   const [rideOpen, setRideOpen] = useState(false);
   const [rideValor, setRideValor] = useState('');
   const [rideKm, setRideKm] = useState('');
