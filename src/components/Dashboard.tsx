@@ -188,40 +188,84 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         </button>
       </div>
 
-      {/* HERO PREMIUM — Lucro real (prioridade #1) */}
-      <div className="relative rounded-2xl p-6 bg-hero border border-border/60 shadow-premium overflow-hidden">
-        <div className={`absolute inset-x-0 top-0 h-1 ${today && today.profit < 0 ? 'bg-loss-gradient' : 'bg-profit-gradient'}`} />
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
-        <p className={`text-5xl font-display font-bold mt-1 number-tabular ${
-          today && today.profit < 0 ? 'text-loss' : today && today.profit > 0 ? 'text-profit' : 'text-foreground'
-        }`}>
-          {today ? fmt(today.profit) : 'R$ 0,00'}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
-          {goals.daily > 0 && (
-            <span className="flex items-center gap-1.5">
-              <Target size={12} className="text-primary" />
-              Meta: <span className="text-foreground font-display font-semibold">{fmt(goals.daily)}</span>
-            </span>
-          )}
-          {goals.daily > 0 && today && today.profit < goals.daily && (
-            <span className="flex items-center gap-1.5">
-              ⚡ Faltam <span className="text-foreground font-display font-semibold">{fmt(goals.daily - Math.max(0, today.profit))}</span>
-            </span>
-          )}
-          {goals.daily > 0 && today && today.profit >= goals.daily && (
-            <span className="text-profit font-display font-semibold">✓ Meta batida</span>
-          )}
-        </div>
-        {goals.daily > 0 && (
-          <div className="mt-3 h-1.5 bg-secondary/60 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${today && today.profit >= goals.daily ? 'bg-profit-gradient' : 'bg-info-gradient'}`}
-              style={{ width: `${goalProgress}%` }}
-            />
+      {/* HERO PREMIUM — Lucro real + Status turno + Meta diária */}
+      {(() => {
+        const activeShift = getActiveShift();
+        const shiftTotals = activeShift ? computeTotals(activeShift) : null;
+        const startedMin = activeShift
+          ? Math.max(0, Math.round((Date.now() - new Date(activeShift.inicio_turno).getTime()) / 60000))
+          : 0;
+        const profitNeg = !!(today && today.profit < 0);
+        return (
+          <div className="relative rounded-2xl p-6 bg-hero border border-border/60 shadow-premium overflow-hidden">
+            <div className={`absolute inset-x-0 top-0 h-1 ${profitNeg ? 'bg-loss-gradient' : 'bg-profit-gradient'}`} />
+            <div className={`absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl opacity-20 ${profitNeg ? 'bg-loss' : 'bg-primary'}`} />
+
+            {/* Linha 1: status do turno */}
+            <div className="relative flex items-center justify-between gap-3 mb-3">
+              {activeShift ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-profit/15 border border-profit/40 text-[11px] font-display font-semibold text-profit">
+                  <span className="w-1.5 h-1.5 rounded-full bg-profit animate-pulse-dot" />
+                  Turno ativo • {formatTempo(startedMin)}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary/60 border border-border text-[11px] font-display font-semibold text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                  Sem turno ativo
+                </span>
+              )}
+              {shiftTotals && shiftTotals.corridas_total > 0 && (
+                <span className="text-[11px] text-muted-foreground font-display">
+                  {shiftTotals.corridas_total} corrida{shiftTotals.corridas_total > 1 ? 's' : ''} • {fmt(shiftTotals.ganho_total)}
+                </span>
+              )}
+            </div>
+
+            {/* Linha 2: lucro real */}
+            <p className="relative text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
+            <p className={`relative text-5xl font-display font-bold mt-1 number-tabular ${
+              profitNeg ? 'text-loss' : today && today.profit > 0 ? 'text-profit' : 'text-foreground'
+            }`}>
+              {today ? fmt(today.profit) : 'R$ 0,00'}
+            </p>
+
+            {/* Linha 3: meta */}
+            {goals.daily > 0 ? (
+              <div className="relative mt-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Target size={12} className="text-primary" />
+                    Meta: <span className="text-foreground font-display font-semibold number-tabular">{fmt(goals.daily)}</span>
+                  </span>
+                  {today && today.profit >= goals.daily ? (
+                    <span className="text-profit font-display font-semibold">✓ Meta batida</span>
+                  ) : (
+                    <span className="text-foreground font-display font-semibold number-tabular">{goalProgress.toFixed(0)}%</span>
+                  )}
+                </div>
+                <div className="mt-2 h-2 bg-secondary/60 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${today && today.profit >= goals.daily ? 'bg-profit-gradient' : 'bg-info-gradient'}`}
+                    style={{ width: `${goalProgress}%` }}
+                  />
+                </div>
+                {today && today.profit < goals.daily && (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    ⚡ Faltam <span className="text-foreground font-display font-semibold number-tabular">{fmt(goals.daily - Math.max(0, today.profit))}</span> para bater a meta
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={onGoToGoals}
+                className="relative mt-4 inline-flex items-center gap-1.5 text-[11px] font-display font-semibold text-primary hover:underline"
+              >
+                <Target size={12} /> Definir meta diária <ArrowRight size={10} />
+              </button>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       <ShiftMode />
 
