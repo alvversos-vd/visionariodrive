@@ -50,10 +50,18 @@ export default function ShiftMode({ onChange }: Props) {
       setVehiclesOpen(true);
       return;
     }
-    setStep('date');
     const last = getActiveVehicle();
     setPickedVehicleId(last?.veiculo_id ?? null);
     setPickedApp(getLastApp());
+    // Regra madrugada: 00:00–04:59 → perguntar hoje ou ontem
+    const hour = new Date().getHours();
+    if (hour < 5) {
+      setPickedDate(todayOperationalDate());
+      setStep('date');
+    } else {
+      setPickedDate(todayOperationalDate());
+      setStep('vehicle');
+    }
     setPickerOpen(true);
   };
 
