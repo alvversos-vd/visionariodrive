@@ -213,7 +213,9 @@ export default function ShiftMode({ onChange }: Props) {
                     </button>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    {new Date().getHours() < 5 && (
+                      <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    )}
                     <button
                       disabled={!pickedVehicleId}
                       onClick={() => setStep('app')}
