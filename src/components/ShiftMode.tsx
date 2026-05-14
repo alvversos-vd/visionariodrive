@@ -178,19 +178,13 @@ export default function ShiftMode({ onChange }: Props) {
               {step === 'date' && (
                 <>
                   <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional do turno.</p>
                   <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-primary text-primary-foreground font-semibold">
                     Hoje · {formatOperationalDate(todayOperationalDate())}
                   </button>
                   <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-secondary text-foreground font-semibold">
                     Ontem · {formatOperationalDate(yesterdayOperationalDate())}
                   </button>
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Escolher data</label>
-                    <input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)} className="w-full px-3 py-2 rounded-md border bg-background" />
-                    <button onClick={() => { setPickedDate(customDate); setStep('vehicle'); }} className="w-full p-2.5 rounded-lg bg-accent text-accent-foreground font-semibold text-sm">
-                      Usar essa data
-                    </button>
-                  </div>
                 </>
               )}
 
