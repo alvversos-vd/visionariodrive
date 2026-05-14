@@ -121,10 +121,43 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
     });
   }
 
+  const burnRate = a.earningsToday > 0 ? (todayTotal / a.earningsToday) * 100 : 0;
+
   return (
     <div className="space-y-4 animate-slide-up">
+      {/* Hero — gastos do dia */}
+      <div className="relative overflow-hidden rounded-2xl p-5 bg-hero border shadow-premium">
+        <div className="absolute inset-x-0 top-0 h-1 bg-loss-gradient opacity-80" />
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Gastos extras de hoje</p>
+            <p className="text-4xl font-display font-bold text-loss number-tabular mt-1">{fmt(todayTotal)}</p>
+            {a.todayEntry && todayTotal > 0 && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Lucro ajustado:{' '}
+                <span className={`font-display font-bold ${profitAdjusted >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(profitAdjusted)}</span>
+              </p>
+            )}
+          </div>
+          {a.earningsToday > 0 && (
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Burn rate</p>
+              <p className={`font-display font-bold text-xl number-tabular ${burnRate > 30 ? 'text-loss' : burnRate > 20 ? 'text-accent' : 'text-profit'}`}>
+                {burnRate.toFixed(0)}%
+              </p>
+              <p className="text-[10px] text-muted-foreground">do ganho</p>
+            </div>
+          )}
+        </div>
+        {a.profile && (
+          <p className="text-[11px] mt-3 text-muted-foreground">
+            🧠 Perfil de hoje: <span className="font-display font-semibold text-foreground">{a.profile}</span>
+          </p>
+        )}
+      </div>
+
       {/* Quick add */}
-      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+      <div className="bg-card rounded-2xl p-4 border shadow-premium space-y-3">
         <h2 className="font-display font-bold text-foreground">+ Novo gasto</h2>
 
         <div className="grid grid-cols-4 gap-2">
@@ -172,26 +205,6 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
           onChange={e => setDescription(e.target.value)}
           className="w-full bg-background border rounded-lg px-3 py-2 text-foreground text-sm"
         />
-      </div>
-
-      {/* Resumo do dia */}
-      <div className="bg-card rounded-lg p-4 border shadow-sm">
-        <p className="text-xs text-muted-foreground">💸 Gastos extras de hoje</p>
-        <p className="text-3xl font-display font-bold text-loss">{fmt(todayTotal)}</p>
-        {a.todayEntry && todayTotal > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Reduziram seu lucro em <span className="font-bold text-loss">{fmt(a.profitImpact)}</span>
-            {' · '}Lucro ajustado:{' '}
-            <span className={`font-bold ${profitAdjusted >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {fmt(profitAdjusted)}
-            </span>
-          </p>
-        )}
-        {a.profile && (
-          <p className="text-xs mt-2">
-            🧠 Seu perfil hoje: <span className="font-semibold text-foreground">{a.profile}</span>
-          </p>
-        )}
       </div>
 
       {/* Alertas */}
