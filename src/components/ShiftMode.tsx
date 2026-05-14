@@ -16,6 +16,12 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function fmtHora(iso?: string) {
+  if (!iso) return '--:--';
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
