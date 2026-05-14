@@ -207,26 +207,6 @@ export default function ExpensesView({ refresh, onChanged }: Props) {
         />
       </div>
 
-      {/* Resumo do dia */}
-      <div className="bg-card rounded-lg p-4 border shadow-sm">
-        <p className="text-xs text-muted-foreground">💸 Gastos extras de hoje</p>
-        <p className="text-3xl font-display font-bold text-loss">{fmt(todayTotal)}</p>
-        {a.todayEntry && todayTotal > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Reduziram seu lucro em <span className="font-bold text-loss">{fmt(a.profitImpact)}</span>
-            {' · '}Lucro ajustado:{' '}
-            <span className={`font-bold ${profitAdjusted >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {fmt(profitAdjusted)}
-            </span>
-          </p>
-        )}
-        {a.profile && (
-          <p className="text-xs mt-2">
-            🧠 Seu perfil hoje: <span className="font-semibold text-foreground">{a.profile}</span>
-          </p>
-        )}
-      </div>
-
       {/* Alertas */}
       {alerts.length > 0 && (
         <div className="space-y-2">
