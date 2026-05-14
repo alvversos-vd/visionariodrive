@@ -142,7 +142,7 @@ export default function ShiftMode({ onChange }: Props) {
           <button onClick={() => setSummary(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
         </div>
         <p className="text-xs text-muted-foreground">
-          {formatOperationalDate(summary.data_operacional)}
+          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
         </p>
