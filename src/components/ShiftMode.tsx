@@ -16,16 +16,21 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function fmtHora(iso?: string) {
+  if (!iso) return '--:--';
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
   const [shift, setShift] = useState<Shift | null>(() => getActiveShift());
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('date');
+  const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('vehicle');
   const [pickedDate, setPickedDate] = useState<string>(todayOperationalDate());
   const [pickedVehicleId, setPickedVehicleId] = useState<string | null>(null);
   const [pickedApp, setPickedApp] = useState<AppEntrega | null>(null);
-  const [customDate, setCustomDate] = useState(todayOperationalDate());
   const [rideOpen, setRideOpen] = useState(false);
   const [rideValor, setRideValor] = useState('');
   const [rideKm, setRideKm] = useState('');
@@ -51,10 +56,18 @@ export default function ShiftMode({ onChange }: Props) {
       setVehiclesOpen(true);
       return;
     }
-    setStep('date');
     const last = getActiveVehicle();
     setPickedVehicleId(last?.veiculo_id ?? null);
     setPickedApp(getLastApp());
+    // Regra madrugada: 00:00–04:59 → perguntar hoje ou ontem
+    const hour = new Date().getHours();
+    if (hour < 5) {
+      setPickedDate(todayOperationalDate());
+      setStep('date');
+    } else {
+      setPickedDate(todayOperationalDate());
+      setStep('vehicle');
+    }
     setPickerOpen(true);
   };
 
@@ -129,7 +142,7 @@ export default function ShiftMode({ onChange }: Props) {
           <button onClick={() => setSummary(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
         </div>
         <p className="text-xs text-muted-foreground">
-          {formatOperationalDate(summary.data_operacional)}
+          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
         </p>
@@ -171,19 +184,13 @@ export default function ShiftMode({ onChange }: Props) {
               {step === 'date' && (
                 <>
                   <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional do turno.</p>
                   <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-primary text-primary-foreground font-semibold">
                     Hoje · {formatOperationalDate(todayOperationalDate())}
                   </button>
                   <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-secondary text-foreground font-semibold">
                     Ontem · {formatOperationalDate(yesterdayOperationalDate())}
                   </button>
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Escolher data</label>
-                    <input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)} className="w-full px-3 py-2 rounded-md border bg-background" />
-                    <button onClick={() => { setPickedDate(customDate); setStep('vehicle'); }} className="w-full p-2.5 rounded-lg bg-accent text-accent-foreground font-semibold text-sm">
-                      Usar essa data
-                    </button>
-                  </div>
                 </>
               )}
 
@@ -212,7 +219,9 @@ export default function ShiftMode({ onChange }: Props) {
                     </button>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    {new Date().getHours() < 5 && (
+                      <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    )}
                     <button
                       disabled={!pickedVehicleId}
                       onClick={() => setStep('app')}
@@ -277,7 +286,7 @@ export default function ShiftMode({ onChange }: Props) {
                 <span className={`absolute inline-flex h-full w-full rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'} opacity-60 animate-pulse-dot`} />
                 <span className={`relative inline-flex h-2 w-2 rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'}`} />
               </span>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno ativo · {formatOperationalDate(shift.data_operacional)}</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno ativo · {formatOperationalDate(shift.data_operacional)} · início {fmtHora(shift.inicio_turno)}</p>
             </div>
             <p className={`text-3xl font-display font-bold mt-1 number-tabular ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
             <p className="text-[11px] text-muted-foreground">Lucro parcial em tempo real</p>
