@@ -286,7 +286,7 @@ export default function ShiftMode({ onChange }: Props) {
                 <span className={`absolute inline-flex h-full w-full rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'} opacity-60 animate-pulse-dot`} />
                 <span className={`relative inline-flex h-2 w-2 rounded-full ${lucroOk ? 'bg-profit' : 'bg-loss'}`} />
               </span>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno ativo · {formatOperationalDate(shift.data_operacional)}</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno ativo · {formatOperationalDate(shift.data_operacional)} · início {fmtHora(shift.inicio_turno)}</p>
             </div>
             <p className={`text-3xl font-display font-bold mt-1 number-tabular ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
             <p className="text-[11px] text-muted-foreground">Lucro parcial em tempo real</p>
