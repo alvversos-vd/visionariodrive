@@ -224,7 +224,9 @@ export interface ShiftTotals {
 
 export function computeTotals(shift: Shift): ShiftTotals {
   const ganho_total = shift.rides.reduce((s, r) => s + r.valor, 0);
-  const km_total = shift.rides.reduce((s, r) => s + r.km, 0);
+  const km_corridas = shift.rides.reduce((s, r) => s + r.km, 0);
+  // Usa o maior entre km manual das corridas e km do GPS (anti-duplicação)
+  const km_total = Math.max(km_corridas, shift.km_gps || 0);
   const corridas_total = shift.rides.length;
 
   let v: Vehicle | null = null;
@@ -244,10 +246,26 @@ export function computeTotals(shift: Shift): ShiftTotals {
   const lucro_total = ganho_total - custo_total;
 
   const fim = shift.fim_turno ? new Date(shift.fim_turno).getTime() : Date.now();
-  const tempo_online_minutos = Math.max(0, Math.round((fim - new Date(shift.inicio_turno).getTime()) / 60000));
+  const inicio = new Date(shift.inicio_turno).getTime();
+  // Desconta tempo pausado
+  let pausado_ms = 0;
+  (shift.pausas || []).forEach(p => {
+    const ini = new Date(p.inicio).getTime();
+    const f = p.fim ? new Date(p.fim).getTime() : Date.now();
+    if (f > ini) pausado_ms += (f - ini);
+  });
+  const tempo_online_minutos = Math.max(0, Math.round((fim - inicio - pausado_ms) / 60000));
   const media_por_km = km_total > 0 ? ganho_total / km_total : 0;
   const media_por_corrida = corridas_total > 0 ? ganho_total / corridas_total : 0;
   return { ganho_total, km_total, corridas_total, custo_combustivel, custo_fixo_rateado, custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida };
+}
+
+export function metaProgresso(shift: Shift, lucro: number): { meta: number; pct: number; faltam: number; atingida: boolean } {
+  const meta = (typeof window !== 'undefined') ? (JSON.parse(localStorage.getItem('lucro-delivery-goals') || '{}').daily || 0) : 0;
+  if (meta <= 0) return { meta: 0, pct: 0, faltam: 0, atingida: false };
+  const pct = Math.min(100, Math.max(0, (lucro / meta) * 100));
+  const faltam = Math.max(0, meta - lucro);
+  return { meta, pct, faltam, atingida: lucro >= meta };
 }
 
 export function formatTempo(min: number): string {
