@@ -95,7 +95,7 @@ export interface StartShiftOptions {
 export function startShift(opts: StartShiftOptions): Shift {
   const list = getShifts();
   list.forEach(s => {
-    if (s.status === 'ativo') {
+    if (s.status === 'ativo' || s.status === 'pausado') {
       s.status = 'finalizado';
       s.fim_turno = new Date().toISOString();
     }
@@ -110,6 +110,9 @@ export function startShift(opts: StartShiftOptions): Shift {
     tipo_veiculo: v?.tipo_veiculo,
     app_utilizado: opts.app_utilizado,
     rides: [],
+    km_gps: 0,
+    km_desde_ultima_corrida: 0,
+    pausas: [],
   };
   list.unshift(shift);
   saveShifts(list);
@@ -120,6 +123,10 @@ export function endShift(turno_id: string): Shift | null {
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s) return null;
+  if (s.status === 'pausado') {
+    const last = s.pausas?.[s.pausas.length - 1];
+    if (last && !last.fim) last.fim = new Date().toISOString();
+  }
   s.status = 'finalizado';
   s.fim_turno = new Date().toISOString();
   saveShifts(list);
