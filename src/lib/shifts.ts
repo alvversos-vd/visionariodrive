@@ -33,6 +33,10 @@ export interface Shift {
   tipo_veiculo?: string;
   app_utilizado?: string;
   rides: ShiftRide[];
+  km_gps?: number;
+  km_desde_ultima_corrida?: number;
+  ultima_corrida_iso?: string;
+  pausas?: ShiftPause[];
 }
 
 export function getShifts(): Shift[] {
