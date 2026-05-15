@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
-import { getActiveShift, addRide, classifyRide } from '@/lib/shifts';
+import { getActiveShift, addRideAuto, classifyRide } from '@/lib/shifts';
 
 interface Props { onChange?: () => void }
 
@@ -10,28 +10,29 @@ function fmt(v: number) {
 }
 
 export default function RegisterRideFab({ onChange }: Props) {
-  const [active, setActive] = useState(() => !!getActiveShift());
+  const [shift, setShift] = useState(() => getActiveShift());
   const [open, setOpen] = useState(false);
   const [valor, setValor] = useState('');
   const [km, setKm] = useState('');
 
   useEffect(() => {
-    const i = setInterval(() => setActive(!!getActiveShift()), 4000);
+    const i = setInterval(() => setShift(getActiveShift()), 3000);
     return () => clearInterval(i);
   }, []);
 
-  if (!active) return null;
+  if (!shift || shift.status !== 'ativo') return null;
 
+  const kmAuto = shift.km_desde_ultima_corrida || 0;
   const v = parseFloat(valor.replace(',', '.'));
-  const k = parseFloat(km.replace(',', '.'));
+  const k = km ? parseFloat(km.replace(',', '.')) : kmAuto;
   const valid = v > 0 && k > 0;
-  const shift = getActiveShift();
-  const preview = valid && shift ? classifyRide(v, k, shift) : null;
+  const preview = valid ? classifyRide(v, k, shift) : null;
 
   const submit = () => {
-    if (!valid || !shift) { toast.error('Preencha valor e km'); return; }
-    const r = addRide(shift.turno_id, v, k);
-    if (!r) return;
+    if (!valid) { toast.error('Preencha o valor (e km se GPS sem movimento)'); return; }
+    const kManual = km ? parseFloat(km.replace(',', '.')) : undefined;
+    const r = addRideAuto(shift.turno_id, v, kManual);
+    if (!r) { toast.error('Não foi possível salvar — sem km'); return; }
     setValor(''); setKm(''); setOpen(false);
     onChange?.();
     if (r.resultado === 'boa') toast.success('🟢 Boa corrida 👊');
@@ -73,31 +74,33 @@ export default function RegisterRideFab({ onChange }: Props) {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor</label>
-                <div className="relative mt-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
-                  <input
-                    type="number" inputMode="decimal" autoFocus
-                    value={valor} onChange={e => setValor(e.target.value)}
-                    placeholder="0,00"
-                    className="w-full pl-9 pr-3 py-3 text-xl font-display font-bold rounded-xl border bg-background number-tabular"
-                  />
-                </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                <input
+                  type="number" inputMode="decimal" autoFocus
+                  value={valor} onChange={e => setValor(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full pl-9 pr-3 py-3 text-2xl font-display font-bold rounded-xl border bg-background number-tabular"
+                />
               </div>
-              <div>
-                <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Distância</label>
-                <div className="relative mt-1">
-                  <input
-                    type="number" inputMode="decimal"
-                    value={km} onChange={e => setKm(e.target.value)}
-                    placeholder="0"
-                    className="w-full pl-3 pr-10 py-3 text-xl font-display font-bold rounded-xl border bg-background number-tabular"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">km</span>
-                </div>
+            </div>
+
+            <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground flex items-center gap-1"><Navigation size={11}/> Km desde a última</span>
+                <span className="font-display font-bold number-tabular">{kmAuto.toFixed(1)} km</span>
               </div>
+              <input
+                type="number" inputMode="decimal"
+                value={km} onChange={e => setKm(e.target.value)}
+                placeholder={kmAuto > 0 ? `Auto (${kmAuto.toFixed(1)} km do GPS)` : 'Informe manualmente'}
+                className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                {kmAuto > 0 ? 'Deixe vazio para usar o km automático do GPS' : 'GPS ainda não registrou movimento'}
+              </p>
             </div>
 
             <div className={`rounded-xl border p-3 transition-colors ${previewColor}`}>
