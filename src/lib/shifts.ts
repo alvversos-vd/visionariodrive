@@ -185,8 +185,20 @@ export function addRide(turno_id: string, valor: number, km: number): ShiftRide 
     data_operacional: s.data_operacional,
   };
   s.rides.unshift(ride);
+  s.km_desde_ultima_corrida = 0;
+  s.ultima_corrida_iso = ride.data_registro;
   saveShifts(list);
   return ride;
+}
+
+/** Registra corrida usando km do GPS auto-acumulado se km não informado. */
+export function addRideAuto(turno_id: string, valor: number, kmManual?: number): ShiftRide | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return null;
+  const km = kmManual && kmManual > 0 ? kmManual : (s.km_desde_ultima_corrida || 0);
+  if (km <= 0) return null;
+  return addRide(turno_id, valor, km);
 }
 
 export function deleteRide(turno_id: string, corrida_id: string) {
