@@ -50,7 +50,40 @@ function saveShifts(list: Shift[]) {
 }
 
 export function getActiveShift(): Shift | null {
-  return getShifts().find(s => s.status === 'ativo') ?? null;
+  return getShifts().find(s => s.status === 'ativo' || s.status === 'pausado') ?? null;
+}
+
+export function pauseShift(turno_id: string): Shift | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s || s.status !== 'ativo') return null;
+  s.status = 'pausado';
+  s.pausas = s.pausas || [];
+  s.pausas.push({ inicio: new Date().toISOString() });
+  saveShifts(list);
+  return s;
+}
+
+export function resumeShift(turno_id: string): Shift | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s || s.status !== 'pausado') return null;
+  s.status = 'ativo';
+  const last = s.pausas?.[s.pausas.length - 1];
+  if (last && !last.fim) last.fim = new Date().toISOString();
+  saveShifts(list);
+  return s;
+}
+
+export function addGpsDistance(turno_id: string, meters: number): void {
+  if (!meters || meters <= 0) return;
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s || s.status !== 'ativo') return;
+  const km = meters / 1000;
+  s.km_gps = (s.km_gps || 0) + km;
+  s.km_desde_ultima_corrida = (s.km_desde_ultima_corrida || 0) + km;
+  saveShifts(list);
 }
 
 export interface StartShiftOptions {
