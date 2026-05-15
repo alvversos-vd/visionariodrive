@@ -4,8 +4,13 @@ import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicle
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
-export type ShiftStatus = 'ativo' | 'finalizado';
+export type ShiftStatus = 'ativo' | 'pausado' | 'finalizado';
 export type RideResult = 'boa' | 'aceitavel' | 'ruim';
+
+export interface ShiftPause {
+  inicio: string;
+  fim?: string;
+}
 
 export interface ShiftRide {
   corrida_id: string;
