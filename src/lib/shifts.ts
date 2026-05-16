@@ -117,13 +117,19 @@ export function startShift(opts: StartShiftOptions): Shift {
     if (s.status === 'ativo' || s.status === 'pausado') {
       s.status = 'finalizado';
       s.fim_turno = new Date().toISOString();
+      const { tz, offset } = getDeviceTz();
+      s.timezone = s.timezone || tz;
+      s.tz_offset_fim_minutos = offset;
+      s.data_operacional_fim = s.data_operacional_fim || operationalDateFromDate(new Date());
     }
   });
   const v = getVehicleById(opts.veiculo_id);
+  const now = new Date();
+  const { tz, offset } = getDeviceTz();
   const shift: Shift = {
     turno_id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     status: 'ativo',
-    inicio_turno: new Date().toISOString(),
+    inicio_turno: now.toISOString(),
     data_operacional: opts.data_operacional,
     veiculo_id: opts.veiculo_id,
     tipo_veiculo: v?.tipo_veiculo,
@@ -132,6 +138,8 @@ export function startShift(opts: StartShiftOptions): Shift {
     km_gps: 0,
     km_desde_ultima_corrida: 0,
     pausas: [],
+    timezone: tz,
+    tz_offset_minutos: offset,
   };
   list.unshift(shift);
   saveShifts(list);
@@ -146,8 +154,16 @@ export function endShift(turno_id: string): Shift | null {
     const last = s.pausas?.[s.pausas.length - 1];
     if (last && !last.fim) last.fim = new Date().toISOString();
   }
+  const now = new Date();
   s.status = 'finalizado';
-  s.fim_turno = new Date().toISOString();
+  s.fim_turno = now.toISOString();
+  const { tz, offset } = getDeviceTz();
+  s.timezone = s.timezone || tz;
+  s.tz_offset_fim_minutos = offset;
+  // Mantém a data operacional do início (turnos que atravessam a madrugada
+  // permanecem contabilizados no dia em que começaram), mas registra também
+  // a data operacional do encerramento para histórico/auditoria.
+  s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
   return s;
 }
