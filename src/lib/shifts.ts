@@ -29,6 +29,7 @@ export interface Shift {
   inicio_turno: string;
   fim_turno?: string;
   data_operacional: string;
+  data_operacional_fim?: string;
   veiculo_id?: string;
   tipo_veiculo?: string;
   app_utilizado?: string;
@@ -37,6 +38,24 @@ export interface Shift {
   km_desde_ultima_corrida?: number;
   ultima_corrida_iso?: string;
   pausas?: ShiftPause[];
+  timezone?: string;
+  tz_offset_minutos?: number;
+  tz_offset_fim_minutos?: number;
+}
+
+function getDeviceTz(): { tz: string; offset: number } {
+  let tz = 'UTC';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch {}
+  // offset em minutos no padrão "minutos ao leste de UTC" (oposto de Date.getTimezoneOffset)
+  const offset = -new Date().getTimezoneOffset();
+  return { tz, offset };
+}
+
+function operationalDateFromDate(d: Date): string {
+  // Se for madrugada (00:00–04:59), a data operacional é o dia anterior.
+  const ref = new Date(d);
+  if (ref.getHours() < 5) ref.setDate(ref.getDate() - 1);
+  return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}-${String(ref.getDate()).padStart(2, '0')}`;
 }
 
 export function getShifts(): Shift[] {
@@ -98,13 +117,19 @@ export function startShift(opts: StartShiftOptions): Shift {
     if (s.status === 'ativo' || s.status === 'pausado') {
       s.status = 'finalizado';
       s.fim_turno = new Date().toISOString();
+      const { tz, offset } = getDeviceTz();
+      s.timezone = s.timezone || tz;
+      s.tz_offset_fim_minutos = offset;
+      s.data_operacional_fim = s.data_operacional_fim || operationalDateFromDate(new Date());
     }
   });
   const v = getVehicleById(opts.veiculo_id);
+  const now = new Date();
+  const { tz, offset } = getDeviceTz();
   const shift: Shift = {
     turno_id: `t_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     status: 'ativo',
-    inicio_turno: new Date().toISOString(),
+    inicio_turno: now.toISOString(),
     data_operacional: opts.data_operacional,
     veiculo_id: opts.veiculo_id,
     tipo_veiculo: v?.tipo_veiculo,
@@ -113,6 +138,8 @@ export function startShift(opts: StartShiftOptions): Shift {
     km_gps: 0,
     km_desde_ultima_corrida: 0,
     pausas: [],
+    timezone: tz,
+    tz_offset_minutos: offset,
   };
   list.unshift(shift);
   saveShifts(list);
@@ -127,8 +154,16 @@ export function endShift(turno_id: string): Shift | null {
     const last = s.pausas?.[s.pausas.length - 1];
     if (last && !last.fim) last.fim = new Date().toISOString();
   }
+  const now = new Date();
   s.status = 'finalizado';
-  s.fim_turno = new Date().toISOString();
+  s.fim_turno = now.toISOString();
+  const { tz, offset } = getDeviceTz();
+  s.timezone = s.timezone || tz;
+  s.tz_offset_fim_minutos = offset;
+  // Mantém a data operacional do início (turnos que atravessam a madrugada
+  // permanecem contabilizados no dia em que começaram), mas registra também
+  // a data operacional do encerramento para histórico/auditoria.
+  s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
   return s;
 }
