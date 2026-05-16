@@ -81,6 +81,30 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(true);
   };
 
+  const requestGpsPermission = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast('📍 GPS indisponível — você pode informar o km manualmente em cada corrida');
+      return;
+    }
+    toast('📍 Precisamos do GPS para calcular automaticamente os km do turno', {
+      description: 'Sem GPS você pode continuar registrando km manualmente.',
+      duration: 5000,
+    });
+    navigator.geolocation.getCurrentPosition(
+      () => toast.success('GPS ativo — km serão calculados automaticamente'),
+      err => {
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error('Permissão de GPS negada — modo manual ativo', {
+            description: 'Informe o km de cada corrida no formulário.',
+          });
+        } else {
+          toast('GPS indisponível agora — modo manual ativo');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const finalizeStart = () => {
     if (!pickedVehicleId || !pickedApp) return;
     setActiveVehicleId(pickedVehicleId);
@@ -94,6 +118,7 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
+    requestGpsPermission();
   };
 
   const handleEnd = () => {
@@ -134,7 +159,7 @@ export default function ShiftMode({ onChange }: Props) {
     }
     const kmEfetivo = k && k > 0 ? k : (shift.km_desde_ultima_corrida || 0);
     if (!kmEfetivo || kmEfetivo <= 0) {
-      toast.error('Sem km do GPS — informe manualmente');
+      toast.error('Informe o km da corrida manualmente');
       return;
     }
     const r = addRideAuto(shift.turno_id, v, k);
@@ -464,6 +489,23 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {(gps === 'denied' || gps === 'unavailable') && (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+            <MapPinOff size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Modo manual ativo</p>
+              <p className="text-accent/80">
+                {gps === 'denied'
+                  ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
+                  : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
+              </p>
+            </div>
+            {gps === 'denied' && (
+              <button onClick={requestGpsPermission} className="text-[10px] underline shrink-0">tentar de novo</button>
+            )}
+          </div>
+        )}
+
         {/* Mensagem motivadora */}
         <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
           {pausado ? 'Turno pausado — toque em retomar para continuar'
@@ -538,7 +580,11 @@ export default function ShiftMode({ onChange }: Props) {
               className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
             />
             <p className="text-[10px] text-muted-foreground">
-              {kmDesde > 0 ? 'Deixe vazio para usar o km automático do GPS' : 'GPS ainda não registrou movimento'}
+              {kmDesde > 0
+                ? 'Deixe vazio para usar o km automático do GPS'
+                : (gps === 'denied' || gps === 'unavailable')
+                  ? 'Modo manual — informe o km da corrida'
+                  : 'GPS ainda não registrou movimento — você pode informar manualmente'}
             </p>
           </div>
 
