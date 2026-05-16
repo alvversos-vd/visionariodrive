@@ -29,6 +29,7 @@ export interface Shift {
   inicio_turno: string;
   fim_turno?: string;
   data_operacional: string;
+  data_operacional_fim?: string;
   veiculo_id?: string;
   tipo_veiculo?: string;
   app_utilizado?: string;
@@ -37,6 +38,24 @@ export interface Shift {
   km_desde_ultima_corrida?: number;
   ultima_corrida_iso?: string;
   pausas?: ShiftPause[];
+  timezone?: string;
+  tz_offset_minutos?: number;
+  tz_offset_fim_minutos?: number;
+}
+
+function getDeviceTz(): { tz: string; offset: number } {
+  let tz = 'UTC';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch {}
+  // offset em minutos no padrão "minutos ao leste de UTC" (oposto de Date.getTimezoneOffset)
+  const offset = -new Date().getTimezoneOffset();
+  return { tz, offset };
+}
+
+function operationalDateFromDate(d: Date): string {
+  // Se for madrugada (00:00–04:59), a data operacional é o dia anterior.
+  const ref = new Date(d);
+  if (ref.getHours() < 5) ref.setDate(ref.getDate() - 1);
+  return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}-${String(ref.getDate()).padStart(2, '0')}`;
 }
 
 export function getShifts(): Shift[] {
