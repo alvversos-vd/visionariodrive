@@ -580,7 +580,11 @@ export default function ShiftMode({ onChange }: Props) {
               className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
             />
             <p className="text-[10px] text-muted-foreground">
-              {kmDesde > 0 ? 'Deixe vazio para usar o km automático do GPS' : 'GPS ainda não registrou movimento'}
+              {kmDesde > 0
+                ? 'Deixe vazio para usar o km automático do GPS'
+                : (gps === 'denied' || gps === 'unavailable')
+                  ? 'Modo manual — informe o km da corrida'
+                  : 'GPS ainda não registrou movimento — você pode informar manualmente'}
             </p>
           </div>
 
