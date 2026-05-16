@@ -489,6 +489,23 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {(gps === 'denied' || gps === 'unavailable') && (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+            <MapPinOff size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Modo manual ativo</p>
+              <p className="text-accent/80">
+                {gps === 'denied'
+                  ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
+                  : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
+              </p>
+            </div>
+            {gps === 'denied' && (
+              <button onClick={requestGpsPermission} className="text-[10px] underline shrink-0">tentar de novo</button>
+            )}
+          </div>
+        )}
+
         {/* Mensagem motivadora */}
         <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
           {pausado ? 'Turno pausado — toque em retomar para continuar'
