@@ -159,7 +159,7 @@ export default function ShiftMode({ onChange }: Props) {
     }
     const kmEfetivo = k && k > 0 ? k : (shift.km_desde_ultima_corrida || 0);
     if (!kmEfetivo || kmEfetivo <= 0) {
-      toast.error('Sem km do GPS — informe manualmente');
+      toast.error('Informe o km da corrida manualmente');
       return;
     }
     const r = addRideAuto(shift.turno_id, v, k);
