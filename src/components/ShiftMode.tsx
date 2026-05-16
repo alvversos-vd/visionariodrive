@@ -81,6 +81,30 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(true);
   };
 
+  const requestGpsPermission = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast('📍 GPS indisponível — você pode informar o km manualmente em cada corrida');
+      return;
+    }
+    toast('📍 Precisamos do GPS para calcular automaticamente os km do turno', {
+      description: 'Sem GPS você pode continuar registrando km manualmente.',
+      duration: 5000,
+    });
+    navigator.geolocation.getCurrentPosition(
+      () => toast.success('GPS ativo — km serão calculados automaticamente'),
+      err => {
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error('Permissão de GPS negada — modo manual ativo', {
+            description: 'Informe o km de cada corrida no formulário.',
+          });
+        } else {
+          toast('GPS indisponível agora — modo manual ativo');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
   const finalizeStart = () => {
     if (!pickedVehicleId || !pickedApp) return;
     setActiveVehicleId(pickedVehicleId);
@@ -94,6 +118,7 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
+    requestGpsPermission();
   };
 
   const handleEnd = () => {
