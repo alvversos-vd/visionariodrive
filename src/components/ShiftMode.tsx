@@ -400,7 +400,7 @@ export default function ShiftMode({ onChange }: Props) {
                 <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-accent' : 'bg-profit'}`} />
               </span>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
-                {pausado ? '🟡 Turno pausado' : '🟢 Turno ativo'} · início {fmtHora(shift.inicio_turno)}
+                {pausado ? '🟡 Turno pausado' : '🟢 Turno ativo'} · {fmtHora(shift.inicio_turno)} → agora · ⏱ {tempoLive}
               </p>
               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-display font-semibold flex items-center gap-1 ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
