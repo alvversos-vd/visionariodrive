@@ -516,7 +516,7 @@ export default function ShiftMode({ onChange }: Props) {
               </p>
             </div>
             {gps === 'denied' && (
-              <button onClick={requestGpsPermission} className="text-[10px] underline shrink-0">tentar de novo</button>
+              <button onClick={() => requestGpsPermission()} className="text-[10px] underline shrink-0">tentar de novo</button>
             )}
           </div>
         )}
