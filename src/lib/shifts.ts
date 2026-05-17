@@ -41,6 +41,18 @@ export interface Shift {
   timezone?: string;
   tz_offset_minutos?: number;
   tz_offset_fim_minutos?: number;
+  /** Status do GPS no turno — preservado no histórico para auditoria. */
+  gps_status?: 'ok' | 'denied' | 'unavailable' | 'pending';
+}
+
+export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['gps_status']>): void {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return;
+  // Não rebaixa 'ok' já consolidado de volta para 'denied' (mantém histórico do melhor estado)
+  if (s.gps_status === 'ok' && status !== 'ok') return;
+  s.gps_status = status;
+  saveShifts(list);
 }
 
 function getDeviceTz(): { tz: string; offset: number } {
