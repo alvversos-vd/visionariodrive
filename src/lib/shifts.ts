@@ -152,6 +152,7 @@ export function startShift(opts: StartShiftOptions): Shift {
     pausas: [],
     timezone: tz,
     tz_offset_minutos: offset,
+    gps_status: 'pending',
   };
   list.unshift(shift);
   saveShifts(list);
