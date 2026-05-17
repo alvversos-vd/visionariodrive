@@ -1,14 +1,16 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X } from 'lucide-react';
+import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, Shield, MapPin, UserMinus, Loader2 } from 'lucide-react';
 import { resetAllData } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { clearLocalCache } from '@/lib/cloudSync';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
