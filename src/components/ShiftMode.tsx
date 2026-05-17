@@ -133,7 +133,7 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
-    requestGpsPermission();
+    requestGpsPermission(s.turno_id);
   };
 
   const handleEnd = () => {
