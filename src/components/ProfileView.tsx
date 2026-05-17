@@ -217,10 +217,69 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
             </AlertDialogContent>
           </AlertDialog>
 
+          <AlertDialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setConfirmPwd(''); }}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-start gap-2 text-destructive hover:text-destructive">
+                <UserMinus size={16} />
+                Excluir minha conta
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir conta definitivamente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso removerá <strong>permanentemente</strong> sua conta, histórico de turnos, corridas, despesas,
+                  veículos e dados pessoais. Esta ação não pode ser desfeita. Para confirmar, digite sua senha abaixo.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-pwd" className="text-xs">Senha</Label>
+                <Input
+                  id="confirm-pwd"
+                  type="password"
+                  autoComplete="current-password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  placeholder="Digite sua senha"
+                  disabled={deleting}
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
+                  disabled={deleting || !confirmPwd}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting && <Loader2 className="animate-spin mr-1" size={14} />}
+                  Excluir conta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Button variant="destructive" className="w-full gap-2" onClick={signOut}>
             <LogOut size={16} />
             Sair da conta
           </Button>
+
+          <div className="pt-3 border-t mt-2">
+            <p className="text-[11px] text-muted-foreground mb-2">Documentos legais</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Link to="/legal?tab=termos" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <FileText size={13} /> Termos de Uso
+              </Link>
+              <Link to="/legal?tab=privacidade" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <Shield size={13} /> Privacidade
+              </Link>
+              <Link to="/legal?tab=localizacao" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <MapPin size={13} /> Localização
+              </Link>
+              <Link to="/legal?tab=exclusao" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <UserMinus size={13} /> Como excluir
+              </Link>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
