@@ -25,6 +25,8 @@ export type Database = {
           objetivo_principal: string | null
           onboarding_completo: boolean
           stripe_customer_id: string | null
+          termos_aceitos_em: string | null
+          termos_versao: string | null
           tipo_veiculo_principal: string | null
           ultimo_login: string | null
           updated_at: string
@@ -41,6 +43,8 @@ export type Database = {
           objetivo_principal?: string | null
           onboarding_completo?: boolean
           stripe_customer_id?: string | null
+          termos_aceitos_em?: string | null
+          termos_versao?: string | null
           tipo_veiculo_principal?: string | null
           ultimo_login?: string | null
           updated_at?: string
@@ -57,6 +61,8 @@ export type Database = {
           objetivo_principal?: string | null
           onboarding_completo?: boolean
           stripe_customer_id?: string | null
+          termos_aceitos_em?: string | null
+          termos_versao?: string | null
           tipo_veiculo_principal?: string | null
           ultimo_login?: string | null
           updated_at?: string

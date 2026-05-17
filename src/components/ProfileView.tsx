@@ -1,14 +1,16 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X } from 'lucide-react';
+import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, Shield, MapPin, UserMinus, Loader2 } from 'lucide-react';
 import { resetAllData } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { clearLocalCache } from '@/lib/cloudSync';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -20,6 +22,45 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(profile?.nome_usuario ?? '');
   const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!user?.email) return;
+    if (!confirmPwd) {
+      toast({ title: 'Confirme sua senha', description: 'A senha é necessária para excluir a conta.', variant: 'destructive' });
+      return;
+    }
+    setDeleting(true);
+    try {
+      // Reautentica para garantir que é o titular
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: confirmPwd,
+      });
+      if (signInErr) {
+        toast({ title: 'Senha incorreta', description: 'Verifique sua senha e tente novamente.', variant: 'destructive' });
+        setDeleting(false);
+        return;
+      }
+      const { error: fnErr } = await supabase.functions.invoke('delete-account');
+      if (fnErr) {
+        toast({ title: 'Erro ao excluir', description: fnErr.message, variant: 'destructive' });
+        setDeleting(false);
+        return;
+      }
+      // Limpa qualquer dado local antes do logout
+      clearLocalCache();
+      await supabase.auth.signOut();
+      toast({ title: 'Conta excluída', description: 'Seus dados foram removidos. Até logo!' });
+      // Hard reload para limpar estado de memória
+      window.location.href = '/auth';
+    } catch (e: any) {
+      toast({ title: 'Erro inesperado', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+      setDeleting(false);
+    }
+  };
 
   const handleReset = () => {
     resetAllData();
@@ -176,10 +217,69 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
             </AlertDialogContent>
           </AlertDialog>
 
+          <AlertDialog open={deleteOpen} onOpenChange={(o) => { setDeleteOpen(o); if (!o) setConfirmPwd(''); }}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="w-full justify-start gap-2 text-destructive hover:text-destructive">
+                <UserMinus size={16} />
+                Excluir minha conta
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir conta definitivamente?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Isso removerá <strong>permanentemente</strong> sua conta, histórico de turnos, corridas, despesas,
+                  veículos e dados pessoais. Esta ação não pode ser desfeita. Para confirmar, digite sua senha abaixo.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-pwd" className="text-xs">Senha</Label>
+                <Input
+                  id="confirm-pwd"
+                  type="password"
+                  autoComplete="current-password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  placeholder="Digite sua senha"
+                  disabled={deleting}
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => { e.preventDefault(); handleDeleteAccount(); }}
+                  disabled={deleting || !confirmPwd}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting && <Loader2 className="animate-spin mr-1" size={14} />}
+                  Excluir conta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Button variant="destructive" className="w-full gap-2" onClick={signOut}>
             <LogOut size={16} />
             Sair da conta
           </Button>
+
+          <div className="pt-3 border-t mt-2">
+            <p className="text-[11px] text-muted-foreground mb-2">Documentos legais</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Link to="/legal?tab=termos" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <FileText size={13} /> Termos de Uso
+              </Link>
+              <Link to="/legal?tab=privacidade" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <Shield size={13} /> Privacidade
+              </Link>
+              <Link to="/legal?tab=localizacao" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <MapPin size={13} /> Localização
+              </Link>
+              <Link to="/legal?tab=exclusao" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
+                <UserMinus size={13} /> Como excluir
+              </Link>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

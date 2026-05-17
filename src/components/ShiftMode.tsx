@@ -9,7 +9,7 @@ import {
   Shift, getActiveShift, startShift, endShift, addRideAuto,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
   formatOperationalDate, deleteRide, classifyRide,
-  pauseShift, resumeShift, metaProgresso,
+  pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
 } from '@/lib/shifts';
 import {
   hasAnyVehicle, getVehiclesV2, getActiveVehicle, setActiveVehicleId, getVehicleById,
@@ -81,28 +81,43 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(true);
   };
 
-  const requestGpsPermission = () => {
+  const requestGpsPermission = (turnoId?: string) => {
+    const id = turnoId ?? shift?.turno_id;
+    // 1) Toast explicativo ANTES de qualquer pedido de permissão
+    toast('📍 Por que precisamos do GPS?', {
+      description:
+        'Sua localização será utilizada apenas durante turnos ativos para cálculo de distância e desempenho. Sem GPS você pode continuar registrando o km manualmente.',
+      duration: 6000,
+    });
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      toast('📍 GPS indisponível — você pode informar o km manualmente em cada corrida');
+      if (id) setShiftGpsStatus(id, 'unavailable');
+      setTimeout(() => toast('GPS indisponível neste dispositivo — modo manual ativo'), 800);
+      refresh();
       return;
     }
-    toast('📍 Precisamos do GPS para calcular automaticamente os km do turno', {
-      description: 'Sem GPS você pode continuar registrando km manualmente.',
-      duration: 5000,
-    });
-    navigator.geolocation.getCurrentPosition(
-      () => toast.success('GPS ativo — km serão calculados automaticamente'),
-      err => {
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.error('Permissão de GPS negada — modo manual ativo', {
-            description: 'Informe o km de cada corrida no formulário.',
-          });
-        } else {
-          toast('GPS indisponível agora — modo manual ativo');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    // 2) Após um instante, dispara o prompt do navegador
+    setTimeout(() => {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          if (id) setShiftGpsStatus(id, 'ok');
+          toast.success('GPS ativo — km serão calculados automaticamente');
+          refresh();
+        },
+        err => {
+          if (err.code === err.PERMISSION_DENIED) {
+            if (id) setShiftGpsStatus(id, 'denied');
+            toast.error('Permissão de GPS negada — modo manual ativo', {
+              description: 'Informe o km de cada corrida no formulário. O histórico continua salvo normalmente.',
+            });
+          } else {
+            if (id) setShiftGpsStatus(id, 'unavailable');
+            toast('GPS indisponível agora — modo manual ativo');
+          }
+          refresh();
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }, 900);
   };
 
   const finalizeStart = () => {
@@ -118,7 +133,7 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
-    requestGpsPermission();
+    requestGpsPermission(s.turno_id);
   };
 
   const handleEnd = () => {
@@ -501,7 +516,7 @@ export default function ShiftMode({ onChange }: Props) {
               </p>
             </div>
             {gps === 'denied' && (
-              <button onClick={requestGpsPermission} className="text-[10px] underline shrink-0">tentar de novo</button>
+              <button onClick={() => requestGpsPermission()} className="text-[10px] underline shrink-0">tentar de novo</button>
             )}
           </div>
         )}
