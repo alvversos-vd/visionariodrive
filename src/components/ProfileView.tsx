@@ -22,6 +22,45 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   const [editing, setEditing] = useState(false);
   const [nome, setNome] = useState(profile?.nome_usuario ?? '');
   const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!user?.email) return;
+    if (!confirmPwd) {
+      toast({ title: 'Confirme sua senha', description: 'A senha é necessária para excluir a conta.', variant: 'destructive' });
+      return;
+    }
+    setDeleting(true);
+    try {
+      // Reautentica para garantir que é o titular
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: confirmPwd,
+      });
+      if (signInErr) {
+        toast({ title: 'Senha incorreta', description: 'Verifique sua senha e tente novamente.', variant: 'destructive' });
+        setDeleting(false);
+        return;
+      }
+      const { error: fnErr } = await supabase.functions.invoke('delete-account');
+      if (fnErr) {
+        toast({ title: 'Erro ao excluir', description: fnErr.message, variant: 'destructive' });
+        setDeleting(false);
+        return;
+      }
+      // Limpa qualquer dado local antes do logout
+      clearLocalCache();
+      await supabase.auth.signOut();
+      toast({ title: 'Conta excluída', description: 'Seus dados foram removidos. Até logo!' });
+      // Hard reload para limpar estado de memória
+      window.location.href = '/auth';
+    } catch (e: any) {
+      toast({ title: 'Erro inesperado', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+      setDeleting(false);
+    }
+  };
 
   const handleReset = () => {
     resetAllData();
