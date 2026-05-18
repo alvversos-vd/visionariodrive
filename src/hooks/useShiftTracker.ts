@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { addGpsDistance, getActiveShift, Shift } from '@/lib/shifts';
+import { addGpsDistance, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
 
 export type GpsState = 'idle' | 'requesting' | 'tracking' | 'denied' | 'unavailable' | 'paused';
 
