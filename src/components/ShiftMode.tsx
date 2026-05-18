@@ -232,6 +232,8 @@ export default function ShiftMode({ onChange }: Props) {
       refresh();
     }
   };
+
+  // Onboarding obrigatório
   if (vehiclesOpen) {
     return (
       <div className="bg-card border-2 border-primary/40 rounded-xl p-4">
