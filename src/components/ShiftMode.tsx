@@ -590,12 +590,18 @@ export default function ShiftMode({ onChange }: Props) {
           <div className="space-y-1 pt-1">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Últimas corridas</p>
             {shift.rides.slice(0, 5).map(r => (
-              <div key={r.corrida_id} className="flex items-center justify-between bg-card border rounded px-2.5 py-1.5 text-xs">
+              <div key={r.corrida_id} className="flex items-center justify-between gap-1 bg-card border rounded px-2.5 py-1.5 text-xs">
                 <span>{r.resultado === 'boa' ? '🟢' : r.resultado === 'aceitavel' ? '🟡' : '🔴'}</span>
                 <span className="font-semibold">{fmt(r.valor)}</span>
-                <span className="text-muted-foreground">{r.km.toFixed(1)} km</span>
+                <span className="text-muted-foreground flex items-center gap-1">
+                  {r.km.toFixed(1)} km
+                  {r.edicoes && r.edicoes.length > 0 && (
+                    <span title="Corrida editada" className="text-[9px] text-accent">✎</span>
+                  )}
+                </span>
                 <span className="font-display font-bold">{fmt(r.valor_por_km)}/km</span>
-                <button onClick={() => { deleteRide(shift.turno_id, r.corrida_id); refresh(); }} className="text-muted-foreground hover:text-loss"><X size={12} /></button>
+                <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary" title="Editar km/valor"><Pencil size={12} /></button>
+                <button onClick={() => { deleteRide(shift.turno_id, r.corrida_id); refresh(); }} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
               </div>
             ))}
           </div>
@@ -603,6 +609,7 @@ export default function ShiftMode({ onChange }: Props) {
       </div>
 
       {rideOpen && renderRideModal()}
+      {editing && renderEditModal()}
     </>
   );
 
