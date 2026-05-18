@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff,
+  Satellite, MapPinOff, Pencil,
 } from 'lucide-react';
 import {
-  Shift, getActiveShift, startShift, endShift, addRideAuto,
+  Shift, ShiftRide, getActiveShift, startShift, endShift, addRideAuto,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
-  formatOperationalDate, deleteRide, classifyRide,
+  formatOperationalDate, deleteRide, classifyRide, updateRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
 } from '@/lib/shifts';
 import {
