@@ -267,6 +267,43 @@ export function deleteRide(turno_id: string, corrida_id: string) {
   saveShifts(list);
 }
 
+/**
+ * Edita km e/ou valor de uma corrida já registrada, preservando histórico de edições
+ * e os timestamps originais. Recalcula valor_por_km e resultado. Não altera ordem nem tempo.
+ */
+export function updateRide(
+  turno_id: string,
+  corrida_id: string,
+  patch: { km?: number; valor?: number }
+): ShiftRide | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return null;
+  const r = s.rides.find(x => x.corrida_id === corrida_id);
+  if (!r) return null;
+
+  const nowIso = new Date().toISOString();
+  r.edicoes = r.edicoes || [];
+
+  if (typeof patch.km === 'number' && Number.isFinite(patch.km) && patch.km > 0 && patch.km !== r.km) {
+    if (r.km_original === undefined) r.km_original = r.km;
+    r.edicoes.push({ campo: 'km', valor_antigo: r.km, valor_novo: patch.km, data_edicao: nowIso });
+    r.km = patch.km;
+  }
+  if (typeof patch.valor === 'number' && Number.isFinite(patch.valor) && patch.valor > 0 && patch.valor !== r.valor) {
+    if (r.valor_original === undefined) r.valor_original = r.valor;
+    r.edicoes.push({ campo: 'valor', valor_antigo: r.valor, valor_novo: patch.valor, data_edicao: nowIso });
+    r.valor = patch.valor;
+  }
+
+  const cls = classifyRide(r.valor, r.km, s);
+  r.valor_por_km = cls.valor_por_km;
+  r.resultado = cls.resultado;
+
+  saveShifts(list);
+  return r;
+}
+
 export interface ShiftTotals {
   ganho_total: number;
   km_total: number;
