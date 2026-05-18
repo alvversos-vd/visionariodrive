@@ -67,9 +67,12 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     }
 
     setGps('requesting');
+    let lastFixAt = Date.now();
     const id = navigator.geolocation.watchPosition(
       pos => {
-        setGps('tracking');
+        lastFixAt = Date.now();
+        setGps(prev => (prev !== 'tracking' ? 'tracking' : prev));
+        setShiftGpsStatus(shift.turno_id, 'ok');
         const cur: Point = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -98,14 +101,28 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
         onTickRef.current?.();
       },
       err => {
-        if (err.code === err.PERMISSION_DENIED) setGps('denied');
-        else setGps('unavailable');
+        if (err.code === err.PERMISSION_DENIED) {
+          setGps('denied');
+          setShiftGpsStatus(shift.turno_id, 'denied');
+        } else {
+          setGps('unavailable');
+          setShiftGpsStatus(shift.turno_id, 'unavailable');
+        }
       },
       { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
     );
     watchId.current = id;
 
+    // Watchdog: se nenhum fix por 45s, considera GPS congelado/indisponível
+    const watchdog = setInterval(() => {
+      if (Date.now() - lastFixAt > 45000) {
+        setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'unavailable' : prev));
+        setShiftGpsStatus(shift.turno_id, 'unavailable');
+      }
+    }, 5000);
+
     return () => {
+      clearInterval(watchdog);
       if (watchId.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId.current);
       }
