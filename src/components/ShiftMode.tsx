@@ -43,6 +43,10 @@ export default function ShiftMode({ onChange }: Props) {
   const [summary, setSummary] = useState<Shift | null>(null);
   const [vehiclesOpen, setVehiclesOpen] = useState(false);
   const [focus, setFocus] = useState(false);
+  const [editing, setEditing] = useState<ShiftRide | null>(null);
+  const [editKm, setEditKm] = useState('');
+  const [editValor, setEditValor] = useState('');
+  const fallbackShownRef = useRef<string | null>(null);
 
   const refresh = () => {
     const a = getActiveShift();
