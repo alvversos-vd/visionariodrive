@@ -317,11 +317,15 @@ export interface ShiftTotals {
   media_por_corrida: number;
 }
 
+function safeNum(n: number): number {
+  return Number.isFinite(n) && !Number.isNaN(n) ? n : 0;
+}
+
 export function computeTotals(shift: Shift): ShiftTotals {
-  const ganho_total = shift.rides.reduce((s, r) => s + r.valor, 0);
-  const km_corridas = shift.rides.reduce((s, r) => s + r.km, 0);
+  const ganho_total = safeNum(shift.rides.reduce((s, r) => s + (r.valor > 0 ? r.valor : 0), 0));
+  const km_corridas = safeNum(shift.rides.reduce((s, r) => s + (r.km > 0 ? r.km : 0), 0));
   // Usa o maior entre km manual das corridas e km do GPS (anti-duplicação)
-  const km_total = Math.max(km_corridas, shift.km_gps || 0);
+  const km_total = Math.max(km_corridas, safeNum(shift.km_gps || 0));
   const corridas_total = shift.rides.length;
 
   let v: Vehicle | null = null;
