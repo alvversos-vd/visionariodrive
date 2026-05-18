@@ -12,15 +12,25 @@ export interface ShiftPause {
   fim?: string;
 }
 
+export interface RideEdit {
+  campo: 'km' | 'valor';
+  valor_antigo: number;
+  valor_novo: number;
+  data_edicao: string;
+}
+
 export interface ShiftRide {
   corrida_id: string;
   turno_id: string;
   valor: number;
   km: number;
+  km_original?: number;
+  valor_original?: number;
   valor_por_km: number;
   resultado: RideResult;
   data_registro: string;
   data_operacional: string;
+  edicoes?: RideEdit[];
 }
 
 export interface Shift {
@@ -257,6 +267,43 @@ export function deleteRide(turno_id: string, corrida_id: string) {
   saveShifts(list);
 }
 
+/**
+ * Edita km e/ou valor de uma corrida já registrada, preservando histórico de edições
+ * e os timestamps originais. Recalcula valor_por_km e resultado. Não altera ordem nem tempo.
+ */
+export function updateRide(
+  turno_id: string,
+  corrida_id: string,
+  patch: { km?: number; valor?: number }
+): ShiftRide | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return null;
+  const r = s.rides.find(x => x.corrida_id === corrida_id);
+  if (!r) return null;
+
+  const nowIso = new Date().toISOString();
+  r.edicoes = r.edicoes || [];
+
+  if (typeof patch.km === 'number' && Number.isFinite(patch.km) && patch.km > 0 && patch.km !== r.km) {
+    if (r.km_original === undefined) r.km_original = r.km;
+    r.edicoes.push({ campo: 'km', valor_antigo: r.km, valor_novo: patch.km, data_edicao: nowIso });
+    r.km = patch.km;
+  }
+  if (typeof patch.valor === 'number' && Number.isFinite(patch.valor) && patch.valor > 0 && patch.valor !== r.valor) {
+    if (r.valor_original === undefined) r.valor_original = r.valor;
+    r.edicoes.push({ campo: 'valor', valor_antigo: r.valor, valor_novo: patch.valor, data_edicao: nowIso });
+    r.valor = patch.valor;
+  }
+
+  const cls = classifyRide(r.valor, r.km, s);
+  r.valor_por_km = cls.valor_por_km;
+  r.resultado = cls.resultado;
+
+  saveShifts(list);
+  return r;
+}
+
 export interface ShiftTotals {
   ganho_total: number;
   km_total: number;
@@ -270,11 +317,15 @@ export interface ShiftTotals {
   media_por_corrida: number;
 }
 
+function safeNum(n: number): number {
+  return Number.isFinite(n) && !Number.isNaN(n) ? n : 0;
+}
+
 export function computeTotals(shift: Shift): ShiftTotals {
-  const ganho_total = shift.rides.reduce((s, r) => s + r.valor, 0);
-  const km_corridas = shift.rides.reduce((s, r) => s + r.km, 0);
+  const ganho_total = safeNum(shift.rides.reduce((s, r) => s + (r.valor > 0 ? r.valor : 0), 0));
+  const km_corridas = safeNum(shift.rides.reduce((s, r) => s + (r.km > 0 ? r.km : 0), 0));
   // Usa o maior entre km manual das corridas e km do GPS (anti-duplicação)
-  const km_total = Math.max(km_corridas, shift.km_gps || 0);
+  const km_total = Math.max(km_corridas, safeNum(shift.km_gps || 0));
   const corridas_total = shift.rides.length;
 
   let v: Vehicle | null = null;
@@ -290,8 +341,8 @@ export function computeTotals(shift: Shift): ShiftTotals {
   } else {
     custo_combustivel = getCostPerKm() * km_total;
   }
-  const custo_total = custo_combustivel + custo_fixo_rateado;
-  const lucro_total = ganho_total - custo_total;
+  const custo_total = safeNum(custo_combustivel + custo_fixo_rateado);
+  const lucro_total = safeNum(ganho_total - custo_total);
 
   const fim = shift.fim_turno ? new Date(shift.fim_turno).getTime() : Date.now();
   const inicio = new Date(shift.inicio_turno).getTime();
@@ -303,9 +354,14 @@ export function computeTotals(shift: Shift): ShiftTotals {
     if (f > ini) pausado_ms += (f - ini);
   });
   const tempo_online_minutos = Math.max(0, Math.round((fim - inicio - pausado_ms) / 60000));
-  const media_por_km = km_total > 0 ? ganho_total / km_total : 0;
-  const media_por_corrida = corridas_total > 0 ? ganho_total / corridas_total : 0;
-  return { ganho_total, km_total, corridas_total, custo_combustivel, custo_fixo_rateado, custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida };
+  const media_por_km = km_total > 0 ? safeNum(ganho_total / km_total) : 0;
+  const media_por_corrida = corridas_total > 0 ? safeNum(ganho_total / corridas_total) : 0;
+  return {
+    ganho_total, km_total, corridas_total,
+    custo_combustivel: safeNum(custo_combustivel),
+    custo_fixo_rateado: safeNum(custo_fixo_rateado),
+    custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida,
+  };
 }
 
 export function metaProgresso(shift: Shift, lucro: number): { meta: number; pct: number; faltam: number; atingida: boolean } {
