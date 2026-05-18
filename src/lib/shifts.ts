@@ -12,15 +12,25 @@ export interface ShiftPause {
   fim?: string;
 }
 
+export interface RideEdit {
+  campo: 'km' | 'valor';
+  valor_antigo: number;
+  valor_novo: number;
+  data_edicao: string;
+}
+
 export interface ShiftRide {
   corrida_id: string;
   turno_id: string;
   valor: number;
   km: number;
+  km_original?: number;
+  valor_original?: number;
   valor_por_km: number;
   resultado: RideResult;
   data_registro: string;
   data_operacional: string;
+  edicoes?: RideEdit[];
 }
 
 export interface Shift {
