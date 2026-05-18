@@ -66,6 +66,25 @@ export default function ShiftMode({ onChange }: Props) {
   // Sai do foco se turno terminar
   useEffect(() => { if (!shift) setFocus(false); }, [shift]);
 
+  // Banner inteligente: avisa 1x por ocorrência quando GPS cai para modo manual,
+  // e limpa o marcador quando o GPS volta a funcionar.
+  useEffect(() => {
+    if (!shift) { fallbackShownRef.current = null; return; }
+    const key = `${shift.turno_id}:${gps}`;
+    if ((gps === 'denied' || gps === 'unavailable') && fallbackShownRef.current !== key) {
+      fallbackShownRef.current = key;
+      toast('⚠️ GPS indisponível — modo manual ativado automaticamente', {
+        description: 'O turno continua normalmente. Informe o km de cada corrida ao registrar.',
+      });
+    }
+    if (gps === 'tracking') {
+      if (fallbackShownRef.current && !fallbackShownRef.current.endsWith(':tracking')) {
+        toast.success('GPS reconectado — cálculo automático retomado');
+      }
+      fallbackShownRef.current = key;
+    }
+  }, [gps, shift?.turno_id]);
+
   const openPicker = () => {
     if (!hasAnyVehicle()) {
       setVehiclesOpen(true);
