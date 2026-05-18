@@ -209,7 +209,29 @@ export default function ShiftMode({ onChange }: Props) {
     else toast.error('🔴 Corrida abaixo do custo ideal');
   };
 
-  // Onboarding obrigatório
+  const openEdit = (r: ShiftRide) => {
+    setEditing(r);
+    setEditKm(String(r.km));
+    setEditValor(String(r.valor));
+  };
+
+  const handleSaveEdit = () => {
+    if (!shift || !editing) return;
+    const km = parseFloat(editKm.replace(',', '.'));
+    const valor = parseFloat(editValor.replace(',', '.'));
+    if (!Number.isFinite(km) || km <= 0) { toast.error('Km inválido'); return; }
+    if (!Number.isFinite(valor) || valor <= 0) { toast.error('Valor inválido'); return; }
+    const patch: { km?: number; valor?: number } = {};
+    if (km !== editing.km) patch.km = km;
+    if (valor !== editing.valor) patch.valor = valor;
+    if (!patch.km && !patch.valor) { setEditing(null); return; }
+    const r = updateRide(shift.turno_id, editing.corrida_id, patch);
+    if (r) {
+      toast.success('Corrida atualizada — indicadores recalculados');
+      setEditing(null);
+      refresh();
+    }
+  };
   if (vehiclesOpen) {
     return (
       <div className="bg-card border-2 border-primary/40 rounded-xl p-4">
