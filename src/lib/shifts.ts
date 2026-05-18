@@ -341,8 +341,8 @@ export function computeTotals(shift: Shift): ShiftTotals {
   } else {
     custo_combustivel = getCostPerKm() * km_total;
   }
-  const custo_total = custo_combustivel + custo_fixo_rateado;
-  const lucro_total = ganho_total - custo_total;
+  const custo_total = safeNum(custo_combustivel + custo_fixo_rateado);
+  const lucro_total = safeNum(ganho_total - custo_total);
 
   const fim = shift.fim_turno ? new Date(shift.fim_turno).getTime() : Date.now();
   const inicio = new Date(shift.inicio_turno).getTime();
@@ -354,9 +354,14 @@ export function computeTotals(shift: Shift): ShiftTotals {
     if (f > ini) pausado_ms += (f - ini);
   });
   const tempo_online_minutos = Math.max(0, Math.round((fim - inicio - pausado_ms) / 60000));
-  const media_por_km = km_total > 0 ? ganho_total / km_total : 0;
-  const media_por_corrida = corridas_total > 0 ? ganho_total / corridas_total : 0;
-  return { ganho_total, km_total, corridas_total, custo_combustivel, custo_fixo_rateado, custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida };
+  const media_por_km = km_total > 0 ? safeNum(ganho_total / km_total) : 0;
+  const media_por_corrida = corridas_total > 0 ? safeNum(ganho_total / corridas_total) : 0;
+  return {
+    ganho_total, km_total, corridas_total,
+    custo_combustivel: safeNum(custo_combustivel),
+    custo_fixo_rateado: safeNum(custo_fixo_rateado),
+    custo_total, lucro_total, tempo_online_minutos, media_por_km, media_por_corrida,
+  };
 }
 
 export function metaProgresso(shift: Shift, lucro: number): { meta: number; pct: number; faltam: number; atingida: boolean } {
