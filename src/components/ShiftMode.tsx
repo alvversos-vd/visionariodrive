@@ -685,4 +685,85 @@ export default function ShiftMode({ onChange }: Props) {
       </div>
     );
   }
+
+  // ============ EDIT MODAL ============
+  function renderEditModal() {
+    if (!editing) return null;
+    const kmNum = parseFloat(editKm.replace(',', '.'));
+    const valorNum = parseFloat(editValor.replace(',', '.'));
+    const previewValid = Number.isFinite(kmNum) && kmNum > 0 && Number.isFinite(valorNum) && valorNum > 0;
+    const previewCls = previewValid ? classifyRide(valorNum, kmNum, shift!) : null;
+    return (
+      <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setEditing(null)}>
+        <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between">
+            <h3 className="font-display font-bold text-base flex items-center gap-2"><Pencil size={16}/> Editar corrida</h3>
+            <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Registrada em {fmtHora(editing.data_registro)} · Horário e ordem cronológica não serão alterados.
+          </p>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+              <input
+                type="number" inputMode="decimal"
+                value={editValor} onChange={e => setEditValor(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 text-lg font-display font-bold rounded-xl border bg-background number-tabular"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Km da corrida</label>
+            <input
+              type="number" inputMode="decimal" min={0}
+              value={editKm} onChange={e => setEditKm(e.target.value)}
+              className="w-full mt-1 px-3 py-2.5 text-lg font-display font-bold rounded-xl border bg-background number-tabular"
+            />
+          </div>
+
+          {previewValid && previewCls && (
+            <div className={`rounded-xl border p-3 ${
+              previewCls.resultado === 'boa' ? 'border-profit/40 bg-profit/10 text-profit' :
+              previewCls.resultado === 'aceitavel' ? 'border-accent/40 bg-accent/10 text-accent' :
+              'border-loss/40 bg-loss/10 text-loss'
+            }`}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-display font-semibold uppercase tracking-wider">Novo R$/km</span>
+                <span className="font-display font-bold">
+                  {previewCls.resultado === 'boa' ? '🟢 Boa' : previewCls.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                </span>
+              </div>
+              <p className="font-display font-bold text-xl number-tabular mt-0.5">{fmt(previewCls.valor_por_km)}/km</p>
+            </div>
+          )}
+
+          {editing.edicoes && editing.edicoes.length > 0 && (
+            <div className="rounded-lg border bg-secondary/30 p-2 max-h-28 overflow-y-auto">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Histórico de edições</p>
+              {editing.edicoes.slice().reverse().map((e, i) => (
+                <p key={i} className="text-[10px] text-muted-foreground">
+                  {fmtHora(e.data_edicao)} · {e.campo}: {e.valor_antigo} → {e.valor_novo}
+                </p>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(null)} className="flex-1 p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm">Cancelar</button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={!previewValid}
+              className="flex-1 p-3 rounded-xl bg-primary text-primary-foreground font-display font-bold disabled:opacity-40 active:scale-[0.98] transition-transform"
+            >
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
