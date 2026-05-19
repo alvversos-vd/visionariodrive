@@ -10,7 +10,10 @@ import {
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
   formatOperationalDate, deleteRide, classifyRide, updateRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
+  restoreRide, revertLastEdit,
 } from '@/lib/shifts';
+import { getSettings } from '@/lib/storage';
+import { DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import {
   hasAnyVehicle, getVehiclesV2, getActiveVehicle, setActiveVehicleId, getVehicleById,
   getLastApp, setLastApp, APPS, AppEntrega, TIPO_LABEL,
