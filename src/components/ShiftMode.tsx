@@ -621,6 +621,17 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {smartAlerts.length > 0 && (
+          <div className="space-y-1.5">
+            {smartAlerts.map(a => (
+              <div key={a.key} className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+                <Target size={14} className="mt-0.5 shrink-0" />
+                <p className="flex-1 font-display">{a.msg}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Mensagem motivadora */}
         <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
           {pausado ? 'Turno pausado — toque em retomar para continuar'
