@@ -113,6 +113,33 @@ export default function SettingsView({ refresh, onChanged }: Props) {
         </Button>
       </div>
 
+      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+        <p className="font-display font-semibold text-foreground">🚨 Alertas inteligentes</p>
+        <p className="text-xs text-muted-foreground">
+          Personalize quando o app deve te avisar durante o turno. Use <strong>0</strong> para desativar cada alerta.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Tempo máx. (h)</Label>
+            <Input type="number" inputMode="decimal" min="0" step="any"
+              value={alertMaxHoras} onChange={e => setAlertMaxHoras(e.target.value)} className="h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Lucro/h mín. (R$)</Label>
+            <Input type="number" inputMode="decimal" min="0" step="any"
+              value={alertMinLucroHora} onChange={e => setAlertMinLucroHora(e.target.value)} className="h-11" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Custo máx. (% ganho)</Label>
+            <Input type="number" inputMode="decimal" min="0" max="100" step="any"
+              value={alertMaxCustoPct} onChange={e => setAlertMaxCustoPct(e.target.value)} className="h-11" />
+          </div>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Lembre-se de tocar em <em>Salvar configurações</em> acima para aplicar.
+        </p>
+      </div>
+
       <div className="bg-card rounded-lg p-4 border shadow-sm">
         <VehiclesView onChange={onChanged} />
       </div>
