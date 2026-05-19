@@ -50,16 +50,33 @@ export interface DailyGoal {
   amount: number;
 }
 
+export interface AlertThresholds {
+  /** Alerta quando o tempo online passar de X horas (0 = desativado). */
+  maxHorasTurno: number;
+  /** Alerta quando o lucro/hora cair abaixo de X (0 = desativado). */
+  minLucroHora: number;
+  /** Alerta quando custos representarem mais que X% do ganho (0 = desativado). */
+  maxCustoPct: number;
+}
+
 export interface AppSettings {
   profitMargin: number; // ex: 1.3 = 30%
   currency: string; // 'BRL'
   estimatedHours: number; // jornada estimada do dia (para previsão)
+  alertThresholds?: AlertThresholds;
 }
+
+export const DEFAULT_ALERT_THRESHOLDS: AlertThresholds = {
+  maxHorasTurno: 10,
+  minLucroHora: 0,
+  maxCustoPct: 50,
+};
 
 export const DEFAULT_SETTINGS: AppSettings = {
   profitMargin: 1.3,
   currency: 'BRL',
   estimatedHours: 8,
+  alertThresholds: { ...DEFAULT_ALERT_THRESHOLDS },
 };
 
 export const DEFAULT_GOALS: Goals = {
