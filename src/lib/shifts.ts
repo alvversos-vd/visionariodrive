@@ -116,15 +116,35 @@ export function resumeShift(turno_id: string): Shift | null {
   return s;
 }
 
+// Buffer de distância para batch-flush (anti-flicker / debounce GPS).
+const _gpsBuffer: Record<string, number> = {};
+let _gpsFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const GPS_FLUSH_MS = 1500;
+
+function flushGpsBuffer(): void {
+  _gpsFlushTimer = null;
+  const ids = Object.keys(_gpsBuffer);
+  if (ids.length === 0) return;
+  const list = getShifts();
+  let touched = false;
+  for (const id of ids) {
+    const meters = _gpsBuffer[id];
+    delete _gpsBuffer[id];
+    if (!meters || meters <= 0) continue;
+    const s = list.find(x => x.turno_id === id);
+    if (!s || s.status !== 'ativo') continue;
+    const km = meters / 1000;
+    s.km_gps = (s.km_gps || 0) + km;
+    s.km_desde_ultima_corrida = (s.km_desde_ultima_corrida || 0) + km;
+    touched = true;
+  }
+  if (touched) saveShifts(list);
+}
+
 export function addGpsDistance(turno_id: string, meters: number): void {
   if (!meters || meters <= 0) return;
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s || s.status !== 'ativo') return;
-  const km = meters / 1000;
-  s.km_gps = (s.km_gps || 0) + km;
-  s.km_desde_ultima_corrida = (s.km_desde_ultima_corrida || 0) + km;
-  saveShifts(list);
+  _gpsBuffer[turno_id] = (_gpsBuffer[turno_id] || 0) + meters;
+  if (!_gpsFlushTimer) _gpsFlushTimer = setTimeout(flushGpsBuffer, GPS_FLUSH_MS);
 }
 
 export interface StartShiftOptions {
@@ -268,6 +288,26 @@ export function deleteRide(turno_id: string, corrida_id: string) {
 }
 
 /**
+ * Restaura uma corrida previamente deletada, mantendo a ordem cronológica
+ * com base em data_registro. Útil para o "Desfazer" após delete.
+ */
+export function restoreRide(turno_id: string, ride: ShiftRide): boolean {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return false;
+  if (s.rides.some(r => r.corrida_id === ride.corrida_id)) return false;
+  s.rides.push({ ...ride });
+  // ordena desc por data_registro (mantém invariante usado na UI)
+  s.rides.sort((a, b) => b.data_registro.localeCompare(a.data_registro));
+  saveShifts(list);
+  return true;
+}
+
+// Debounce de edições rápidas (evita race / flicker em totais)
+const _editTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const EDIT_DEBOUNCE_MS = 250;
+
+/**
  * Edita km e/ou valor de uma corrida já registrada, preservando histórico de edições
  * e os timestamps originais. Recalcula valor_por_km e resultado. Não altera ordem nem tempo.
  */
@@ -300,9 +340,41 @@ export function updateRide(
   r.valor_por_km = cls.valor_por_km;
   r.resultado = cls.resultado;
 
+  // Coalesce writes para múltiplas edições rápidas na mesma corrida
+  const key = `${turno_id}:${corrida_id}`;
+  if (_editTimers[key]) clearTimeout(_editTimers[key]);
+  _editTimers[key] = setTimeout(() => { delete _editTimers[key]; saveShifts(getShifts()); }, EDIT_DEBOUNCE_MS);
   saveShifts(list);
   return r;
 }
+
+/**
+ * Reverte a última edição registrada em uma corrida (km ou valor) usando o
+ * histórico em `edicoes`. Não remove o registro do histórico para manter rastreabilidade
+ * — adiciona uma nova entrada inversa.
+ */
+export function revertLastEdit(turno_id: string, corrida_id: string): ShiftRide | null {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return null;
+  const r = s.rides.find(x => x.corrida_id === corrida_id);
+  if (!r || !r.edicoes || r.edicoes.length === 0) return null;
+  const last = r.edicoes[r.edicoes.length - 1];
+  const nowIso = new Date().toISOString();
+  if (last.campo === 'km') {
+    r.edicoes.push({ campo: 'km', valor_antigo: r.km, valor_novo: last.valor_antigo, data_edicao: nowIso });
+    r.km = last.valor_antigo;
+  } else {
+    r.edicoes.push({ campo: 'valor', valor_antigo: r.valor, valor_novo: last.valor_antigo, data_edicao: nowIso });
+    r.valor = last.valor_antigo;
+  }
+  const cls = classifyRide(r.valor, r.km, s);
+  r.valor_por_km = cls.valor_por_km;
+  r.resultado = cls.resultado;
+  saveShifts(list);
+  return r;
+}
+
 
 export interface ShiftTotals {
   ganho_total: number;

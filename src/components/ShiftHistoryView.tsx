@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate } from '@/lib/shifts';
+import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { getGoals } from '@/lib/storage';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet } from 'lucide-react';
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
 type Filter = 'hoje' | 'semana' | 'mes' | 'todos';
@@ -42,6 +44,21 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const [vehicleFilter, setVehicleFilter] = useState<'todos' | TipoVeiculo>('todos');
   const [appFilter, setAppFilter] = useState<string>('todos');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const monthAgo = new Date(today.getTime() - 29 * 86400000);
+  const monthAgoIso = `${monthAgo.getFullYear()}-${String(monthAgo.getMonth() + 1).padStart(2, '0')}-${String(monthAgo.getDate()).padStart(2, '0')}`;
+  const [exportFrom, setExportFrom] = useState(monthAgoIso);
+  const [exportTo, setExportTo] = useState(todayIso);
+
+  const handleExport = (kind: 'csv' | 'pdf') => {
+    if (exportFrom > exportTo) { toast.error('Período inválido: data inicial maior que final'); return; }
+    const fn = kind === 'csv' ? exportShiftsCsv : exportShiftsPdf;
+    const count = fn(exportFrom, exportTo);
+    if (count === 0) toast('Nenhum turno encontrado no período');
+    else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+  };
 
   const shifts = useMemo<Shift[]>(
     () => getShifts().filter(s => s.status === 'finalizado'),
@@ -145,10 +162,49 @@ export default function ShiftHistoryView({ refresh }: Props) {
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div>
-        <h2 className="font-display font-bold text-lg flex items-center gap-2">📊 Histórico de turnos</h2>
-        <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display font-bold text-lg flex items-center gap-2">📊 Histórico de turnos</h2>
+          <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
+        </div>
+        <button
+          onClick={() => setExportOpen(o => !o)}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-foreground text-xs font-display font-semibold border"
+          aria-expanded={exportOpen}
+        >
+          <Download size={13} /> Exportar
+        </button>
       </div>
+
+      {exportOpen && (
+        <div className="bg-card border rounded-xl p-3 space-y-3 animate-slide-up">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Período do export</p>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-[11px] text-muted-foreground space-y-1">
+              <span>De</span>
+              <input type="date" value={exportFrom} max={exportTo}
+                onChange={e => setExportFrom(e.target.value)}
+                className="w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+            </label>
+            <label className="text-[11px] text-muted-foreground space-y-1">
+              <span>Até</span>
+              <input type="date" value={exportTo} min={exportFrom} max={todayIso}
+                onChange={e => setExportTo(e.target.value)}
+                className="w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => handleExport('csv')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-primary text-primary-foreground font-display font-semibold text-xs">
+              <FileSpreadsheet size={13}/> CSV
+            </button>
+            <button onClick={() => handleExport('pdf')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-foreground text-background font-display font-semibold text-xs">
+              <FileText size={13}/> PDF
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Exporta todos os turnos finalizados cuja data operacional cai no período selecionado.</p>
+        </div>
+      )}
+
 
       {/* Sticky filter bar */}
       <div className="sticky top-0 z-10 -mx-4 px-4 py-2 bg-background/95 backdrop-blur-md border-b border-border/40 space-y-2">

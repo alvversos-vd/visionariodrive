@@ -10,7 +10,10 @@ import {
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
   formatOperationalDate, deleteRide, classifyRide, updateRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
+  restoreRide, revertLastEdit,
 } from '@/lib/shifts';
+import { getSettings } from '@/lib/storage';
+import { DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import {
   hasAnyVehicle, getVehiclesV2, getActiveVehicle, setActiveVehicleId, getVehicleById,
   getLastApp, setLastApp, APPS, AppEntrega, TIPO_LABEL,
@@ -225,12 +228,46 @@ export default function ShiftMode({ onChange }: Props) {
     if (km !== editing.km) patch.km = km;
     if (valor !== editing.valor) patch.valor = valor;
     if (!patch.km && !patch.valor) { setEditing(null); return; }
-    const r = updateRide(shift.turno_id, editing.corrida_id, patch);
+    const turnoId = shift.turno_id;
+    const corridaId = editing.corrida_id;
+    const r = updateRide(turnoId, corridaId, patch);
     if (r) {
-      toast.success('Corrida atualizada — indicadores recalculados');
       setEditing(null);
       refresh();
+      toast.success('Corrida atualizada — indicadores recalculados', {
+        duration: 6000,
+        action: {
+          label: 'Desfazer',
+          onClick: () => {
+            // Reverte uma edição por campo alterado
+            if (patch.valor !== undefined) revertLastEdit(turnoId, corridaId);
+            if (patch.km !== undefined) revertLastEdit(turnoId, corridaId);
+            refresh();
+            toast('Edição revertida');
+          },
+        },
+      });
     }
+  };
+
+  const handleDeleteRide = (r: ShiftRide) => {
+    if (!shift) return;
+    const snapshot: ShiftRide = JSON.parse(JSON.stringify(r));
+    const turnoId = shift.turno_id;
+    deleteRide(turnoId, r.corrida_id);
+    refresh();
+    toast('Corrida removida', {
+      duration: 6000,
+      action: {
+        label: 'Desfazer',
+        onClick: () => {
+          if (restoreRide(turnoId, snapshot)) {
+            refresh();
+            toast.success('Corrida restaurada');
+          }
+        },
+      },
+    });
   };
 
   // Onboarding obrigatório
@@ -402,6 +439,22 @@ export default function ShiftMode({ onChange }: Props) {
   const rPorKm = t.km_total > 0 ? t.ganho_total / t.km_total : 0;
   const kmDesde = shift.km_desde_ultima_corrida || 0;
 
+  // === Smart alerts (limiares configuráveis) ===
+  const thresholds = { ...DEFAULT_ALERT_THRESHOLDS, ...(getSettings().alertThresholds || {}) };
+  const horasOnline = t.tempo_online_minutos / 60;
+  const lucroHora = horasOnline > 0 ? t.lucro_total / horasOnline : 0;
+  const custoPct = t.ganho_total > 0 ? (t.custo_total / t.ganho_total) * 100 : 0;
+  const smartAlerts: { key: string; msg: string }[] = [];
+  if (thresholds.maxHorasTurno > 0 && horasOnline >= thresholds.maxHorasTurno) {
+    smartAlerts.push({ key: 'horas', msg: `⏰ Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
+  }
+  if (thresholds.minLucroHora > 0 && t.corridas_total >= 2 && lucroHora < thresholds.minLucroHora) {
+    smartAlerts.push({ key: 'lucroh', msg: `📉 Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
+  }
+  if (thresholds.maxCustoPct > 0 && t.ganho_total > 0 && custoPct > thresholds.maxCustoPct) {
+    smartAlerts.push({ key: 'custo', msg: `💸 Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
+  }
+
   // Preview da corrida no modal
   const vNum = parseFloat(rideValor.replace(',', '.'));
   const kNum = rideKm ? parseFloat(rideKm.replace(',', '.')) : kmDesde;
@@ -568,6 +621,17 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {smartAlerts.length > 0 && (
+          <div className="space-y-1.5">
+            {smartAlerts.map(a => (
+              <div key={a.key} className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+                <Target size={14} className="mt-0.5 shrink-0" />
+                <p className="flex-1 font-display">{a.msg}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Mensagem motivadora */}
         <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
           {pausado ? 'Turno pausado — toque em retomar para continuar'
@@ -601,7 +665,7 @@ export default function ShiftMode({ onChange }: Props) {
                 </span>
                 <span className="font-display font-bold">{fmt(r.valor_por_km)}/km</span>
                 <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary" title="Editar km/valor"><Pencil size={12} /></button>
-                <button onClick={() => { deleteRide(shift.turno_id, r.corrida_id); refresh(); }} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
+                <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
               </div>
             ))}
           </div>
