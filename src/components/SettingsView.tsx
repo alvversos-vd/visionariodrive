@@ -21,6 +21,10 @@ export default function SettingsView({ refresh, onChanged }: Props) {
   const [saved, setSaved] = useState(false);
   const [vehicles, setVehicles] = useState<string[]>(() => getVehicles());
   const [rideTypes, setRideTypes] = useState<string[]>(() => getRideTypes());
+  const initialAlerts = { ...DEFAULT_ALERT_THRESHOLDS, ...(initial.alertThresholds || {}) };
+  const [alertMaxHoras, setAlertMaxHoras] = useState(String(initialAlerts.maxHorasTurno));
+  const [alertMinLucroHora, setAlertMinLucroHora] = useState(String(initialAlerts.minLucroHora));
+  const [alertMaxCustoPct, setAlertMaxCustoPct] = useState(String(initialAlerts.maxCustoPct));
 
   const updateVehicles = (list: string[]) => {
     setVehicles(list);
@@ -38,7 +42,15 @@ export default function SettingsView({ refresh, onChanged }: Props) {
     const hrs = parseFloat(estHours);
     if (isNaN(pct) || pct < 0 || pct > 500) return;
     if (isNaN(hrs) || hrs <= 0 || hrs > 24) return;
-    const next: AppSettings = { ...initial, profitMargin: 1 + pct / 100, estimatedHours: hrs };
+    const mh = Math.max(0, Number(alertMaxHoras) || 0);
+    const ml = Math.max(0, Number(alertMinLucroHora) || 0);
+    const mc = Math.min(100, Math.max(0, Number(alertMaxCustoPct) || 0));
+    const next: AppSettings = {
+      ...initial,
+      profitMargin: 1 + pct / 100,
+      estimatedHours: hrs,
+      alertThresholds: { maxHorasTurno: mh, minLucroHora: ml, maxCustoPct: mc },
+    };
     saveSettings(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
