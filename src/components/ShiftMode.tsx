@@ -228,12 +228,46 @@ export default function ShiftMode({ onChange }: Props) {
     if (km !== editing.km) patch.km = km;
     if (valor !== editing.valor) patch.valor = valor;
     if (!patch.km && !patch.valor) { setEditing(null); return; }
-    const r = updateRide(shift.turno_id, editing.corrida_id, patch);
+    const turnoId = shift.turno_id;
+    const corridaId = editing.corrida_id;
+    const r = updateRide(turnoId, corridaId, patch);
     if (r) {
-      toast.success('Corrida atualizada — indicadores recalculados');
       setEditing(null);
       refresh();
+      toast.success('Corrida atualizada — indicadores recalculados', {
+        duration: 6000,
+        action: {
+          label: 'Desfazer',
+          onClick: () => {
+            // Reverte uma edição por campo alterado
+            if (patch.valor !== undefined) revertLastEdit(turnoId, corridaId);
+            if (patch.km !== undefined) revertLastEdit(turnoId, corridaId);
+            refresh();
+            toast('Edição revertida');
+          },
+        },
+      });
     }
+  };
+
+  const handleDeleteRide = (r: ShiftRide) => {
+    if (!shift) return;
+    const snapshot: ShiftRide = JSON.parse(JSON.stringify(r));
+    const turnoId = shift.turno_id;
+    deleteRide(turnoId, r.corrida_id);
+    refresh();
+    toast('Corrida removida', {
+      duration: 6000,
+      action: {
+        label: 'Desfazer',
+        onClick: () => {
+          if (restoreRide(turnoId, snapshot)) {
+            refresh();
+            toast.success('Corrida restaurada');
+          }
+        },
+      },
+    });
   };
 
   // Onboarding obrigatório
