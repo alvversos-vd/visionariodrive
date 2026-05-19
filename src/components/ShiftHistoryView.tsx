@@ -44,6 +44,21 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const [vehicleFilter, setVehicleFilter] = useState<'todos' | TipoVeiculo>('todos');
   const [appFilter, setAppFilter] = useState<string>('todos');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const monthAgo = new Date(today.getTime() - 29 * 86400000);
+  const monthAgoIso = `${monthAgo.getFullYear()}-${String(monthAgo.getMonth() + 1).padStart(2, '0')}-${String(monthAgo.getDate()).padStart(2, '0')}`;
+  const [exportFrom, setExportFrom] = useState(monthAgoIso);
+  const [exportTo, setExportTo] = useState(todayIso);
+
+  const handleExport = (kind: 'csv' | 'pdf') => {
+    if (exportFrom > exportTo) { toast.error('Período inválido: data inicial maior que final'); return; }
+    const fn = kind === 'csv' ? exportShiftsCsv : exportShiftsPdf;
+    const count = fn(exportFrom, exportTo);
+    if (count === 0) toast('Nenhum turno encontrado no período');
+    else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+  };
 
   const shifts = useMemo<Shift[]>(
     () => getShifts().filter(s => s.status === 'finalizado'),
