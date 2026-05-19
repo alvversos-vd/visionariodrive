@@ -116,15 +116,35 @@ export function resumeShift(turno_id: string): Shift | null {
   return s;
 }
 
+// Buffer de distância para batch-flush (anti-flicker / debounce GPS).
+const _gpsBuffer: Record<string, number> = {};
+let _gpsFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const GPS_FLUSH_MS = 1500;
+
+function flushGpsBuffer(): void {
+  _gpsFlushTimer = null;
+  const ids = Object.keys(_gpsBuffer);
+  if (ids.length === 0) return;
+  const list = getShifts();
+  let touched = false;
+  for (const id of ids) {
+    const meters = _gpsBuffer[id];
+    delete _gpsBuffer[id];
+    if (!meters || meters <= 0) continue;
+    const s = list.find(x => x.turno_id === id);
+    if (!s || s.status !== 'ativo') continue;
+    const km = meters / 1000;
+    s.km_gps = (s.km_gps || 0) + km;
+    s.km_desde_ultima_corrida = (s.km_desde_ultima_corrida || 0) + km;
+    touched = true;
+  }
+  if (touched) saveShifts(list);
+}
+
 export function addGpsDistance(turno_id: string, meters: number): void {
   if (!meters || meters <= 0) return;
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s || s.status !== 'ativo') return;
-  const km = meters / 1000;
-  s.km_gps = (s.km_gps || 0) + km;
-  s.km_desde_ultima_corrida = (s.km_desde_ultima_corrida || 0) + km;
-  saveShifts(list);
+  _gpsBuffer[turno_id] = (_gpsBuffer[turno_id] || 0) + meters;
+  if (!_gpsFlushTimer) _gpsFlushTimer = setTimeout(flushGpsBuffer, GPS_FLUSH_MS);
 }
 
 export interface StartShiftOptions {
