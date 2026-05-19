@@ -638,7 +638,7 @@ export default function ShiftMode({ onChange }: Props) {
                 </span>
                 <span className="font-display font-bold">{fmt(r.valor_por_km)}/km</span>
                 <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary" title="Editar km/valor"><Pencil size={12} /></button>
-                <button onClick={() => { deleteRide(shift.turno_id, r.corrida_id); refresh(); }} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
+                <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
               </div>
             ))}
           </div>
