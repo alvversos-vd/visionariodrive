@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate } from '@/lib/shifts';
+import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { getGoals } from '@/lib/storage';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet } from 'lucide-react';
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
 type Filter = 'hoje' | 'semana' | 'mes' | 'todos';
