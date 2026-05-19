@@ -439,6 +439,22 @@ export default function ShiftMode({ onChange }: Props) {
   const rPorKm = t.km_total > 0 ? t.ganho_total / t.km_total : 0;
   const kmDesde = shift.km_desde_ultima_corrida || 0;
 
+  // === Smart alerts (limiares configuráveis) ===
+  const thresholds = { ...DEFAULT_ALERT_THRESHOLDS, ...(getSettings().alertThresholds || {}) };
+  const horasOnline = t.tempo_online_minutos / 60;
+  const lucroHora = horasOnline > 0 ? t.lucro_total / horasOnline : 0;
+  const custoPct = t.ganho_total > 0 ? (t.custo_total / t.ganho_total) * 100 : 0;
+  const smartAlerts: { key: string; msg: string }[] = [];
+  if (thresholds.maxHorasTurno > 0 && horasOnline >= thresholds.maxHorasTurno) {
+    smartAlerts.push({ key: 'horas', msg: `⏰ Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
+  }
+  if (thresholds.minLucroHora > 0 && t.corridas_total >= 2 && lucroHora < thresholds.minLucroHora) {
+    smartAlerts.push({ key: 'lucroh', msg: `📉 Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
+  }
+  if (thresholds.maxCustoPct > 0 && t.ganho_total > 0 && custoPct > thresholds.maxCustoPct) {
+    smartAlerts.push({ key: 'custo', msg: `💸 Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
+  }
+
   // Preview da corrida no modal
   const vNum = parseFloat(rideValor.replace(',', '.'));
   const kNum = rideKm ? parseFloat(rideKm.replace(',', '.')) : kmDesde;
