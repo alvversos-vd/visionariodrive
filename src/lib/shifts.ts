@@ -53,7 +53,28 @@ export interface Shift {
   tz_offset_fim_minutos?: number;
   /** Status do GPS no turno — preservado no histórico para auditoria. */
   gps_status?: 'ok' | 'denied' | 'unavailable' | 'pending';
+  /** Pontos brutos da rota capturados pelo GPS, para desenhar no mapa ao vivo
+   *  e auditoria. Limitado a ~5000 pontos por turno (downsample antes disso). */
+  rota?: Array<{ lat: number; lng: number; t: number; spd?: number; hdg?: number }>;
 }
+
+/** Acrescenta um ponto à rota do turno (com cap de tamanho para não estourar storage). */
+export function appendRoutePoint(
+  turno_id: string,
+  pt: { lat: number; lng: number; t: number; spd?: number; hdg?: number }
+): void {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s || s.status !== 'ativo') return;
+  s.rota = s.rota || [];
+  // Downsample: se já passou de 5000 pontos, descarta os mais antigos pela metade
+  if (s.rota.length >= 5000) {
+    s.rota = s.rota.filter((_, i) => i % 2 === 0);
+  }
+  s.rota.push(pt);
+  saveShifts(list);
+}
+
 
 export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['gps_status']>): void {
   const list = getShifts();
