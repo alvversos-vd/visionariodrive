@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil,
+  Satellite, MapPinOff, Pencil, Map as MapIcon,
 } from 'lucide-react';
 import {
   Shift, ShiftRide, getActiveShift, startShift, endShift, addRideAuto,
@@ -19,7 +19,10 @@ import {
   getLastApp, setLastApp, APPS, AppEntrega, TIPO_LABEL,
 } from '@/lib/vehicles';
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
+import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
+import ShiftLiveMap from './ShiftLiveMap';
 import VehiclesView from './VehiclesView';
+
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
