@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import {
   Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil,
+  Satellite, MapPinOff, Pencil, Map as MapIcon,
 } from 'lucide-react';
 import {
   Shift, ShiftRide, getActiveShift, startShift, endShift, addRideAuto,
@@ -19,7 +19,10 @@ import {
   getLastApp, setLastApp, APPS, AppEntrega, TIPO_LABEL,
 } from '@/lib/vehicles';
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
+import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
+import ShiftLiveMap from './ShiftLiveMap';
 import VehiclesView from './VehiclesView';
+
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -50,6 +53,10 @@ export default function ShiftMode({ onChange }: Props) {
   const [editKm, setEditKm] = useState('');
   const [editValor, setEditValor] = useState('');
   const fallbackShownRef = useRef<string | null>(null);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [consentTurnoId, setConsentTurnoId] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(false);
+
 
   const refresh = () => {
     const a = getActiveShift();
@@ -107,44 +114,57 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(true);
   };
 
+  /**
+   * Fluxo profissional de permissão de GPS:
+   * 1) abre modal humanizado (GpsConsentDialog) explicando uso
+   * 2) somente após "Aceitar" dispara o prompt nativo do navegador
+   * 3) trata permissão negada com mensagens iOS/Android específicas
+   */
   const requestGpsPermission = (turnoId?: string) => {
-    const id = turnoId ?? shift?.turno_id;
-    // 1) Toast explicativo ANTES de qualquer pedido de permissão
-    toast('📍 Por que precisamos do GPS?', {
-      description:
-        'Sua localização será utilizada apenas durante turnos ativos para cálculo de distância e desempenho. Sem GPS você pode continuar registrando o km manualmente.',
-      duration: 6000,
-    });
+    const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       if (id) setShiftGpsStatus(id, 'unavailable');
-      setTimeout(() => toast('GPS indisponível neste dispositivo — modo manual ativo'), 800);
+      toast('GPS indisponível neste dispositivo — modo manual ativo');
       refresh();
       return;
     }
-    // 2) Após um instante, dispara o prompt do navegador
-    setTimeout(() => {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          if (id) setShiftGpsStatus(id, 'ok');
-          toast.success('GPS ativo — km serão calculados automaticamente');
-          refresh();
-        },
-        err => {
-          if (err.code === err.PERMISSION_DENIED) {
-            if (id) setShiftGpsStatus(id, 'denied');
-            toast.error('Permissão de GPS negada — modo manual ativo', {
-              description: 'Informe o km de cada corrida no formulário. O histórico continua salvo normalmente.',
-            });
-          } else {
-            if (id) setShiftGpsStatus(id, 'unavailable');
-            toast('GPS indisponível agora — modo manual ativo');
-          }
-          refresh();
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }, 900);
+    // Se já consentiu antes, pula o modal e vai direto ao prompt nativo
+    if (hasGpsConsent()) {
+      triggerNativePrompt(id);
+      return;
+    }
+    setConsentTurnoId(id);
+    setConsentOpen(true);
   };
+
+  const triggerNativePrompt = (id: string | null) => {
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        if (id) setShiftGpsStatus(id, 'ok');
+        saveGpsConsent();
+        toast.success('GPS ativo — km serão calculados automaticamente');
+        refresh();
+      },
+      err => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (err.code === err.PERMISSION_DENIED) {
+          if (id) setShiftGpsStatus(id, 'denied');
+          toast.error('Permissão de GPS negada', {
+            description: isIOS
+              ? 'Ajustes › Safari › Localização › Permitir. Modo manual ativado.'
+              : 'Permita localização precisa nas configurações. Modo manual ativado.',
+            duration: 7000,
+          });
+        } else {
+          if (id) setShiftGpsStatus(id, 'unavailable');
+          toast('GPS indisponível agora — modo manual ativo');
+        }
+        refresh();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
 
   const finalizeStart = () => {
     if (!pickedVehicleId || !pickedApp) return;
@@ -639,15 +659,28 @@ export default function ShiftMode({ onChange }: Props) {
             : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
         </p>
 
+        {/* Mapa ao vivo (opt-in) */}
+        {showMap && (shift.rota?.length ?? 0) > 0 && (
+          <ShiftLiveMap shift={shift} />
+        )}
+
         {/* Actions */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
-            {pausado ? <><Play size={14} /> Retomar</> : <><Pause size={14} /> Pausar</>}
+            {pausado ? <Play size={14} /> : <Pause size={14} />}
+          </button>
+          <button
+            onClick={() => setShowMap(v => !v)}
+            title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+            className={`p-3 rounded-xl font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform ${showMap ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-secondary text-foreground'}`}
+          >
+            <MapIcon size={14} />
           </button>
           <button onClick={openRide} disabled={pausado} className="col-span-2 p-3 rounded-xl bg-profit-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform disabled:opacity-50">
-            <Plus size={18} /> Registrar corrida
+            <Plus size={18} /> Corrida
           </button>
         </div>
+
 
         {/* Últimas corridas */}
         {shift.rides.length > 0 && (
@@ -674,8 +707,23 @@ export default function ShiftMode({ onChange }: Props) {
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
+      <GpsConsentDialog
+        open={consentOpen}
+        onAccept={() => {
+          saveGpsConsent();
+          setConsentOpen(false);
+          triggerNativePrompt(consentTurnoId);
+        }}
+        onDecline={() => {
+          setConsentOpen(false);
+          if (consentTurnoId) setShiftGpsStatus(consentTurnoId, 'denied');
+          toast('Modo manual ativado — informe o km de cada corrida');
+          refresh();
+        }}
+      />
     </>
   );
+
 
   // ============ RIDE MODAL ============
   function renderRideModal() {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { addGpsDistance, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { addGpsDistance, appendRoutePoint, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
 
 export type GpsState = 'idle' | 'requesting' | 'tracking' | 'denied' | 'unavailable' | 'paused';
 
@@ -8,6 +8,8 @@ interface Point {
   lng: number;
   t: number;
   acc: number;
+  spd?: number;
+  hdg?: number;
 }
 
 function haversineMeters(a: Point, b: Point): number {
@@ -24,25 +26,75 @@ function haversineMeters(a: Point, b: Point): number {
 }
 
 /**
- * Hook que rastreia GPS enquanto há um turno ativo e re-renderiza por segundo.
- * Aplica filtros anti-bug: precisão ruim, micro-deslocamentos, jumps de velocidade, throttle.
+ * Rastreador de turno — comportamento mobile-first:
+ *  - watchPosition com alta precisão
+ *  - filtros anti-jitter (precisão ruim, micro-deslocamentos, jumps)
+ *  - persiste pontos da rota no storage para sobreviver a minimizar/reload
+ *  - Wake Lock para reduzir kill em background no Android
+ *  - reconciliação no visibilitychange
  */
 export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void }) {
   const [gps, setGps] = useState<GpsState>('idle');
   const [, setTick] = useState(0);
   const lastPoint = useRef<Point | null>(null);
   const watchId = useRef<number | null>(null);
+  const wakeLock = useRef<WakeLockSentinel | null>(null);
   const onTickRef = useRef(opts?.onTick);
   onTickRef.current = opts?.onTick;
 
-  // Re-render por segundo enquanto turno ativo (não pausado)
+  // Re-render por segundo enquanto turno ativo (não pausado) — só em foreground
   useEffect(() => {
     if (!shift || shift.status !== 'ativo') return;
     const i = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       setTick(t => t + 1);
       onTickRef.current?.();
     }, 1000);
     return () => clearInterval(i);
+  }, [shift?.turno_id, shift?.status]);
+
+  // Visibility: ao voltar do background, força refresh + reconciliação
+  useEffect(() => {
+    if (!shift) return;
+    const onVis = () => {
+      if (!document.hidden) {
+        // Re-âncora o último ponto para evitar "salto" no primeiro fix pós-background
+        lastPoint.current = null;
+        setTick(t => t + 1);
+        onTickRef.current?.();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pageshow', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pageshow', onVis);
+    };
+  }, [shift?.turno_id]);
+
+  // Wake Lock — tenta manter tela ligada durante turno ativo (best-effort)
+  useEffect(() => {
+    if (!shift || shift.status !== 'ativo') return;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLockSentinel> } };
+    if (!nav.wakeLock) return;
+    let cancelled = false;
+    const acquire = async () => {
+      try {
+        const lock = await nav.wakeLock!.request('screen');
+        if (cancelled) { lock.release().catch(() => {}); return; }
+        wakeLock.current = lock;
+        lock.addEventListener('release', () => { wakeLock.current = null; });
+      } catch { /* sem permissão / unsupported — silencioso */ }
+    };
+    acquire();
+    const onVis = () => { if (!document.hidden && !wakeLock.current) acquire(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
+      wakeLock.current?.release().catch(() => {});
+      wakeLock.current = null;
+    };
   }, [shift?.turno_id, shift?.status]);
 
   // GPS watch
@@ -63,6 +115,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     if (shift.status !== 'ativo') return;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setGps('unavailable');
+      setShiftGpsStatus(shift.turno_id, 'unavailable');
       return;
     }
 
@@ -78,25 +131,35 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           lng: pos.coords.longitude,
           t: pos.timestamp || Date.now(),
           acc: pos.coords.accuracy ?? 999,
+          spd: pos.coords.speed ?? undefined,
+          hdg: pos.coords.heading ?? undefined,
         };
-        // Filtro: precisão ruim
+        // Filtro 1: precisão ruim
         if (cur.acc > 50) return;
+        // Filtro 2: parado (speed reportada < 0.5 m/s)
+        const stationary = typeof cur.spd === 'number' && cur.spd >= 0 && cur.spd < 0.5;
+
         const prev = lastPoint.current;
         if (!prev) {
           lastPoint.current = cur;
+          // Primeiro fix do turno também entra na rota
+          appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+          onTickRef.current?.();
           return;
         }
         const dt = (cur.t - prev.t) / 1000;
         if (dt < 3) return; // throttle
         const meters = haversineMeters(prev, cur);
-        if (meters < 10) return; // ignora ruído (parado)
+        if (meters < 8) return; // ruído / parado
+        if (stationary && meters < 15) return;
         const speedKmh = (meters / dt) * 3.6;
         if (speedKmh > 200) {
-          // jump impossível — ignora e re-ancora
+          // jump impossível — re-ancora sem somar
           lastPoint.current = cur;
           return;
         }
         addGpsDistance(shift.turno_id, meters);
+        appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
         lastPoint.current = cur;
         onTickRef.current?.();
       },
@@ -109,11 +172,11 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           setShiftGpsStatus(shift.turno_id, 'unavailable');
         }
       },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
     watchId.current = id;
 
-    // Watchdog: se nenhum fix por 45s, considera GPS congelado/indisponível
+    // Watchdog: se nenhum fix por 45s, marca como indisponível (modo manual)
     const watchdog = setInterval(() => {
       if (Date.now() - lastFixAt > 45000) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'unavailable' : prev));
@@ -157,5 +220,4 @@ export function tempoOnlineMs(shift: Shift): number {
   return Math.max(0, fim - ini - pausado);
 }
 
-// re-export to avoid unused warning when imported elsewhere
 export { getActiveShift };
