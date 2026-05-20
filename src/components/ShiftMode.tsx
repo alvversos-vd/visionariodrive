@@ -659,15 +659,28 @@ export default function ShiftMode({ onChange }: Props) {
             : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
         </p>
 
+        {/* Mapa ao vivo (opt-in) */}
+        {showMap && (shift.rota?.length ?? 0) > 0 && (
+          <ShiftLiveMap shift={shift} />
+        )}
+
         {/* Actions */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
-            {pausado ? <><Play size={14} /> Retomar</> : <><Pause size={14} /> Pausar</>}
+            {pausado ? <Play size={14} /> : <Pause size={14} />}
+          </button>
+          <button
+            onClick={() => setShowMap(v => !v)}
+            title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+            className={`p-3 rounded-xl font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform ${showMap ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-secondary text-foreground'}`}
+          >
+            <MapIcon size={14} />
           </button>
           <button onClick={openRide} disabled={pausado} className="col-span-2 p-3 rounded-xl bg-profit-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform disabled:opacity-50">
-            <Plus size={18} /> Registrar corrida
+            <Plus size={18} /> Corrida
           </button>
         </div>
+
 
         {/* Últimas corridas */}
         {shift.rides.length > 0 && (
@@ -694,8 +707,23 @@ export default function ShiftMode({ onChange }: Props) {
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
+      <GpsConsentDialog
+        open={consentOpen}
+        onAccept={() => {
+          saveGpsConsent();
+          setConsentOpen(false);
+          triggerNativePrompt(consentTurnoId);
+        }}
+        onDecline={() => {
+          setConsentOpen(false);
+          if (consentTurnoId) setShiftGpsStatus(consentTurnoId, 'denied');
+          toast('Modo manual ativado — informe o km de cada corrida');
+          refresh();
+        }}
+      />
     </>
   );
+
 
   // ============ RIDE MODAL ============
   function renderRideModal() {
