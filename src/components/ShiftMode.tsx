@@ -53,6 +53,10 @@ export default function ShiftMode({ onChange }: Props) {
   const [editKm, setEditKm] = useState('');
   const [editValor, setEditValor] = useState('');
   const fallbackShownRef = useRef<string | null>(null);
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [consentTurnoId, setConsentTurnoId] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(false);
+
 
   const refresh = () => {
     const a = getActiveShift();
@@ -110,44 +114,57 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(true);
   };
 
+  /**
+   * Fluxo profissional de permissão de GPS:
+   * 1) abre modal humanizado (GpsConsentDialog) explicando uso
+   * 2) somente após "Aceitar" dispara o prompt nativo do navegador
+   * 3) trata permissão negada com mensagens iOS/Android específicas
+   */
   const requestGpsPermission = (turnoId?: string) => {
-    const id = turnoId ?? shift?.turno_id;
-    // 1) Toast explicativo ANTES de qualquer pedido de permissão
-    toast('📍 Por que precisamos do GPS?', {
-      description:
-        'Sua localização será utilizada apenas durante turnos ativos para cálculo de distância e desempenho. Sem GPS você pode continuar registrando o km manualmente.',
-      duration: 6000,
-    });
+    const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       if (id) setShiftGpsStatus(id, 'unavailable');
-      setTimeout(() => toast('GPS indisponível neste dispositivo — modo manual ativo'), 800);
+      toast('GPS indisponível neste dispositivo — modo manual ativo');
       refresh();
       return;
     }
-    // 2) Após um instante, dispara o prompt do navegador
-    setTimeout(() => {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          if (id) setShiftGpsStatus(id, 'ok');
-          toast.success('GPS ativo — km serão calculados automaticamente');
-          refresh();
-        },
-        err => {
-          if (err.code === err.PERMISSION_DENIED) {
-            if (id) setShiftGpsStatus(id, 'denied');
-            toast.error('Permissão de GPS negada — modo manual ativo', {
-              description: 'Informe o km de cada corrida no formulário. O histórico continua salvo normalmente.',
-            });
-          } else {
-            if (id) setShiftGpsStatus(id, 'unavailable');
-            toast('GPS indisponível agora — modo manual ativo');
-          }
-          refresh();
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }, 900);
+    // Se já consentiu antes, pula o modal e vai direto ao prompt nativo
+    if (hasGpsConsent()) {
+      triggerNativePrompt(id);
+      return;
+    }
+    setConsentTurnoId(id);
+    setConsentOpen(true);
   };
+
+  const triggerNativePrompt = (id: string | null) => {
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        if (id) setShiftGpsStatus(id, 'ok');
+        saveGpsConsent();
+        toast.success('GPS ativo — km serão calculados automaticamente');
+        refresh();
+      },
+      err => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (err.code === err.PERMISSION_DENIED) {
+          if (id) setShiftGpsStatus(id, 'denied');
+          toast.error('Permissão de GPS negada', {
+            description: isIOS
+              ? 'Ajustes › Safari › Localização › Permitir. Modo manual ativado.'
+              : 'Permita localização precisa nas configurações. Modo manual ativado.',
+            duration: 7000,
+          });
+        } else {
+          if (id) setShiftGpsStatus(id, 'unavailable');
+          toast('GPS indisponível agora — modo manual ativo');
+        }
+        refresh();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
 
   const finalizeStart = () => {
     if (!pickedVehicleId || !pickedApp) return;
