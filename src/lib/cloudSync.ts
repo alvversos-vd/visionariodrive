@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+
 
 // Keys mapped to columns
 const KEY_MAP = {
@@ -19,7 +19,7 @@ const LOCAL_KEYS = Object.keys(KEY_MAP) as LocalKey[];
 
 let currentUserId: string | null = null;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
 let hydrating = false;
 
 export function setSyncUser(userId: string | null) {
@@ -84,16 +84,10 @@ async function pushToCloud() {
   const payload: Record<string, unknown> = { user_id: currentUserId };
   for (const lk of LOCAL_KEYS) payload[KEY_MAP[lk]] = readLocal(lk);
 
-  const { error } = await supabase
+  // Salvamento silencioso na nuvem — sem toast (era spam durante o turno).
+  await supabase
     .from('user_data')
     .upsert(payload as never, { onConflict: 'user_id' });
-
-  if (!error) {
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => {
-      toast({ description: '✓ Salvo automaticamente', duration: 1500 });
-    }, 200);
-  }
 }
 
 export function subscribeRealtime(userId: string, onChange: () => void) {

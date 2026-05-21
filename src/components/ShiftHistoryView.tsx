@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate } from '@/lib/shifts';
+import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
+import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { getGoals } from '@/lib/storage';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2 } from 'lucide-react';
+
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
 type Filter = 'hoje' | 'semana' | 'mes' | 'todos';
@@ -394,8 +396,36 @@ export default function ShiftHistoryView({ refresh }: Props) {
                             {meta > 0 && result === 'excelente' && (
                               <p className="text-xs text-profit flex items-center gap-1 font-display font-semibold"><Trophy size={12}/> Bateu a meta de {fmt(meta)}</p>
                             )}
+                            {(s.rota?.length ?? 0) > 1 && (
+                              <div className="pt-1 space-y-1.5">
+                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                  <MapIcon size={10}/> Rota ({s.rota!.length} pontos)
+                                </p>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                  <button
+                                    onClick={() => { exportRouteGpx(s) ? toast.success('GPX exportado') : toast('Rota vazia'); }}
+                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                                  ><Download size={11}/> GPX</button>
+                                  <button
+                                    onClick={() => { exportRouteKml(s) ? toast.success('KML exportado') : toast('Rota vazia'); }}
+                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                                  ><Download size={11}/> KML</button>
+                                  <button
+                                    onClick={() => {
+                                      if (clearShiftRoute(s.turno_id)) {
+                                        toast.success('Rota apagada');
+                                        setOpenId(null);
+                                      }
+                                    }}
+                                    className="px-2 py-1.5 rounded bg-loss/10 text-loss text-[11px] font-display font-semibold flex items-center justify-center gap-1 border border-loss/30"
+                                  ><Trash2 size={11}/> Apagar</button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">Abra GPX/KML no Google Earth, Maps ou Strava.</p>
+                              </div>
+                            )}
                           </div>
                         )}
+
                       </div>
                     );
                   })}

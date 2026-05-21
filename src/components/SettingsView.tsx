@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
+import { clearAllRoutes } from '@/lib/shifts';
+import { clearGpsConsent } from './GpsConsentDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, MapPin, ShieldOff } from 'lucide-react';
 import TagListEditor from './TagListEditor';
 import VehiclesView from './VehiclesView';
+
 
 interface Props {
   refresh: number;
@@ -158,6 +162,43 @@ export default function SettingsView({ refresh, onChanged }: Props) {
         <p className="text-sm text-muted-foreground">Real brasileiro (R$) — padrão.</p>
       </div>
 
+      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="text-primary" size={18} />
+          <p className="font-display font-semibold text-foreground">Privacidade de localização</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Suas rotas ficam salvas <strong>apenas neste aparelho</strong>. Você pode apagar
+          o histórico de localização e refazer a permissão do GPS a qualquer momento.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              const n = clearAllRoutes();
+              toast.success(n > 0 ? `Rotas apagadas em ${n} turno${n === 1 ? '' : 's'}` : 'Nenhuma rota para apagar');
+            }}
+          >
+            <MapPin size={14} className="mr-1.5" /> Apagar histórico de rotas
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              clearGpsConsent();
+              toast.success('Consentimento de GPS redefinido. Será pedido novamente no próximo turno.');
+            }}
+          >
+            <ShieldOff size={14} className="mr-1.5" /> Redefinir permissão GPS
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Apagar rotas não remove suas corridas, ganhos nem km — apenas os pontos de localização.
+          Para revogar a permissão do navegador, ajuste também nas configurações do site no Chrome/Safari.
+        </p>
+      </div>
+
       <div className="bg-card rounded-lg p-4 border-2 border-destructive/30 shadow-sm space-y-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="text-destructive" size={18} />
@@ -181,6 +222,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
           </div>
         )}
       </div>
+
     </div>
   );
 }

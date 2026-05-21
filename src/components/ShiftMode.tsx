@@ -21,7 +21,9 @@ import {
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
 import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
 import ShiftLiveMap from './ShiftLiveMap';
+import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
+
 
 
 function fmt(v: number) {
@@ -661,8 +663,21 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* Mapa ao vivo (opt-in) */}
         {showMap && (shift.rota?.length ?? 0) > 0 && (
-          <ShiftLiveMap shift={shift} />
+          <div className="space-y-2">
+            <ShiftLiveMap shift={shift} />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { exportRouteGpx(shift) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
+                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+              ><MapIcon size={12}/> Exportar GPX</button>
+              <button
+                onClick={() => { exportRouteKml(shift) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
+                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+              ><MapIcon size={12}/> Exportar KML</button>
+            </div>
+          </div>
         )}
+
 
         {/* Actions */}
         <div className="grid grid-cols-4 gap-2">
