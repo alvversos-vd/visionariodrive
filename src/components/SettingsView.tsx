@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
+import { clearAllRoutes } from '@/lib/shifts';
+import { clearGpsConsent } from './GpsConsentDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, MapPin, ShieldOff } from 'lucide-react';
 import TagListEditor from './TagListEditor';
 import VehiclesView from './VehiclesView';
+
 
 interface Props {
   refresh: number;
