@@ -75,6 +75,28 @@ export function appendRoutePoint(
   saveShifts(list);
 }
 
+/** Apaga a rota (pontos GPS) de um turno específico, mantendo km/corridas. */
+export function clearShiftRoute(turno_id: string): boolean {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return false;
+  s.rota = [];
+  saveShifts(list);
+  return true;
+}
+
+/** Apaga a rota de TODOS os turnos (mantém histórico de corridas e km). */
+export function clearAllRoutes(): number {
+  const list = getShifts();
+  let cleared = 0;
+  list.forEach(s => {
+    if (s.rota && s.rota.length > 0) { s.rota = []; cleared++; }
+  });
+  if (cleared > 0) saveShifts(list);
+  return cleared;
+}
+
+
 
 export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['gps_status']>): void {
   const list = getShifts();
