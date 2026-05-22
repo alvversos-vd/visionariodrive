@@ -97,7 +97,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     };
   }, [shift?.turno_id, shift?.status]);
 
-  // GPS watch
+  // GPS watch + polling suplementar (combate throttling do browser)
   useEffect(() => {
     if (!shift) {
       setGps('idle');
@@ -121,69 +121,96 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
     setGps('requesting');
     let lastFixAt = Date.now();
-    const id = navigator.geolocation.watchPosition(
-      pos => {
-        lastFixAt = Date.now();
-        setGps(prev => (prev !== 'tracking' ? 'tracking' : prev));
-        setShiftGpsStatus(shift.turno_id, 'ok');
-        const cur: Point = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          t: pos.timestamp || Date.now(),
-          acc: pos.coords.accuracy ?? 999,
-          spd: pos.coords.speed ?? undefined,
-          hdg: pos.coords.heading ?? undefined,
-        };
-        // Filtro 1: precisão muito ruim (urbano costuma dar 20-40m, manter folga)
-        if (cur.acc > 75) return;
+    const turnoId = shift.turno_id;
 
-        const prev = lastPoint.current;
-        if (!prev) {
-          lastPoint.current = cur;
-          // Primeiro fix do turno entra na rota
-          appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
-          onTickRef.current?.();
-          return;
-        }
-        const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
-        const meters = haversineMeters(prev, cur);
-        // Filtro anti-jitter mínimo: ignora apenas pontos quase coincidentes
-        if (meters < 3) return;
-        const speedKmh = (meters / dt) * 3.6;
-        if (speedKmh > 200) {
-          // jump impossível (provável salto de GPS) — re-ancora sem somar
-          lastPoint.current = cur;
-          return;
-        }
-        // Tracking contínuo: soma distância incremental e adiciona ponto na polyline
-        addGpsDistance(shift.turno_id, meters);
-        appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+    // Handler único — tanto watchPosition quanto polling chamam aqui.
+    // Deduplica por timestamp e aplica filtros + cálculo Haversine incremental.
+    const seenTs = new Set<number>();
+    const ingest = (pos: GeolocationPosition) => {
+      lastFixAt = Date.now();
+      setGps(prev => (prev !== 'tracking' ? 'tracking' : prev));
+      setShiftGpsStatus(turnoId, 'ok');
+      const ts = pos.timestamp || Date.now();
+      if (seenTs.has(ts)) return;
+      seenTs.add(ts);
+      if (seenTs.size > 200) {
+        // bound — mantém só os 100 mais recentes
+        const arr = Array.from(seenTs).slice(-100);
+        seenTs.clear();
+        arr.forEach(t => seenTs.add(t));
+      }
+      const cur: Point = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        t: ts,
+        acc: pos.coords.accuracy ?? 999,
+        spd: pos.coords.speed ?? undefined,
+        hdg: pos.coords.heading ?? undefined,
+      };
+      // Filtro de precisão (mais permissivo em movimento: 100m)
+      if (cur.acc > 100) return;
+
+      const prev = lastPoint.current;
+      if (!prev) {
         lastPoint.current = cur;
+        appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
         onTickRef.current?.();
-      },
-      err => {
-        if (err.code === err.PERMISSION_DENIED) {
-          setGps('denied');
-          setShiftGpsStatus(shift.turno_id, 'denied');
-        } else {
-          setGps('unavailable');
-          setShiftGpsStatus(shift.turno_id, 'unavailable');
-        }
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-    );
+        return;
+      }
+      const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
+      const meters = haversineMeters(prev, cur);
+      // Anti-jitter mínimo: só ignora pontos virtualmente idênticos
+      if (meters < 2) return;
+      const speedKmh = (meters / dt) * 3.6;
+      if (speedKmh > 250) {
+        // salto impossível — re-ancora sem somar (provável teletransporte GPS)
+        lastPoint.current = cur;
+        return;
+      }
+      addGpsDistance(turnoId, meters);
+      appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+      lastPoint.current = cur;
+      onTickRef.current?.();
+    };
+
+    const onErr = (err: GeolocationPositionError) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        setGps('denied');
+        setShiftGpsStatus(turnoId, 'denied');
+      }
+      // outros erros (timeout/unavailable) — não rebaixa o estado se já está tracking;
+      // o watchdog cuida disso.
+    };
+
+    const id = navigator.geolocation.watchPosition(ingest, onErr, {
+      enableHighAccuracy: true,
+      maximumAge: 1000, // permite fix recente (mais throughput em browsers que throttlam)
+      timeout: 20000,
+    });
     watchId.current = id;
 
-    // Watchdog: se nenhum fix por 45s, marca como indisponível (modo manual)
+    // Polling suplementar: força amostra a cada 2.5s — combate throttling de
+    // watchPosition em mobile (Chrome/Safari frequentemente espaçam fixes em 5-10s).
+    const poll = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return; // economia em background
+      navigator.geolocation.getCurrentPosition(ingest, () => {}, {
+        enableHighAccuracy: true,
+        maximumAge: 2000,
+        timeout: 10000,
+      });
+    }, 2500);
+
+    // Watchdog: 60s sem fix → marca indisponível (modo manual)
     const watchdog = setInterval(() => {
-      if (Date.now() - lastFixAt > 45000) {
+      if (Date.now() - lastFixAt > 60000) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'unavailable' : prev));
-        setShiftGpsStatus(shift.turno_id, 'unavailable');
+        setShiftGpsStatus(turnoId, 'unavailable');
       }
     }, 5000);
 
     return () => {
       clearInterval(watchdog);
+      clearInterval(poll);
       if (watchId.current !== null && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId.current);
       }
