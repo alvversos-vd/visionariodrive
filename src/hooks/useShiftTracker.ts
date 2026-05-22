@@ -134,30 +134,28 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           spd: pos.coords.speed ?? undefined,
           hdg: pos.coords.heading ?? undefined,
         };
-        // Filtro 1: precisão ruim
-        if (cur.acc > 50) return;
-        // Filtro 2: parado (speed reportada < 0.5 m/s)
-        const stationary = typeof cur.spd === 'number' && cur.spd >= 0 && cur.spd < 0.5;
+        // Filtro 1: precisão muito ruim (urbano costuma dar 20-40m, manter folga)
+        if (cur.acc > 75) return;
 
         const prev = lastPoint.current;
         if (!prev) {
           lastPoint.current = cur;
-          // Primeiro fix do turno também entra na rota
+          // Primeiro fix do turno entra na rota
           appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
           onTickRef.current?.();
           return;
         }
-        const dt = (cur.t - prev.t) / 1000;
-        if (dt < 3) return; // throttle
+        const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
         const meters = haversineMeters(prev, cur);
-        if (meters < 8) return; // ruído / parado
-        if (stationary && meters < 15) return;
+        // Filtro anti-jitter mínimo: ignora apenas pontos quase coincidentes
+        if (meters < 3) return;
         const speedKmh = (meters / dt) * 3.6;
         if (speedKmh > 200) {
-          // jump impossível — re-ancora sem somar
+          // jump impossível (provável salto de GPS) — re-ancora sem somar
           lastPoint.current = cur;
           return;
         }
+        // Tracking contínuo: soma distância incremental e adiciona ponto na polyline
         addGpsDistance(shift.turno_id, meters);
         appendRoutePoint(shift.turno_id, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
         lastPoint.current = cur;
