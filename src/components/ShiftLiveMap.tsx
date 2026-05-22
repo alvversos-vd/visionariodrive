@@ -77,7 +77,7 @@ export default function ShiftLiveMap({ shift, className }: Props) {
       />
       <div className="absolute top-2 left-2 z-[400] bg-background/85 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-[10px] font-mono leading-tight border border-border shadow-sm pointer-events-none">
         <div><span className="text-muted-foreground">pts</span> <span className="font-bold text-primary">{pts.length}</span></div>
-        <div><span className="text-muted-foreground">km</span> <span className="font-bold">{(shift.km_gps_total ?? 0).toFixed(2)}</span></div>
+        <div><span className="text-muted-foreground">km</span> <span className="font-bold">{(shift.km_gps ?? 0).toFixed(2)}</span></div>
         {last?.spd != null && (
           <div><span className="text-muted-foreground">vel</span> <span className="font-bold">{(last.spd * 3.6).toFixed(0)}</span><span className="text-muted-foreground">km/h</span></div>
         )}
