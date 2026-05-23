@@ -160,7 +160,10 @@ export function getActiveShift(): Shift | null {
   return getShifts().find(s => s.status === 'ativo' || s.status === 'pausado') ?? null;
 }
 
+// (Buffer de distância — declarado abaixo logo após o bloco de pausa/retomada de turno)
+
 export function pauseShift(turno_id: string): Shift | null {
+  flushShiftBuffers();
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s || s.status !== 'ativo') return null;
