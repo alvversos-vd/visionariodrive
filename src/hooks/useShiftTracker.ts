@@ -107,10 +107,6 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     if (shift.status === 'pausado') {
       setGps('paused');
       lastPoint.current = null;
-      if (watchId.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
       return;
     }
     if (shift.status !== 'ativo') return;
