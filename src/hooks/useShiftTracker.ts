@@ -38,7 +38,6 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
   const [gps, setGps] = useState<GpsState>('idle');
   const [, setTick] = useState(0);
   const lastPoint = useRef<Point | null>(null);
-  const watchId = useRef<number | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
   const onTickRef = useRef(opts?.onTick);
   onTickRef.current = opts?.onTick;
