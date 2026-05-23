@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { addGpsDistance, appendRoutePoint, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { gpsService, GpsFix } from '@/lib/gpsService';
 
 export type GpsState = 'idle' | 'requesting' | 'tracking' | 'denied' | 'unavailable' | 'paused';
 
