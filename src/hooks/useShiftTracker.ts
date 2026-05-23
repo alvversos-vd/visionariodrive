@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { addGpsDistance, appendRoutePoint, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { gpsService, GpsFix } from '@/lib/gpsService';
 
 export type GpsState = 'idle' | 'requesting' | 'tracking' | 'denied' | 'unavailable' | 'paused';
 
@@ -37,7 +38,6 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
   const [gps, setGps] = useState<GpsState>('idle');
   const [, setTick] = useState(0);
   const lastPoint = useRef<Point | null>(null);
-  const watchId = useRef<number | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
   const onTickRef = useRef(opts?.onTick);
   onTickRef.current = opts?.onTick;
@@ -106,14 +106,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     if (shift.status === 'pausado') {
       setGps('paused');
       lastPoint.current = null;
-      if (watchId.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
       return;
     }
     if (shift.status !== 'ativo') return;
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    if (!gpsService.isAvailable()) {
       setGps('unavailable');
       setShiftGpsStatus(shift.turno_id, 'unavailable');
       return;
@@ -123,33 +119,18 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     let lastFixAt = Date.now();
     const turnoId = shift.turno_id;
 
-    // Handler único — tanto watchPosition quanto polling chamam aqui.
-    // Deduplica por timestamp e aplica filtros + cálculo Haversine incremental.
-    const seenTs = new Set<number>();
-    const ingest = (pos: GeolocationPosition) => {
+    const onFix = (fix: GpsFix) => {
       lastFixAt = Date.now();
       setGps(prev => (prev !== 'tracking' ? 'tracking' : prev));
       setShiftGpsStatus(turnoId, 'ok');
-      const ts = pos.timestamp || Date.now();
-      if (seenTs.has(ts)) return;
-      seenTs.add(ts);
-      if (seenTs.size > 200) {
-        // bound — mantém só os 100 mais recentes
-        const arr = Array.from(seenTs).slice(-100);
-        seenTs.clear();
-        arr.forEach(t => seenTs.add(t));
-      }
-      const cur: Point = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        t: ts,
-        acc: pos.coords.accuracy ?? 999,
-        spd: pos.coords.speed ?? undefined,
-        hdg: pos.coords.heading ?? undefined,
-      };
-      // Filtro de precisão (mais permissivo em movimento: 100m)
-      if (cur.acc > 100) return;
 
+      // Filtro de precisão (permissivo: 100m)
+      if (fix.accuracy > 100) return;
+
+      const cur: Point = {
+        lat: fix.lat, lng: fix.lng, t: fix.t, acc: fix.accuracy,
+        spd: fix.speed, hdg: fix.heading,
+      };
       const prev = lastPoint.current;
       if (!prev) {
         lastPoint.current = cur;
@@ -159,11 +140,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       }
       const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
       const meters = haversineMeters(prev, cur);
-      // Anti-jitter mínimo: só ignora pontos virtualmente idênticos
       if (meters < 2) return;
       const speedKmh = (meters / dt) * 3.6;
       if (speedKmh > 250) {
-        // salto impossível — re-ancora sem somar (provável teletransporte GPS)
+        // salto impossível — re-ancora sem somar
         lastPoint.current = cur;
         return;
       }
@@ -173,34 +153,18 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       onTickRef.current?.();
     };
 
-    const onErr = (err: GeolocationPositionError) => {
-      if (err.code === err.PERMISSION_DENIED) {
-        setGps('denied');
-        setShiftGpsStatus(turnoId, 'denied');
-      }
-      // outros erros (timeout/unavailable) — não rebaixa o estado se já está tracking;
-      // o watchdog cuida disso.
-    };
-
-    const id = navigator.geolocation.watchPosition(ingest, onErr, {
-      enableHighAccuracy: true,
-      maximumAge: 1000, // permite fix recente (mais throughput em browsers que throttlam)
-      timeout: 20000,
+    const handle = gpsService.watch({
+      onFix,
+      onError: (kind) => {
+        if (kind === 'denied') {
+          setGps('denied');
+          setShiftGpsStatus(turnoId, 'denied');
+        }
+        // timeout/unavailable: watchdog cuida
+      },
     });
-    watchId.current = id;
 
-    // Polling suplementar: força amostra a cada 2.5s — combate throttling de
-    // watchPosition em mobile (Chrome/Safari frequentemente espaçam fixes em 5-10s).
-    const poll = setInterval(() => {
-      if (typeof document !== 'undefined' && document.hidden) return; // economia em background
-      navigator.geolocation.getCurrentPosition(ingest, () => {}, {
-        enableHighAccuracy: true,
-        maximumAge: 2000,
-        timeout: 10000,
-      });
-    }, 2500);
-
-    // Watchdog: 60s sem fix → marca indisponível (modo manual)
+    // Watchdog: 60s sem fix → marca indisponível
     const watchdog = setInterval(() => {
       if (Date.now() - lastFixAt > 60000) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'unavailable' : prev));
@@ -210,11 +174,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
     return () => {
       clearInterval(watchdog);
-      clearInterval(poll);
-      if (watchId.current !== null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
-      watchId.current = null;
+      handle.stop();
       lastPoint.current = null;
     };
   }, [shift?.turno_id, shift?.status]);

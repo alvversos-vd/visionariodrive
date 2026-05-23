@@ -58,21 +58,44 @@ export interface Shift {
   rota?: Array<{ lat: number; lng: number; t: number; spd?: number; hdg?: number }>;
 }
 
-/** Acrescenta um ponto à rota do turno (com cap de tamanho para não estourar storage). */
-export function appendRoutePoint(
-  turno_id: string,
-  pt: { lat: number; lng: number; t: number; spd?: number; hdg?: number }
-): void {
+// Buffer de pontos da rota para batch-flush (evita gravar localStorage a cada fix).
+type RoutePt = { lat: number; lng: number; t: number; spd?: number; hdg?: number };
+const _routeBuffer: Record<string, RoutePt[]> = {};
+let _routeFlushTimer: ReturnType<typeof setTimeout> | null = null;
+const ROUTE_FLUSH_MS = 1500;
+
+function flushRouteBuffer(): void {
+  _routeFlushTimer = null;
+  const ids = Object.keys(_routeBuffer);
+  if (ids.length === 0) return;
   const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s || s.status !== 'ativo') return;
-  s.rota = s.rota || [];
-  // Downsample: se já passou de 5000 pontos, descarta os mais antigos pela metade
-  if (s.rota.length >= 5000) {
-    s.rota = s.rota.filter((_, i) => i % 2 === 0);
+  let touched = false;
+  for (const id of ids) {
+    const pts = _routeBuffer[id];
+    delete _routeBuffer[id];
+    if (!pts || pts.length === 0) continue;
+    const s = list.find(x => x.turno_id === id);
+    if (!s || s.status !== 'ativo') continue;
+    s.rota = s.rota || [];
+    if (s.rota.length + pts.length >= 5000) {
+      s.rota = s.rota.filter((_, i) => i % 2 === 0);
+    }
+    s.rota.push(...pts);
+    touched = true;
   }
-  s.rota.push(pt);
-  saveShifts(list);
+  if (touched) saveShifts(list);
+}
+
+/** Acrescenta um ponto à rota do turno (batched — flush a cada 1.5s). */
+export function appendRoutePoint(turno_id: string, pt: RoutePt): void {
+  (_routeBuffer[turno_id] = _routeBuffer[turno_id] || []).push(pt);
+  if (!_routeFlushTimer) _routeFlushTimer = setTimeout(flushRouteBuffer, ROUTE_FLUSH_MS);
+}
+
+/** Força flush imediato dos buffers (rota + distância) — usado ao pausar/encerrar. */
+export function flushShiftBuffers(): void {
+  if (_routeFlushTimer) { clearTimeout(_routeFlushTimer); flushRouteBuffer(); }
+  if (_gpsFlushTimer) { clearTimeout(_gpsFlushTimer); flushGpsBuffer(); }
 }
 
 /** Apaga a rota (pontos GPS) de um turno específico, mantendo km/corridas. */
@@ -137,7 +160,10 @@ export function getActiveShift(): Shift | null {
   return getShifts().find(s => s.status === 'ativo' || s.status === 'pausado') ?? null;
 }
 
+// (Buffer de distância — declarado abaixo logo após o bloco de pausa/retomada de turno)
+
 export function pauseShift(turno_id: string): Shift | null {
+  flushShiftBuffers();
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s || s.status !== 'ativo') return null;
@@ -233,6 +259,7 @@ export function startShift(opts: StartShiftOptions): Shift {
 }
 
 export function endShift(turno_id: string): Shift | null {
+  flushShiftBuffers();
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s) return null;
