@@ -259,6 +259,7 @@ export function startShift(opts: StartShiftOptions): Shift {
 }
 
 export function endShift(turno_id: string): Shift | null {
+  flushShiftBuffers();
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s) return null;
