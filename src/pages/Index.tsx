@@ -15,6 +15,7 @@ import UpgradeView from '@/components/UpgradeView';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
+import InstallAppButton from '@/components/InstallAppButton';
 
 type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
