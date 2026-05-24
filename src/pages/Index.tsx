@@ -97,7 +97,8 @@ export default function Index() {
             <h1 className="font-display text-xl font-bold text-foreground tracking-tight">Visionario Drive</h1>
             <p className="text-[11px] text-muted-foreground">Lucro real • Decisão rápida • Controle</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <InstallAppButton />
             <button
               onClick={() => setTab('profile')}
               className={`p-2 rounded-xl transition-colors ${tab === 'profile' ? 'bg-primary text-primary-foreground' : 'bg-secondary/70 text-foreground hover:bg-secondary'}`}
