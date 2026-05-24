@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { addGpsDistance, appendRoutePoint, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { toast } from 'sonner';
+import { addGpsDistance, appendRoutePoint, flushShiftBuffers, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 
-export type GpsState = 'idle' | 'requesting' | 'tracking' | 'denied' | 'unavailable' | 'paused';
+export type GpsState =
+  | 'idle'
+  | 'requesting'
+  | 'tracking'
+  | 'background'   // app fora de foco — browser provavelmente reduzindo updates
+  | 'denied'
+  | 'unavailable'
+  | 'paused';
 
 interface Point {
   lat: number;
@@ -26,19 +34,32 @@ function haversineMeters(a: Point, b: Point): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+const THROTTLE_NOTICE_MS = 30_000;   // gap p/ avisar que o sistema reduziu o tracking
+const HEARTBEAT_RESTART_MS = 15_000; // sem fix por 15s em foreground → recria watcher
+const WATCHDOG_FAIL_MS = 60_000;     // 60s sem fix → marca unavailable
+const THROTTLE_TOAST_COOLDOWN_MS = 5 * 60_000;
+
 /**
  * Rastreador de turno — comportamento mobile-first:
- *  - watchPosition com alta precisão
+ *  - watchPosition + polling suplementar via gpsService
  *  - filtros anti-jitter (precisão ruim, micro-deslocamentos, jumps)
  *  - persiste pontos da rota no storage para sobreviver a minimizar/reload
  *  - Wake Lock para reduzir kill em background no Android
- *  - reconciliação no visibilitychange
+ *  - Camada de resiliência foreground/background:
+ *      • detecta hidden/visible/pagehide/focus/blur
+ *      • recria watcher ao voltar
+ *      • reconciliação (re-âncora último ponto, descarta saltos impossíveis)
+ *      • heartbeat — se ficar sem fix em foreground, reinicia watcher
+ *      • toast discreto quando o sistema reduziu o tracking em background
  */
 export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void }) {
   const [gps, setGps] = useState<GpsState>('idle');
   const [, setTick] = useState(0);
+  const [restartKey, setRestartKey] = useState(0);
   const lastPoint = useRef<Point | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
+  const hiddenAtRef = useRef<number | null>(null);
+  const lastThrottleToastRef = useRef<number>(0);
   const onTickRef = useRef(opts?.onTick);
   onTickRef.current = opts?.onTick;
 
@@ -53,24 +74,56 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     return () => clearInterval(i);
   }, [shift?.turno_id, shift?.status]);
 
-  // Visibility: ao voltar do background, força refresh + reconciliação
+  // Visibility / lifecycle: marca background, força flush e reanexa watcher ao voltar
   useEffect(() => {
-    if (!shift) return;
-    const onVis = () => {
-      if (!document.hidden) {
-        // Re-âncora o último ponto para evitar "salto" no primeiro fix pós-background
-        lastPoint.current = null;
-        setTick(t => t + 1);
-        onTickRef.current?.();
+    if (!shift || shift.status !== 'ativo') return;
+
+    const onHidden = () => {
+      hiddenAtRef.current = Date.now();
+      flushShiftBuffers(); // não perde pontos se o navegador suspender
+      setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'background' : prev));
+    };
+
+    const onVisible = () => {
+      const hiddenFor = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
+      hiddenAtRef.current = null;
+
+      // Re-âncora — primeiro fix pós-background não deve gerar salto contábil
+      lastPoint.current = null;
+      setRestartKey(k => k + 1); // força re-subscribe limpo
+      setTick(t => t + 1);
+      onTickRef.current?.();
+
+      if (
+        hiddenFor > THROTTLE_NOTICE_MS &&
+        Date.now() - lastThrottleToastRef.current > THROTTLE_TOAST_COOLDOWN_MS
+      ) {
+        lastThrottleToastRef.current = Date.now();
+        const sec = Math.round(hiddenFor / 1000);
+        toast('Tracking reduzido em segundo plano', {
+          description: `O sistema pausou o GPS por ~${sec}s enquanto o app estava em segundo plano. Mantenha o app aberto para precisão máxima.`,
+        });
       }
     };
+
+    const onVis = () => (document.hidden ? onHidden() : onVisible());
+    const onPageHide = () => { flushShiftBuffers(); };
+    const onPageShow = () => onVisible();
+    const onBlur = () => { /* alguns devices só sobem blur — flush por segurança */ flushShiftBuffers(); };
+
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pageshow', onVis);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onVisible);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pageshow', onVis);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onVisible);
     };
-  }, [shift?.turno_id]);
+  }, [shift?.turno_id, shift?.status]);
 
   // Wake Lock — tenta manter tela ligada durante turno ativo (best-effort)
   useEffect(() => {
@@ -117,14 +170,18 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
     setGps('requesting');
     let lastFixAt = Date.now();
+    let restartedByHeartbeat = false;
     const turnoId = shift.turno_id;
 
     const onFix = (fix: GpsFix) => {
       lastFixAt = Date.now();
-      setGps(prev => (prev !== 'tracking' ? 'tracking' : prev));
+      setGps(prev => {
+        const isBg = typeof document !== 'undefined' && document.hidden;
+        const next: GpsState = isBg ? 'background' : 'tracking';
+        return prev === next ? prev : next;
+      });
       setShiftGpsStatus(turnoId, 'ok');
 
-      // Filtro de precisão (permissivo: 100m)
       if (fix.accuracy > 100) return;
 
       const cur: Point = {
@@ -143,7 +200,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (meters < 2) return;
       const speedKmh = (meters / dt) * 3.6;
       if (speedKmh > 250) {
-        // salto impossível — re-ancora sem somar
+        // salto impossível — re-ancora sem somar (reconciliação anti-duplicação)
         lastPoint.current = cur;
         return;
       }
@@ -160,24 +217,33 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           setGps('denied');
           setShiftGpsStatus(turnoId, 'denied');
         }
-        // timeout/unavailable: watchdog cuida
       },
     });
 
-    // Watchdog: 60s sem fix → marca indisponível
-    const watchdog = setInterval(() => {
-      if (Date.now() - lastFixAt > 60000) {
-        setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'unavailable' : prev));
+    // Heartbeat/Watchdog
+    const interval = setInterval(() => {
+      const since = Date.now() - lastFixAt;
+      const isBg = typeof document !== 'undefined' && document.hidden;
+
+      if (since > WATCHDOG_FAIL_MS) {
+        setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
         setShiftGpsStatus(turnoId, 'unavailable');
+        return;
+      }
+
+      // Em foreground, se ficou sem fix por >15s, tenta uma única reinicialização limpa
+      if (!isBg && since > HEARTBEAT_RESTART_MS && !restartedByHeartbeat) {
+        restartedByHeartbeat = true;
+        setRestartKey(k => k + 1);
       }
     }, 5000);
 
     return () => {
-      clearInterval(watchdog);
+      clearInterval(interval);
       handle.stop();
       lastPoint.current = null;
     };
-  }, [shift?.turno_id, shift?.status]);
+  }, [shift?.turno_id, shift?.status, restartKey]);
 
   return { gps };
 }
