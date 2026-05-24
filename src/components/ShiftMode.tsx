@@ -484,11 +484,12 @@ export default function ShiftMode({ onChange }: Props) {
   const previewClass = previewValid ? classifyRide(vNum, kNum, shift) : null;
 
   const gpsBadge =
-    gps === 'tracking' ? { icon: <Satellite size={11} className="animate-pulse" />, label: 'GPS', cls: 'text-profit bg-profit/10' } :
+    gps === 'tracking' ? { icon: <Satellite size={11} className="animate-pulse" />, label: '🟢 Tracking ativo', cls: 'text-profit bg-profit/10' } :
+    gps === 'background' ? { icon: <Satellite size={11} />, label: '🟡 Em segundo plano', cls: 'text-accent bg-accent/10' } :
     gps === 'requesting' ? { icon: <Satellite size={11} />, label: 'GPS…', cls: 'text-accent bg-accent/10' } :
     gps === 'paused' ? { icon: <Pause size={11} />, label: 'GPS pausado', cls: 'text-muted-foreground bg-secondary' } :
-    gps === 'denied' ? { icon: <MapPinOff size={11} />, label: 'GPS negado', cls: 'text-loss bg-loss/10' } :
-    gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: 'Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
+    gps === 'denied' ? { icon: <MapPinOff size={11} />, label: '🔴 GPS negado', cls: 'text-loss bg-loss/10' } :
+    gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: '🔴 Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
     { icon: <Satellite size={11} />, label: '...', cls: 'text-muted-foreground bg-secondary' };
 
   // === MODO FOCO ===
