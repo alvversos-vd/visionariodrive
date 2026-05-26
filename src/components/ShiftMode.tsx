@@ -612,6 +612,11 @@ export default function ShiftMode({ onChange }: Props) {
               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-display font-semibold flex items-center gap-1 ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
               </span>
+              {gapSec != null && (gps === 'tracking' || gps === 'background') && (
+                <span className="text-[9px] text-muted-foreground font-display">
+                  · última posição há {fmtGap(gapSec)}
+                </span>
+              )}
             </div>
 
             {/* Lucro gigante */}
