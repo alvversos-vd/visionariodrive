@@ -194,13 +194,43 @@ export default function ShiftMode({ onChange }: Props) {
 
   const handleEnd = () => {
     if (!shift) return;
-    if (!confirm('Finalizar turno agora?')) return;
+    // Abre AlertDialog semântico — funciona de forma confiável em PWA iOS/Android
+    // (window.confirm é instável em standalone). Press-and-hold previne toque acidental.
+    setHoldProgress(0);
+    setEndConfirmOpen(true);
+  };
+
+  const finalizeEnd = () => {
+    if (!shift) return;
     const finished = endShift(shift.turno_id);
     setShift(null);
     setSummary(finished);
     setFocus(false);
+    setEndConfirmOpen(false);
+    setHoldProgress(0);
     onChange?.();
   };
+
+  const HOLD_MS = 1000;
+  const startHoldEnd = () => {
+    if (holdTimerRef.current) return;
+    holdStartRef.current = Date.now();
+    holdTimerRef.current = setInterval(() => {
+      const pct = Math.min(1, (Date.now() - holdStartRef.current) / HOLD_MS);
+      setHoldProgress(pct);
+      if (pct >= 1) {
+        if (holdTimerRef.current) { clearInterval(holdTimerRef.current); holdTimerRef.current = null; }
+        finalizeEnd();
+      }
+    }, 50);
+  };
+  const cancelHoldEnd = () => {
+    if (holdTimerRef.current) { clearInterval(holdTimerRef.current); holdTimerRef.current = null; }
+    setHoldProgress(0);
+  };
+  useEffect(() => () => {
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+  }, []);
 
   const handlePause = () => {
     if (!shift) return;
