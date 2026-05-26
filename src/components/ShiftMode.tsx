@@ -74,7 +74,7 @@ export default function ShiftMode({ onChange }: Props) {
     onChange?.();
   };
 
-  const { gps } = useShiftTracker(shift, { onTick: () => {
+  const { gps, lastFixAt } = useShiftTracker(shift, { onTick: () => {
     // re-pega snapshot do shift do storage para refletir km_gps acumulado
     const a = getActiveShift();
     if (a) setShift({ ...a });
