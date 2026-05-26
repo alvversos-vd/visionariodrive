@@ -803,6 +803,47 @@ export default function ShiftMode({ onChange }: Props) {
           refresh();
         }}
       />
+
+      {/* Finalizar turno — AlertDialog semântico + press-and-hold para evitar toque acidental */}
+      <AlertDialog open={endConfirmOpen} onOpenChange={(o) => { if (!o) { cancelHoldEnd(); setEndConfirmOpen(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalizar turno?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Os totais do turno serão consolidados no histórico e dashboard. Esta ação não pode ser desfeita.
+              {totals && (
+                <span className="block mt-2 text-xs">
+                  💰 Lucro: <b>{fmt(totals.lucro_total)}</b> · 🛣 {totals.km_total.toFixed(1)} km · 🚗 {totals.corridas_total} corridas
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelHoldEnd}>Cancelar</AlertDialogCancel>
+            <button
+              type="button"
+              onPointerDown={startHoldEnd}
+              onPointerUp={cancelHoldEnd}
+              onPointerLeave={cancelHoldEnd}
+              onPointerCancel={cancelHoldEnd}
+              className="relative overflow-hidden inline-flex items-center justify-center rounded-md bg-loss text-primary-foreground font-display font-bold px-4 py-2.5 text-sm select-none touch-none active:scale-[0.99]"
+              style={{ minWidth: 200 }}
+            >
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 bg-primary-foreground/20 transition-[width] duration-75 ease-linear"
+                style={{ width: `${holdProgress * 100}%` }}
+              />
+              <span className="relative flex items-center gap-2">
+                <Square size={14} fill="currentColor" />
+                {holdProgress > 0 && holdProgress < 1
+                  ? `Segure para confirmar… ${Math.round(holdProgress * 100)}%`
+                  : 'Segure 1s para finalizar'}
+              </span>
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 
