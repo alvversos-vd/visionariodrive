@@ -175,7 +175,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     const turnoId = shift.turno_id;
 
     const onFix = (fix: GpsFix) => {
-      lastFixAt = Date.now();
+      lastFixLocal = Date.now();
       setGps(prev => {
         const isBg = typeof document !== 'undefined' && document.hidden;
         const next: GpsState = isBg ? 'background' : 'tracking';
