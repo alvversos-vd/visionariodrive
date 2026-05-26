@@ -16,6 +16,25 @@ export function saveEntry(entry: DailyEntry): void {
   markDirty();
 }
 
+/**
+ * Insere ou atualiza um entry de forma idempotente.
+ * Se já existir entry com o mesmo `id` (ou mesmo `shiftId` quando informado),
+ * substitui no lugar — não duplica no histórico/dashboard.
+ */
+export function upsertEntry(entry: DailyEntry): void {
+  const entries = getEntries();
+  const idx = entries.findIndex(e =>
+    e.id === entry.id || (entry.shiftId && e.shiftId === entry.shiftId)
+  );
+  if (idx >= 0) {
+    entries[idx] = entry;
+  } else {
+    entries.unshift(entry);
+  }
+  localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
+  markDirty();
+}
+
 export function getEntries(): DailyEntry[] {
   const raw = localStorage.getItem(ENTRIES_KEY);
   return raw ? JSON.parse(raw) : [];

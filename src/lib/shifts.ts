@@ -1,6 +1,7 @@
 import { markDirty } from './cloudSync';
-import { getEntries, getSettings } from './storage';
+import { getEntries, getSettings, upsertEntry } from './storage';
 import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
+import { DailyEntry } from './types';
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
@@ -127,6 +128,8 @@ export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['g
   if (!s) return;
   // Não rebaixa 'ok' já consolidado de volta para 'denied' (mantém histórico do melhor estado)
   if (s.gps_status === 'ok' && status !== 'ok') return;
+  // Debounce: se o status já é o atual, evita write desnecessário (bateria/perf).
+  if (s.gps_status === status) return;
   s.gps_status = status;
   saveShifts(list);
 }
@@ -278,7 +281,59 @@ export function endShift(turno_id: string): Shift | null {
   // a data operacional do encerramento para histórico/auditoria.
   s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
+
+  // Bridge shift → entries (idempotente por shiftId): garante que Dashboard
+  // e HistoryView reflitam o turno finalizado sem duplicar nem perder dados legados.
+  try { upsertEntryFromShift(s); } catch { /* não bloqueia finalização */ }
+
   return s;
+}
+
+/**
+ * Deriva um DailyEntry a partir do turno finalizado e faz upsert idempotente
+ * por shiftId. Mantém compatibilidade total com entries manuais.
+ */
+export function upsertEntryFromShift(shift: Shift): DailyEntry {
+  const t = computeTotals(shift);
+  const v = shift.veiculo_id ? getVehicleById(shift.veiculo_id) : null;
+
+  const fuelPrice = v?.valor_combustivel_litro || 0;
+  const vehicleConsumption = v?.km_por_litro || 0;
+  const monthlyFixedCosts = v?.custo_fixo_mensal || 0;
+  const litersConsumed = vehicleConsumption > 0 ? t.km_total / vehicleConsumption : 0;
+  const dailyFixedCost = monthlyFixedCosts / 30;
+
+  // Usa data operacional ao meio-dia local para evitar deslocamento de fuso
+  const [y, m, d] = shift.data_operacional.split('-').map(Number);
+  const dateIso = new Date(y, (m || 1) - 1, d || 1, 12, 0, 0).toISOString();
+
+  const entry: DailyEntry = {
+    id: `shift_${shift.turno_id}`,
+    date: dateIso,
+    hoursWorked: t.tempo_online_minutos / 60,
+    kmDriven: t.km_total,
+    totalEarnings: t.ganho_total,
+    fuelPrice,
+    vehicleConsumption,
+    installment: 0,
+    maintenance: 0,
+    insurance: 0,
+    otherCosts: 0,
+    vehicle: v?.nome_veiculo,
+    rideType: shift.app_utilizado,
+    litersConsumed,
+    fuelCost: t.custo_combustivel,
+    monthlyFixedCosts,
+    dailyFixedCost: t.custo_fixo_rateado,
+    totalCost: t.custo_total,
+    profit: t.lucro_total,
+    profitPerHour: t.tempo_online_minutos > 0 ? t.lucro_total / (t.tempo_online_minutos / 60) : 0,
+    profitPerKm: t.km_total > 0 ? t.lucro_total / t.km_total : 0,
+    source: 'shift',
+    shiftId: shift.turno_id,
+  };
+  upsertEntry(entry);
+  return entry;
 }
 
 // Custo médio histórico (fallback quando não há veículo)

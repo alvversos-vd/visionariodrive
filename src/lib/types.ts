@@ -22,6 +22,10 @@ export interface DailyEntry {
   profit: number;
   profitPerHour: number;
   profitPerKm: number;
+  /** Origem do registro: 'manual' (form) ou 'shift' (gerado automaticamente ao finalizar turno). */
+  source?: 'manual' | 'shift';
+  /** Quando source === 'shift': id do turno que gerou este registro (idempotência). */
+  shiftId?: string;
 }
 
 export interface RideEntry {

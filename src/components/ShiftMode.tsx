@@ -23,6 +23,10 @@ import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDia
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 
 
@@ -58,6 +62,10 @@ export default function ShiftMode({ onChange }: Props) {
   const [consentOpen, setConsentOpen] = useState(false);
   const [consentTurnoId, setConsentTurnoId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdStartRef = useRef<number>(0);
 
 
   const refresh = () => {
@@ -66,7 +74,7 @@ export default function ShiftMode({ onChange }: Props) {
     onChange?.();
   };
 
-  const { gps } = useShiftTracker(shift, { onTick: () => {
+  const { gps, lastFixAt } = useShiftTracker(shift, { onTick: () => {
     // re-pega snapshot do shift do storage para refletir km_gps acumulado
     const a = getActiveShift();
     if (a) setShift({ ...a });
@@ -186,13 +194,43 @@ export default function ShiftMode({ onChange }: Props) {
 
   const handleEnd = () => {
     if (!shift) return;
-    if (!confirm('Finalizar turno agora?')) return;
+    // Abre AlertDialog semântico — funciona de forma confiável em PWA iOS/Android
+    // (window.confirm é instável em standalone). Press-and-hold previne toque acidental.
+    setHoldProgress(0);
+    setEndConfirmOpen(true);
+  };
+
+  const finalizeEnd = () => {
+    if (!shift) return;
     const finished = endShift(shift.turno_id);
     setShift(null);
     setSummary(finished);
     setFocus(false);
+    setEndConfirmOpen(false);
+    setHoldProgress(0);
     onChange?.();
   };
+
+  const HOLD_MS = 1000;
+  const startHoldEnd = () => {
+    if (holdTimerRef.current) return;
+    holdStartRef.current = Date.now();
+    holdTimerRef.current = setInterval(() => {
+      const pct = Math.min(1, (Date.now() - holdStartRef.current) / HOLD_MS);
+      setHoldProgress(pct);
+      if (pct >= 1) {
+        if (holdTimerRef.current) { clearInterval(holdTimerRef.current); holdTimerRef.current = null; }
+        finalizeEnd();
+      }
+    }, 50);
+  };
+  const cancelHoldEnd = () => {
+    if (holdTimerRef.current) { clearInterval(holdTimerRef.current); holdTimerRef.current = null; }
+    setHoldProgress(0);
+  };
+  useEffect(() => () => {
+    if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+  }, []);
 
   const handlePause = () => {
     if (!shift) return;
@@ -492,6 +530,12 @@ export default function ShiftMode({ onChange }: Props) {
     gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: '🔴 Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
     { icon: <Satellite size={11} />, label: '...', cls: 'text-muted-foreground bg-secondary' };
 
+  // Tempo desde a última posição GPS (para UX honesta + banner de background longo)
+  const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
+  const gapSec = gapMs != null ? Math.floor(gapMs / 1000) : null;
+  const longBackgroundGap = gps === 'background' || (gapSec != null && gapSec > 60);
+  const fmtGap = (s: number) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}min` : `${Math.floor(s/3600)}h${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
+
   // === MODO FOCO ===
   if (focus) {
     return (
@@ -568,6 +612,11 @@ export default function ShiftMode({ onChange }: Props) {
               <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-display font-semibold flex items-center gap-1 ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
               </span>
+              {gapSec != null && (gps === 'tracking' || gps === 'background') && (
+                <span className="text-[9px] text-muted-foreground font-display">
+                  · última posição há {fmtGap(gapSec)}
+                </span>
+              )}
             </div>
 
             {/* Lucro gigante */}
@@ -641,6 +690,23 @@ export default function ShiftMode({ onChange }: Props) {
             {gps === 'denied' && (
               <button onClick={() => requestGpsPermission()} className="text-[10px] underline shrink-0">tentar de novo</button>
             )}
+          </div>
+        )}
+
+        {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
+            Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
+        {longBackgroundGap && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+            <Satellite size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Tracking em segundo plano reduzido</p>
+              <p className="text-accent/80">
+                {gapSec != null && gapSec > 5
+                  ? `Sem nova posição há ${fmtGap(gapSec)}. `
+                  : ''}
+                Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
+              </p>
+            </div>
           </div>
         )}
 
@@ -737,6 +803,47 @@ export default function ShiftMode({ onChange }: Props) {
           refresh();
         }}
       />
+
+      {/* Finalizar turno — AlertDialog semântico + press-and-hold para evitar toque acidental */}
+      <AlertDialog open={endConfirmOpen} onOpenChange={(o) => { if (!o) { cancelHoldEnd(); setEndConfirmOpen(false); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalizar turno?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Os totais do turno serão consolidados no histórico e dashboard. Esta ação não pode ser desfeita.
+              {totals && (
+                <span className="block mt-2 text-xs">
+                  💰 Lucro: <b>{fmt(totals.lucro_total)}</b> · 🛣 {totals.km_total.toFixed(1)} km · 🚗 {totals.corridas_total} corridas
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelHoldEnd}>Cancelar</AlertDialogCancel>
+            <button
+              type="button"
+              onPointerDown={startHoldEnd}
+              onPointerUp={cancelHoldEnd}
+              onPointerLeave={cancelHoldEnd}
+              onPointerCancel={cancelHoldEnd}
+              className="relative overflow-hidden inline-flex items-center justify-center rounded-md bg-loss text-primary-foreground font-display font-bold px-4 py-2.5 text-sm select-none touch-none active:scale-[0.99]"
+              style={{ minWidth: 200 }}
+            >
+              <span
+                aria-hidden
+                className="absolute inset-y-0 left-0 bg-primary-foreground/20 transition-[width] duration-75 ease-linear"
+                style={{ width: `${holdProgress * 100}%` }}
+              />
+              <span className="relative flex items-center gap-2">
+                <Square size={14} fill="currentColor" />
+                {holdProgress > 0 && holdProgress < 1
+                  ? `Segure para confirmar… ${Math.round(holdProgress * 100)}%`
+                  : 'Segure 1s para finalizar'}
+              </span>
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 

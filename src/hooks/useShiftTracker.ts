@@ -54,6 +54,7 @@ const THROTTLE_TOAST_COOLDOWN_MS = 5 * 60_000;
  */
 export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void }) {
   const [gps, setGps] = useState<GpsState>('idle');
+  const [lastFixAt, setLastFixAt] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const [restartKey, setRestartKey] = useState(0);
   const lastPoint = useRef<Point | null>(null);
@@ -169,12 +170,12 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     }
 
     setGps('requesting');
-    let lastFixAt = Date.now();
+    let lastFixLocal = Date.now();
     let restartedByHeartbeat = false;
     const turnoId = shift.turno_id;
 
     const onFix = (fix: GpsFix) => {
-      lastFixAt = Date.now();
+      lastFixLocal = Date.now();
       setGps(prev => {
         const isBg = typeof document !== 'undefined' && document.hidden;
         const next: GpsState = isBg ? 'background' : 'tracking';
@@ -220,10 +221,12 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       },
     });
 
-    // Heartbeat/Watchdog
+    // Heartbeat/Watchdog (também propaga lastFixAt como state a cada 5s — cadência baixa
+     // o suficiente para não causar renders excessivos no mobile).
     const interval = setInterval(() => {
-      const since = Date.now() - lastFixAt;
+      const since = Date.now() - lastFixLocal;
       const isBg = typeof document !== 'undefined' && document.hidden;
+      setLastFixAt(lastFixLocal);
 
       if (since > WATCHDOG_FAIL_MS) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
@@ -245,7 +248,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     };
   }, [shift?.turno_id, shift?.status, restartKey]);
 
-  return { gps };
+  return { gps, lastFixAt };
 }
 
 export function fmtDuracao(ms: number): string {
