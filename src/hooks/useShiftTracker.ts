@@ -170,7 +170,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     }
 
     setGps('requesting');
-    let lastFixAt = Date.now();
+    let lastFixLocal = Date.now();
     let restartedByHeartbeat = false;
     const turnoId = shift.turno_id;
 
