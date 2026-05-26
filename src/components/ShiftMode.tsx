@@ -693,6 +693,23 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
+            Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
+        {longBackgroundGap && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
+          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
+            <Satellite size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Tracking em segundo plano reduzido</p>
+              <p className="text-accent/80">
+                {gapSec != null && gapSec > 5
+                  ? `Sem nova posição há ${fmtGap(gapSec)}. `
+                  : ''}
+                Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
+              </p>
+            </div>
+          </div>
+        )}
+
         {smartAlerts.length > 0 && (
           <div className="space-y-1.5">
             {smartAlerts.map(a => (
