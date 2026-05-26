@@ -128,6 +128,8 @@ export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['g
   if (!s) return;
   // Não rebaixa 'ok' já consolidado de volta para 'denied' (mantém histórico do melhor estado)
   if (s.gps_status === 'ok' && status !== 'ok') return;
+  // Debounce: se o status já é o atual, evita write desnecessário (bateria/perf).
+  if (s.gps_status === status) return;
   s.gps_status = status;
   saveShifts(list);
 }
