@@ -62,6 +62,10 @@ export default function ShiftMode({ onChange }: Props) {
   const [consentOpen, setConsentOpen] = useState(false);
   const [consentTurnoId, setConsentTurnoId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdStartRef = useRef<number>(0);
 
 
   const refresh = () => {
