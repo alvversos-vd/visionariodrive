@@ -54,6 +54,7 @@ const THROTTLE_TOAST_COOLDOWN_MS = 5 * 60_000;
  */
 export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void }) {
   const [gps, setGps] = useState<GpsState>('idle');
+  const [lastFixAt, setLastFixAt] = useState<number | null>(null);
   const [, setTick] = useState(0);
   const [restartKey, setRestartKey] = useState(0);
   const lastPoint = useRef<Point | null>(null);
