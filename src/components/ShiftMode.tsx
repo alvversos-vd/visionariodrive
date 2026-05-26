@@ -530,6 +530,12 @@ export default function ShiftMode({ onChange }: Props) {
     gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: '🔴 Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
     { icon: <Satellite size={11} />, label: '...', cls: 'text-muted-foreground bg-secondary' };
 
+  // Tempo desde a última posição GPS (para UX honesta + banner de background longo)
+  const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
+  const gapSec = gapMs != null ? Math.floor(gapMs / 1000) : null;
+  const longBackgroundGap = gps === 'background' || (gapSec != null && gapSec > 60 && (gps === 'tracking' || gps === 'background'));
+  const fmtGap = (s: number) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}min` : `${Math.floor(s/3600)}h${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
+
   // === MODO FOCO ===
   if (focus) {
     return (
