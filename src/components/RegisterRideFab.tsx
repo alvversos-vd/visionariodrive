@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Plus, X, Navigation } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { getActiveShift, addRideAuto, classifyRide } from '@/lib/shifts';
+import { getVehicleById } from '@/lib/vehicles';
 
 interface Props { onChange?: () => void }
 
@@ -9,31 +10,71 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function fmtSince(iso?: string): string {
+  if (!iso) return '—';
+  const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  if (m < 60) return `${m}min`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}min`;
+}
+
 export default function RegisterRideFab({ onChange }: Props) {
   const [shift, setShift] = useState(() => getActiveShift());
   const [open, setOpen] = useState(false);
   const [valor, setValor] = useState('');
   const [km, setKm] = useState('');
+  const [obs, setObs] = useState('');
+  const [forceManual, setForceManual] = useState(false);
 
   useEffect(() => {
     const i = setInterval(() => setShift(getActiveShift()), 3000);
     return () => clearInterval(i);
   }, []);
 
+  // Refresh interno enquanto modal aberto — para km_auto e tempo "desde última" ficarem vivos
+  useEffect(() => {
+    if (!open) return;
+    const i = setInterval(() => setShift(getActiveShift()), 1000);
+    return () => clearInterval(i);
+  }, [open]);
+
+  const vehicle = useMemo(
+    () => (shift?.veiculo_id ? getVehicleById(shift.veiculo_id) : null),
+    [shift?.veiculo_id]
+  );
+
   if (!shift || shift.status !== 'ativo') return null;
 
   const kmAuto = shift.km_desde_ultima_corrida || 0;
+  const gpsOk = shift.gps_status === 'ok';
+  // "Modo inteligente" = GPS válido + houve movimento rastreado desde a última corrida
+  const smartAvailable = gpsOk && kmAuto > 0;
+  const smartMode = smartAvailable && !forceManual;
+
   const v = parseFloat(valor.replace(',', '.'));
-  const k = km ? parseFloat(km.replace(',', '.')) : kmAuto;
-  const valid = v > 0 && k > 0;
-  const preview = valid ? classifyRide(v, k, shift) : null;
+  const kManual = km ? parseFloat(km.replace(',', '.')) : NaN;
+  const kUsed = smartMode ? kmAuto : (Number.isFinite(kManual) && kManual > 0 ? kManual : 0);
+  const valid = v > 0 && kUsed > 0;
+  const preview = valid ? classifyRide(v, kUsed, shift) : null;
+
+  const reset = () => { setValor(''); setKm(''); setObs(''); setForceManual(false); };
 
   const submit = () => {
-    if (!valid) { toast.error('Preencha o valor (e km se GPS sem movimento)'); return; }
-    const kManual = km ? parseFloat(km.replace(',', '.')) : undefined;
-    const r = addRideAuto(shift.turno_id, v, kManual);
-    if (!r) { toast.error('Não foi possível salvar — sem km'); return; }
-    setValor(''); setKm(''); setOpen(false);
+    if (!valid) {
+      toast.error(smartMode ? 'Informe o valor recebido' : 'Preencha valor e km');
+      return;
+    }
+    const r = addRideAuto(
+      shift.turno_id,
+      v,
+      smartMode ? undefined : kUsed,
+      obs.trim() || undefined
+    );
+    if (!r) { toast.error('Não foi possível salvar a corrida'); return; }
+    reset();
+    setOpen(false);
     onChange?.();
     if (r.resultado === 'boa') toast.success('🟢 Boa corrida 👊');
     else if (r.resultado === 'aceitavel') toast('🟡 Lucro baixo nessa corrida');
@@ -58,22 +99,44 @@ export default function RegisterRideFab({ onChange }: Props) {
       {open && (
         <div
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center"
-          onClick={() => setOpen(false)}
+          onClick={() => { setOpen(false); reset(); }}
         >
           <div
-            className="bg-card rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-sm space-y-4 border-t sm:border animate-slide-up"
+            className="bg-card rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-sm space-y-4 border-t sm:border animate-slide-up max-h-[92vh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display font-bold text-lg">Nova corrida</h3>
-                <p className="text-xs text-muted-foreground">Registre em segundos</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {smartMode ? (<><Zap size={11} className="text-profit"/> Modo automático</>) : 'Modo manual'}
+                </p>
               </div>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-1">
+              <button onClick={() => { setOpen(false); reset(); }} className="text-muted-foreground hover:text-foreground p-1">
                 <X size={20} />
               </button>
             </div>
 
+            {/* Contexto herdado do turno — sempre visível */}
+            <div className="flex flex-wrap gap-1.5 text-[11px]">
+              {shift.app_utilizado && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/60 border text-muted-foreground">
+                  <Smartphone size={11}/> {shift.app_utilizado}
+                </span>
+              )}
+              {vehicle?.nome_veiculo && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/60 border text-muted-foreground">
+                  <Car size={11}/> {vehicle.nome_veiculo}
+                </span>
+              )}
+              {shift.ultima_corrida_iso && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/60 border text-muted-foreground">
+                  <Clock size={11}/> última há {fmtSince(shift.ultima_corrida_iso)}
+                </span>
+              )}
+            </div>
+
+            {/* Valor — sempre */}
             <div>
               <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
               <div className="relative mt-1">
@@ -87,22 +150,69 @@ export default function RegisterRideFab({ onChange }: Props) {
               </div>
             </div>
 
-            <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-1"><Navigation size={11}/> Km desde a última</span>
-                <span className="font-display font-bold number-tabular">{kmAuto.toFixed(1)} km</span>
+            {/* KM — modo inteligente: chip readonly + link para ajustar. Manual: input. */}
+            {smartMode ? (
+              <div className="rounded-xl border border-profit/30 bg-profit/5 p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold flex items-center gap-1">
+                    <Navigation size={10}/> KM do GPS
+                  </p>
+                  <p className="font-display font-bold text-xl number-tabular text-profit">
+                    {kmAuto.toFixed(1)} <span className="text-xs font-normal opacity-70">km</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setForceManual(true); setKm(kmAuto.toFixed(1)); }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-secondary/60"
+                >
+                  <Pencil size={11}/> ajustar
+                </button>
               </div>
+            ) : (
+              <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Navigation size={11}/> KM da corrida
+                  </span>
+                  {smartAvailable && (
+                    <button
+                      type="button"
+                      onClick={() => { setForceManual(false); setKm(''); }}
+                      className="text-[10px] text-profit hover:underline inline-flex items-center gap-1"
+                    >
+                      <Zap size={10}/> usar GPS ({kmAuto.toFixed(1)} km)
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="number" inputMode="decimal"
+                  value={km} onChange={e => setKm(e.target.value)}
+                  placeholder={kmAuto > 0 ? `Sugestão: ${kmAuto.toFixed(1)} km` : 'Informe a distância'}
+                  className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
+                />
+                {!gpsOk && (
+                  <p className="text-[10px] text-muted-foreground">
+                    GPS indisponível — informe o km manualmente.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Observação opcional */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold">
+                Observação <span className="opacity-60 normal-case">(opcional)</span>
+              </label>
               <input
-                type="number" inputMode="decimal"
-                value={km} onChange={e => setKm(e.target.value)}
-                placeholder={kmAuto > 0 ? `Auto (${kmAuto.toFixed(1)} km do GPS)` : 'Informe manualmente'}
-                className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
+                type="text" maxLength={120}
+                value={obs} onChange={e => setObs(e.target.value)}
+                placeholder="ex: gorjeta, chuva, longa…"
+                className="mt-1 w-full px-3 py-2 text-sm rounded-lg border bg-background"
               />
-              <p className="text-[10px] text-muted-foreground">
-                {kmAuto > 0 ? 'Deixe vazio para usar o km automático do GPS' : 'GPS ainda não registrou movimento'}
-              </p>
             </div>
 
+            {/* Preview lucro/km */}
             <div className={`rounded-xl border p-3 transition-colors ${previewColor}`}>
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">Valor por km</span>
@@ -111,7 +221,7 @@ export default function RegisterRideFab({ onChange }: Props) {
                 </span>}
               </div>
               <p className="font-display font-bold text-2xl number-tabular mt-0.5">
-                {valid ? fmt(v / k) : 'R$ —,—'}<span className="text-xs font-normal opacity-70">/km</span>
+                {valid ? fmt(v / kUsed) : 'R$ —,—'}<span className="text-xs font-normal opacity-70">/km</span>
               </p>
             </div>
 
@@ -120,7 +230,7 @@ export default function RegisterRideFab({ onChange }: Props) {
               disabled={!valid}
               className="w-full p-4 rounded-xl bg-profit-gradient text-primary-foreground font-display font-bold text-base disabled:opacity-40 active:scale-[0.98] transition-transform shadow-glow"
             >
-              Salvar corrida
+              {smartMode ? 'Salvar corrida' : 'Salvar corrida'}
             </button>
           </div>
         </div>
