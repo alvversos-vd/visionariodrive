@@ -32,6 +32,9 @@ export interface ShiftRide {
   data_registro: string;
   data_operacional: string;
   edicoes?: RideEdit[];
+  observacao?: string;
+  /** 'auto' = km veio do GPS (modo inteligente); 'manual' = usuário informou. */
+  km_origem?: 'auto' | 'manual';
 }
 
 export interface Shift {
@@ -372,7 +375,12 @@ export function classifyRide(valor: number, km: number, shift?: Shift | null): {
   return { valor_por_km, resultado };
 }
 
-export function addRide(turno_id: string, valor: number, km: number): ShiftRide | null {
+export function addRide(
+  turno_id: string,
+  valor: number,
+  km: number,
+  extras?: { observacao?: string; km_origem?: 'auto' | 'manual' }
+): ShiftRide | null {
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s || s.status !== 'ativo') return null;
@@ -386,6 +394,8 @@ export function addRide(turno_id: string, valor: number, km: number): ShiftRide 
     resultado,
     data_registro: new Date().toISOString(),
     data_operacional: s.data_operacional,
+    observacao: extras?.observacao?.trim() || undefined,
+    km_origem: extras?.km_origem,
   };
   s.rides.unshift(ride);
   s.km_desde_ultima_corrida = 0;
@@ -395,13 +405,22 @@ export function addRide(turno_id: string, valor: number, km: number): ShiftRide 
 }
 
 /** Registra corrida usando km do GPS auto-acumulado se km não informado. */
-export function addRideAuto(turno_id: string, valor: number, kmManual?: number): ShiftRide | null {
+export function addRideAuto(
+  turno_id: string,
+  valor: number,
+  kmManual?: number,
+  observacao?: string
+): ShiftRide | null {
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s) return null;
-  const km = kmManual && kmManual > 0 ? kmManual : (s.km_desde_ultima_corrida || 0);
+  const usedManual = !!(kmManual && kmManual > 0);
+  const km = usedManual ? (kmManual as number) : (s.km_desde_ultima_corrida || 0);
   if (km <= 0) return null;
-  return addRide(turno_id, valor, km);
+  return addRide(turno_id, valor, km, {
+    observacao,
+    km_origem: usedManual ? 'manual' : 'auto',
+  });
 }
 
 export function deleteRide(turno_id: string, corrida_id: string) {
