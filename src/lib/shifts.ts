@@ -2,6 +2,7 @@ import { markDirty } from './cloudSync';
 import { getEntries, getSettings, upsertEntry } from './storage';
 import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
 import { DailyEntry } from './types';
+import { tombstoneShift, tombstoneEntry } from './tombstones';
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
@@ -285,11 +286,57 @@ export function endShift(turno_id: string): Shift | null {
   s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
 
-  // Bridge shift → entries (idempotente por shiftId): garante que Dashboard
-  // e HistoryView reflitam o turno finalizado sem duplicar nem perder dados legados.
+  // Bridge shift → entries (idempotente por shiftId).
   try { upsertEntryFromShift(s); } catch { /* não bloqueia finalização */ }
 
+  // Push imediato — protege contra "turno renasce ativo" ao minimizar
+  // o app no mobile/PWA antes do debounce de 600ms disparar.
+  markDirty({ immediate: true });
+
   return s;
+}
+
+/**
+ * Apaga um turno (cascade): remove da lista, registra tombstone para evitar
+ * ressurreição via cloud, apaga a entry derivada e re-upserta o eventual
+ * "novo primeiro turno" do mesmo (dia, veículo) — porque o custo fixo
+ * diário muda de dono (ver shouldApplyDailyFixedCost).
+ */
+export function deleteShift(turno_id: string): boolean {
+  const list = getShifts();
+  const target = list.find(s => s.turno_id === turno_id);
+  if (!target) return false;
+  const remaining = list.filter(s => s.turno_id !== turno_id);
+  saveShifts(remaining);
+  tombstoneShift(turno_id);
+
+  // Remove a entry derivada do histórico/dashboard
+  try {
+    const entries = getEntries();
+    const derivedId = `shift_${turno_id}`;
+    const next = entries.filter(e => e.id !== derivedId && e.shiftId !== turno_id);
+    if (next.length !== entries.length) {
+      localStorage.setItem('lucro-delivery-entries', JSON.stringify(next));
+      tombstoneEntry(derivedId);
+    }
+  } catch { /* não-bloqueante */ }
+
+  // Re-upsert do novo primeiro turno do dia/veículo (custo fixo migra para ele)
+  if (target.veiculo_id) {
+    const newFirst = remaining
+      .filter(s =>
+        s.veiculo_id === target.veiculo_id &&
+        s.data_operacional === target.data_operacional &&
+        s.status === 'finalizado'
+      )
+      .sort((a, b) => a.inicio_turno.localeCompare(b.inicio_turno))[0];
+    if (newFirst) {
+      try { upsertEntryFromShift(newFirst); } catch { /* não-bloqueante */ }
+    }
+  }
+
+  markDirty({ immediate: true });
+  return true;
 }
 
 /**
@@ -537,10 +584,32 @@ function safeNum(n: number): number {
   return Number.isFinite(n) && !Number.isNaN(n) ? n : 0;
 }
 
+/**
+ * REGRA DE PRODUTO (MVP): o custo fixo diário do veículo é aplicado
+ * UMA ÚNICA vez por (veículo, data_operacional), no PRIMEIRO turno do dia
+ * (ordenado por `inicio_turno`). Turnos subsequentes do mesmo veículo no
+ * mesmo dia operacional NÃO reaplicam o custo.
+ *
+ * Determinístico: depende apenas de inicio_turno (estável após criação)
+ * e do veiculo_id. Não há rateio — mantém percepção "o dia começa com
+ * custo operacional fixo".
+ *
+ * Se o turno não tem veículo, aplica (compatibilidade com fluxo antigo).
+ */
+export function shouldApplyDailyFixedCost(shift: Shift): boolean {
+  if (!shift.veiculo_id) return true;
+  const siblings = getShifts()
+    .filter(s =>
+      s.veiculo_id === shift.veiculo_id &&
+      s.data_operacional === shift.data_operacional
+    )
+    .sort((a, b) => a.inicio_turno.localeCompare(b.inicio_turno));
+  return siblings[0]?.turno_id === shift.turno_id;
+}
+
 export function computeTotals(shift: Shift): ShiftTotals {
   const ganho_total = safeNum(shift.rides.reduce((s, r) => s + (r.valor > 0 ? r.valor : 0), 0));
   const km_corridas = safeNum(shift.rides.reduce((s, r) => s + (r.km > 0 ? r.km : 0), 0));
-  // Usa o maior entre km manual das corridas e km do GPS (anti-duplicação)
   const km_total = Math.max(km_corridas, safeNum(shift.km_gps || 0));
   const corridas_total = shift.rides.length;
 
@@ -553,7 +622,10 @@ export function computeTotals(shift: Shift): ShiftTotals {
     if (v.km_por_litro && v.km_por_litro > 0) {
       custo_combustivel = (km_total / v.km_por_litro) * (v.valor_combustivel_litro || 0);
     }
-    custo_fixo_rateado = (v.custo_fixo_mensal || 0) / 30;
+    // Fase B: só o 1º turno do dia/veículo paga o custo fixo diário.
+    custo_fixo_rateado = shouldApplyDailyFixedCost(shift)
+      ? (v.custo_fixo_mensal || 0) / 30
+      : 0;
   } else {
     custo_combustivel = getCostPerKm() * km_total;
   }
@@ -562,7 +634,6 @@ export function computeTotals(shift: Shift): ShiftTotals {
 
   const fim = shift.fim_turno ? new Date(shift.fim_turno).getTime() : Date.now();
   const inicio = new Date(shift.inicio_turno).getTime();
-  // Desconta tempo pausado
   let pausado_ms = 0;
   (shift.pausas || []).forEach(p => {
     const ini = new Date(p.inicio).getTime();
