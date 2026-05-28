@@ -2,6 +2,7 @@ import { markDirty } from './cloudSync';
 import { getEntries, getSettings, upsertEntry } from './storage';
 import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
 import { DailyEntry } from './types';
+import { tombstoneShift, tombstoneEntry } from './tombstones';
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
