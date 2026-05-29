@@ -128,12 +128,95 @@ class WebGpsProvider implements GpsProvider {
 }
 
 /**
- * Provider ativo. Para migrar para Capacitor:
+ * Capacitor native provider (Phase 1 — preparação).
  *
- *   import { Geolocation } from '@capacitor/geolocation';
- *   class CapacitorGpsProvider implements GpsProvider { ... }
- *   export const gpsService: GpsProvider = Capacitor.isNativePlatform()
- *     ? new CapacitorGpsProvider()
- *     : new WebGpsProvider();
+ * Quando rodando dentro do app nativo (`Capacitor.isNativePlatform()`),
+ * usamos `@capacitor/geolocation` que dá:
+ *   - permissões reais do sistema (não o prompt do browser)
+ *   - precisão maior em iOS
+ *   - lifecycle nativo (foreground service Android virá em fase 2 via
+ *     plugin background-geolocation, sem mudar este arquivo)
+ *
+ * O lazy import evita que o bundle web cresça sem necessidade — Vite
+ * code-splita esse chunk e ele só carrega no app nativo.
  */
-export const gpsService: GpsProvider = new WebGpsProvider();
+class CapacitorGpsProvider implements GpsProvider {
+  isAvailable(): boolean { return true; }
+
+  async queryPermission(): Promise<PermissionState | 'unknown'> {
+    try {
+      const { Geolocation } = await import('@capacitor/geolocation');
+      const s = await Geolocation.checkPermissions();
+      if (s.location === 'granted') return 'granted';
+      if (s.location === 'denied') return 'denied';
+      if (s.location === 'prompt' || s.location === 'prompt-with-rationale') return 'prompt';
+      return 'unknown';
+    } catch { return 'unknown'; }
+  }
+
+  watch({ onFix, onError }: GpsWatchOptions): GpsWatchHandle {
+    let watchId: string | null = null;
+    let stopped = false;
+
+    (async () => {
+      try {
+        const { Geolocation } = await import('@capacitor/geolocation');
+        const perm = await Geolocation.requestPermissions();
+        if (perm.location !== 'granted') {
+          onError?.(perm.location === 'denied' ? 'denied' : 'unavailable');
+          return;
+        }
+        if (stopped) return;
+        watchId = await Geolocation.watchPosition(
+          { enableHighAccuracy: true, timeout: 20000 },
+          (pos, err) => {
+            if (err) { onError?.('unavailable', err); return; }
+            if (!pos) return;
+            onFix({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              t: pos.timestamp || Date.now(),
+              accuracy: pos.coords.accuracy ?? 999,
+              speed: pos.coords.speed ?? undefined,
+              heading: pos.coords.heading ?? undefined,
+            });
+          },
+        );
+      } catch (e) {
+        onError?.('unavailable', e);
+      }
+    })();
+
+    return {
+      stop: () => {
+        stopped = true;
+        if (watchId) {
+          import('@capacitor/geolocation').then(({ Geolocation }) =>
+            Geolocation.clearWatch({ id: watchId! }).catch(() => {}),
+          );
+          watchId = null;
+        }
+      },
+    };
+  }
+}
+
+/**
+ * Provider ativo — escolhido em runtime.
+ * - Web/PWA: WebGpsProvider (atual, estável, sem regressão)
+ * - App nativo (após `npx cap add ios|android` e build em device):
+ *   CapacitorGpsProvider com permissões reais do sistema e tracking
+ *   foreground/background nativo.
+ *
+ * A interface GpsProvider é a MESMA — `useShiftTracker` não muda.
+ */
+function pickProvider(): GpsProvider {
+  try {
+    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }) : undefined;
+    if (w?.Capacitor?.isNativePlatform?.()) return new CapacitorGpsProvider();
+  } catch { /* fallback web */ }
+  return new WebGpsProvider();
+}
+
+export const gpsService: GpsProvider = pickProvider();
+
