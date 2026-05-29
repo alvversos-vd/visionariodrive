@@ -110,16 +110,29 @@ export async function hydrateFromCloud(userId: string) {
  * Marca dados como sujos. Por padrão usa debounce de 600ms.
  * Use { immediate: true } para operações críticas (endShift, deleteEntry,
  * deleteShift, clearAllAppData) onde a app pode ser minimizada logo após.
+ * Retorna a Promise do push quando immediate=true, para callers que precisam
+ * aguardar a confirmação antes de mudar de tela / fechar dialog.
  */
-export function markDirty(opts?: { immediate?: boolean }) {
+export function markDirty(opts?: { immediate?: boolean }): Promise<void> | void {
   if (!currentUserId || hydrating) return;
   if (opts?.immediate) {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-    void pushToCloud();
-    return;
+    return pushToCloud();
   }
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => void pushToCloud(), 600);
+}
+
+/**
+ * Flush explícito e awaitable. Usar antes de navegar para fora de uma tela
+ * crítica (ex.: fechar dialog de "finalizar turno") para garantir que o
+ * estado finalizado já está no cloud antes do usuário potencialmente
+ * minimizar/fechar o app — protege contra "turno renasce ativo" no reload.
+ */
+export async function flushNow(): Promise<void> {
+  if (!currentUserId || hydrating) return;
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  try { await pushToCloud(); } catch { /* silencioso — fallback no próximo ciclo */ }
 }
 
 async function pushToCloud() {
@@ -127,7 +140,7 @@ async function pushToCloud() {
   const payload: Record<string, unknown> = { user_id: currentUserId };
   for (const lk of LOCAL_KEYS) {
     let v = readLocal(lk);
-    v = mergeIncomingForKey(lk, v); // garante tombstones aplicados antes do push
+    v = mergeIncomingForKey(lk, v);
     payload[KEY_MAP[lk]] = v;
   }
   await supabase
@@ -139,9 +152,9 @@ async function pushToCloud() {
 function flushOnLifecycle() {
   if (!currentUserId || hydrating) return;
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  // dispara sem await — browser pode encerrar a aba; navigator.sendBeacon-like
   void pushToCloud();
 }
+
 
 function bindLifecycleListeners() {
   if (typeof window === 'undefined') return;

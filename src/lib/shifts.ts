@@ -280,20 +280,32 @@ export function endShift(turno_id: string): Shift | null {
   const { tz, offset } = getDeviceTz();
   s.timezone = s.timezone || tz;
   s.tz_offset_fim_minutos = offset;
-  // Mantém a data operacional do início (turnos que atravessam a madrugada
-  // permanecem contabilizados no dia em que começaram), mas registra também
-  // a data operacional do encerramento para histórico/auditoria.
   s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
 
-  // Bridge shift → entries (idempotente por shiftId).
   try { upsertEntryFromShift(s); } catch { /* não bloqueia finalização */ }
 
   // Push imediato — protege contra "turno renasce ativo" ao minimizar
   // o app no mobile/PWA antes do debounce de 600ms disparar.
   markDirty({ immediate: true });
-
   return s;
+}
+
+/**
+ * Variante awaitable de endShift — finaliza e retorna apenas após o push
+ * pro cloud concluir. Use no UI ("Encerrar turno") para garantir que se
+ * o usuário minimizar/fechar o app logo em seguida, o status finalizado
+ * já está persistido — bloqueia o bug de "turno renasce ativo" no reload
+ * em mobile/PWA (principal causa raiz no iOS standalone).
+ */
+export async function endShiftAtomic(turno_id: string): Promise<Shift | null> {
+  const finished = endShift(turno_id);
+  if (!finished) return null;
+  try {
+    const { flushNow } = await import('./cloudSync');
+    await flushNow();
+  } catch { /* listeners de lifecycle tentam de novo no próximo ciclo */ }
+  return finished;
 }
 
 /**

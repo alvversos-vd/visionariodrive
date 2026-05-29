@@ -6,7 +6,7 @@ import {
   Satellite, MapPinOff, Pencil, Map as MapIcon,
 } from 'lucide-react';
 import {
-  Shift, ShiftRide, getActiveShift, startShift, endShift, addRideAuto,
+  Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
   formatOperationalDate, deleteRide, classifyRide, updateRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
@@ -200,15 +200,24 @@ export default function ShiftMode({ onChange }: Props) {
     setEndConfirmOpen(true);
   };
 
-  const finalizeEnd = () => {
-    if (!shift) return;
-    const finished = endShift(shift.turno_id);
-    setShift(null);
-    setSummary(finished);
-    setFocus(false);
-    setEndConfirmOpen(false);
-    setHoldProgress(0);
-    onChange?.();
+  const [endingShift, setEndingShift] = useState(false);
+  const finalizeEnd = async () => {
+    if (!shift || endingShift) return;
+    setEndingShift(true);
+    try {
+      // Atômico: só limpa a UI após o cloud confirmar a finalização.
+      // Protege contra o usuário minimizar o app no meio do push e o turno
+      // "renascer" como ativo no próximo reload (especialmente iOS standalone).
+      const finished = await endShiftAtomic(shift.turno_id);
+      setShift(null);
+      setSummary(finished);
+      setFocus(false);
+      setEndConfirmOpen(false);
+      setHoldProgress(0);
+      onChange?.();
+    } finally {
+      setEndingShift(false);
+    }
   };
 
   const HOLD_MS = 1000;
