@@ -6,7 +6,7 @@ import {
   Satellite, MapPinOff, Pencil, Map as MapIcon,
 } from 'lucide-react';
 import {
-  Shift, ShiftRide, getActiveShift, startShift, endShift, endShiftAtomic, addRideAuto,
+  Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
   formatOperationalDate, deleteRide, classifyRide, updateRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
