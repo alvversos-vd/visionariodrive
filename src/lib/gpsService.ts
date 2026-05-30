@@ -212,11 +212,19 @@ class CapacitorGpsProvider implements GpsProvider {
  */
 function pickProvider(): GpsProvider {
   try {
-    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }) : undefined;
-    if (w?.Capacitor?.isNativePlatform?.()) return new CapacitorGpsProvider();
+    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }) : undefined;
+    if (w?.Capacitor?.isNativePlatform?.()) {
+      const platform = w.Capacitor.getPlatform?.() ?? 'native';
+      // eslint-disable-next-line no-console
+      console.info(`[gpsService] Using NATIVE provider (Capacitor / ${platform})`);
+      return new CapacitorGpsProvider();
+    }
   } catch { /* fallback web */ }
+  // eslint-disable-next-line no-console
+  console.info('[gpsService] Using WEB provider (navigator.geolocation)');
   return new WebGpsProvider();
 }
 
 export const gpsService: GpsProvider = pickProvider();
+
 
