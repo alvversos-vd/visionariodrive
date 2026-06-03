@@ -148,32 +148,78 @@ export default function ShiftMode({ onChange }: Props) {
   };
 
   const triggerNativePrompt = (id: string | null) => {
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        if (id) setShiftGpsStatus(id, 'ok');
-        saveGpsConsent();
-        toast.success('GPS ativo — km serão calculados automaticamente');
-        refresh();
-      },
-      err => {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        if (err.code === err.PERMISSION_DENIED) {
-          if (id) setShiftGpsStatus(id, 'denied');
-          toast.error('Permissão de GPS negada', {
-            description: isIOS
-              ? 'Ajustes › Safari › Localização › Permitir. Modo manual ativado.'
-              : 'Permita localização precisa nas configurações. Modo manual ativado.',
-            duration: 7000,
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    // Em plataforma nativa (Capacitor / APK), o WebView NÃO dispara o prompt
+    // de permissão do sistema via navigator.geolocation. Precisamos chamar
+    // @capacitor/geolocation diretamente para que o Android/iOS exibam o
+    // diálogo nativo e registrem a permissão em Configurações > Apps.
+    const cap = typeof window !== 'undefined'
+      ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      : undefined;
+    const isNative = !!cap?.isNativePlatform?.();
+
+    const handleGranted = () => {
+      if (id) setShiftGpsStatus(id, 'ok');
+      saveGpsConsent();
+      toast.success('GPS ativo — km serão calculados automaticamente');
+      refresh();
+    };
+
+    const handleDenied = () => {
+      if (id) setShiftGpsStatus(id, 'denied');
+      toast.error('Permissão de GPS negada', {
+        description: isIOS
+          ? 'Ajustes › Privacidade › Localização › Visionário Drive › Ao Usar. Modo manual ativado.'
+          : 'Permita localização precisa nas configurações do app. Modo manual ativado.',
+        duration: 7000,
+      });
+      refresh();
+    };
+
+    const handleUnavailable = () => {
+      if (id) setShiftGpsStatus(id, 'unavailable');
+      toast('GPS indisponível agora — modo manual ativo');
+      refresh();
+    };
+
+    if (isNative) {
+      (async () => {
+        try {
+          const { Geolocation } = await import('@capacitor/geolocation');
+          // 1) Dispara o prompt nativo do sistema (Android/iOS)
+          const perm = await Geolocation.requestPermissions();
+          if (perm.location !== 'granted') {
+            if (perm.location === 'denied') handleDenied();
+            else handleUnavailable();
+            return;
+          }
+          // 2) Confirma com um fix real para garantir que o GPS responde
+          await Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 15000,
           });
-        } else {
-          if (id) setShiftGpsStatus(id, 'unavailable');
-          toast('GPS indisponível agora — modo manual ativo');
+          handleGranted();
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn('[ShiftMode] Capacitor Geolocation falhou', e);
+          handleUnavailable();
         }
-        refresh();
+      })();
+      return;
+    }
+
+    // Web / PWA — fluxo original via navigator.geolocation
+    navigator.geolocation.getCurrentPosition(
+      () => handleGranted(),
+      err => {
+        if (err.code === err.PERMISSION_DENIED) handleDenied();
+        else handleUnavailable();
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
+
 
 
   const finalizeStart = () => {
