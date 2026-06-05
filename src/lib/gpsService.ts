@@ -14,6 +14,10 @@
  *  - Retorna um `stop()` idempotente.
  */
 
+import { gpsTelemetry } from './gpsTelemetry';
+
+
+
 export interface GpsFix {
   lat: number;
   lng: number;
@@ -75,15 +79,27 @@ class WebGpsProvider implements GpsProvider {
     }
 
     const seenTs = new Set<number>();
-    const ingest = (pos: GeolocationPosition) => {
+    const ingest = (pos: GeolocationPosition, source: 'watch' | 'poll') => {
       const t = pos.timestamp || Date.now();
-      if (seenTs.has(t)) return;
+      if (seenTs.has(t)) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'dup_ts', source, t }); } catch { /* noop */ }
+        return;
+      }
       seenTs.add(t);
       if (seenTs.size > 200) {
         const arr = Array.from(seenTs).slice(-100);
         seenTs.clear();
         arr.forEach(x => seenTs.add(x));
       }
+      try {
+        gpsTelemetry.event('raw_fix', {
+          source,
+          accuracy: pos.coords.accuracy ?? null,
+          speed: pos.coords.speed ?? null,
+          source_lag_ms: Date.now() - t,
+          hidden: typeof document !== 'undefined' ? document.hidden : null,
+        });
+      } catch { /* noop */ }
       onFix({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
@@ -93,6 +109,7 @@ class WebGpsProvider implements GpsProvider {
         heading: pos.coords.heading ?? undefined,
       });
     };
+
 
     const onErr = (err: GeolocationPositionError) => {
       if (err.code === err.PERMISSION_DENIED) onError?.('denied', err);
