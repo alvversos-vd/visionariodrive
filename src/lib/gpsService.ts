@@ -117,7 +117,7 @@ class WebGpsProvider implements GpsProvider {
       else if (err.code === err.TIMEOUT) onError?.('timeout', err);
     };
 
-    const watchId = navigator.geolocation.watchPosition(ingest, onErr, {
+    const watchId = navigator.geolocation.watchPosition(p => ingest(p, 'watch'), onErr, {
       enableHighAccuracy: true,
       maximumAge: 1000,
       timeout: 20000,
@@ -125,12 +125,13 @@ class WebGpsProvider implements GpsProvider {
 
     const poll = setInterval(() => {
       if (pausePollWhenHidden && typeof document !== 'undefined' && document.hidden) return;
-      navigator.geolocation.getCurrentPosition(ingest, () => {}, {
+      navigator.geolocation.getCurrentPosition(p => ingest(p, 'poll'), () => {}, {
         enableHighAccuracy: true,
         maximumAge: 2000,
         timeout: 10000,
       });
     }, pollMs);
+
 
     let stopped = false;
     return {
