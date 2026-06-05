@@ -191,7 +191,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       });
       setShiftGpsStatus(turnoId, 'ok');
 
-      if (fix.accuracy > 100) return;
+      if (fix.accuracy > 100) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'low_accuracy', accuracy: fix.accuracy }); } catch { /* noop */ }
+        return;
+      }
 
       const cur: Point = {
         lat: fix.lat, lng: fix.lng, t: fix.t, acc: fix.accuracy,
@@ -201,21 +204,27 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (!prev) {
         lastPoint.current = cur;
         appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+        try { gpsTelemetry.event('fix_accepted', { reason: 'first_or_reanchor' }); } catch { /* noop */ }
         onTickRef.current?.();
         return;
       }
       const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
       const meters = haversineMeters(prev, cur);
-      if (meters < 2) return;
+      if (meters < 2) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'micro_move', meters, speed_kmh: (meters / dt) * 3.6 }); } catch { /* noop */ }
+        return;
+      }
       const speedKmh = (meters / dt) * 3.6;
       if (speedKmh > 250) {
         // salto impossível — re-ancora sem somar (reconciliação anti-duplicação)
         lastPoint.current = cur;
+        try { gpsTelemetry.event('fix_dropped', { reason: 'impossible_jump', meters, speed_kmh: speedKmh }); } catch { /* noop */ }
         return;
       }
       addGpsDistance(turnoId, meters);
       appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
       lastPoint.current = cur;
+      try { gpsTelemetry.event('fix_accepted', { meters, speed_kmh: speedKmh }); } catch { /* noop */ }
       onTickRef.current?.();
     };
 
@@ -226,8 +235,11 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           setGps('denied');
           setShiftGpsStatus(turnoId, 'denied');
         }
+        try { gpsTelemetry.event('error', { kind }); } catch { /* noop */ }
       },
     });
+    try { gpsTelemetry.event('watch_started', { turnoId }); } catch { /* noop */ }
+
 
     // Heartbeat/Watchdog (também propaga lastFixAt como state a cada 5s — cadência baixa
      // o suficiente para não causar renders excessivos no mobile).
