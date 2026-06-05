@@ -1,0 +1,24 @@
+/*
+ * BUG-MVP-003 — Rebaixa z-index dos panes/controles do Leaflet para que
+ * NENHUM elemento do mapa sobreponha modais/dialogs da aplicação.
+ *
+ * Modais usam z-50..z-[80]; toasts z-[100]. Tudo do Leaflet fica < 40.
+ * Apenas CSS — não altera tracking, GPS, storage, sync, cálculos ou modais.
+ */
+
+.leaflet-pane         { z-index: 10 !important; }
+.leaflet-tile-pane    { z-index: 10 !important; }
+.leaflet-overlay-pane { z-index: 11 !important; }
+.leaflet-shadow-pane  { z-index: 12 !important; }
+.leaflet-marker-pane  { z-index: 13 !important; }
+.leaflet-tooltip-pane { z-index: 14 !important; }
+.leaflet-popup-pane   { z-index: 15 !important; }
+
+.leaflet-map-pane     { z-index: 10 !important; }
+
+.leaflet-control      { z-index: 20 !important; }
+.leaflet-top,
+.leaflet-bottom       { z-index: 20 !important; }
+
+/* Container nunca deve criar stacking context acima de modais */
+.leaflet-container    { z-index: 0; }
