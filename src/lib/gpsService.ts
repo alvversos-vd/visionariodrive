@@ -235,14 +235,17 @@ function pickProvider(): GpsProvider {
       const platform = w.Capacitor.getPlatform?.() ?? 'native';
       // eslint-disable-next-line no-console
       console.info(`[gpsService] Using NATIVE provider (Capacitor / ${platform})`);
+      try { gpsTelemetry.setProvider(`capacitor:${platform}`); } catch { /* noop */ }
       return new CapacitorGpsProvider();
     }
   } catch { /* fallback web */ }
   // eslint-disable-next-line no-console
   console.info('[gpsService] Using WEB provider (navigator.geolocation)');
+  try { gpsTelemetry.setProvider('web:navigator.geolocation'); } catch { /* noop */ }
   return new WebGpsProvider();
 }
 
 export const gpsService: GpsProvider = pickProvider();
+
 
 
