@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
 import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter } from 'lucide-react';
+import { getExpenses } from '@/lib/expenses';
+import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
