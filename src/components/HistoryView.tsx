@@ -69,12 +69,20 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 }
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
-  const allEntries = useMemo(() => getEntries(), [refresh]);
+  const rawEntries = useMemo(() => getEntries(), [refresh]);
   const allRides = useMemo(() => getRides(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
+  const expenses = useMemo(() => getExpenses(), [refresh]);
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
+
+  // Merge expenses (read-side) into the canonical list used everywhere.
+  // No mutation of storage / DailyEntry / sync.
+  const allEntries: AdjustedDailyEntry[] = useMemo(
+    () => mergeExpensesIntoEntries(rawEntries, expenses),
+    [rawEntries, expenses],
+  );
 
   // Build option lists from data actually present
   const vehicleOptions = useMemo(() => {
@@ -97,7 +105,13 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     return true;
   };
 
-  const entries = useMemo(() => allEntries.filter(matches), [allEntries, vehicleFilter, rideTypeFilter]);
+  // When a filter is active, expense-only entries are dropped (they have no
+  // vehicle/rideType attribution) — this is intentional and surfaced via the
+  // "limpar filtros" hint.
+  const entries = useMemo(
+    () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matches(e))),
+    [allEntries, vehicleFilter, rideTypeFilter],
+  );
   const rides = useMemo(() => allRides.filter(matches), [allRides, vehicleFilter, rideTypeFilter]);
 
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
