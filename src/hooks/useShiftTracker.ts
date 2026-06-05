@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { addGpsDistance, appendRoutePoint, flushShiftBuffers, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
 import { gpsService, GpsFix } from '@/lib/gpsService';
+import { gpsTelemetry } from '@/lib/gpsTelemetry';
+
 
 export type GpsState =
   | 'idle'
@@ -81,6 +83,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
     const onHidden = () => {
       hiddenAtRef.current = Date.now();
+      try { gpsTelemetry.event('visibility_change', { hidden: true }); } catch { /* noop */ }
       flushShiftBuffers(); // não perde pontos se o navegador suspender
       setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'background' : prev));
     };
@@ -88,6 +91,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     const onVisible = () => {
       const hiddenFor = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
       hiddenAtRef.current = null;
+      try {
+        gpsTelemetry.event('visibility_change', { hidden: false, hidden_for_ms: hiddenFor });
+        if (hiddenFor > 0) gpsTelemetry.event('background_period', { duration_ms: hiddenFor });
+      } catch { /* noop */ }
 
       // Re-âncora — primeiro fix pós-background não deve gerar salto contábil
       lastPoint.current = null;
@@ -99,6 +106,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
         hiddenFor > THROTTLE_NOTICE_MS &&
         Date.now() - lastThrottleToastRef.current > THROTTLE_TOAST_COOLDOWN_MS
       ) {
+
         lastThrottleToastRef.current = Date.now();
         const sec = Math.round(hiddenFor / 1000);
         toast('Tracking reduzido em segundo plano', {
