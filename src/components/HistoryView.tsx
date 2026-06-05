@@ -431,7 +431,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         {entries.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-6">Nenhum registro com esse filtro.</p>
         ) : (
-          entries.map((entry: DailyEntry) => (
+          entries.map((entry) => (
             <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -443,27 +443,47 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                     {fmt(entry.profit)}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
-                </p>
-                {(entry.vehicle || entry.rideType) && (
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    {entry.vehicle && (
-                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
+                {entry.expenseOnly ? (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <Receipt size={11} /> Gastos avulsos sem turno registrado · {fmt(entry.expensesExtra)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+                      Edite ou remova em "Gastos".
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
+                    </p>
+                    {entry.expensesExtra > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Receipt size={10} /> inclui {fmt(entry.expensesExtra)} de gastos avulsos
+                      </p>
                     )}
-                    {entry.rideType && (
-                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
+                    {(entry.vehicle || entry.rideType) && (
+                      <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                        {entry.vehicle && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
+                        )}
+                        {entry.rideType && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
-              <button
-                onClick={() => handleDeleteEntry(entry.id)}
-                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                aria-label="Excluir registro"
-              >
-                <Trash2 size={16} />
-              </button>
+              {!entry.expenseOnly && (
+                <button
+                  onClick={() => handleDeleteEntry(entry.id)}
+                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Excluir registro"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))
         )}
