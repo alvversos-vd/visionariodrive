@@ -116,7 +116,7 @@ export default function ShiftLiveMap({ shift, className }: Props) {
         className={className ?? 'w-full h-48 rounded-xl overflow-hidden border border-border'}
         aria-label="Rota em tempo real"
       />
-      <div className="absolute top-2 left-2 z-[400] bg-background/85 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-[10px] font-mono leading-tight border border-border shadow-sm pointer-events-none">
+      <div className="absolute top-2 left-2 z-30 bg-background/85 backdrop-blur-sm rounded-lg px-2.5 py-1.5 text-[10px] font-mono leading-tight border border-border shadow-sm pointer-events-none">
         <div><span className="text-muted-foreground">pts</span> <span className="font-bold text-primary">{pts.length}</span> <span className="text-muted-foreground">seg</span> <span className="font-bold">{segCount}</span></div>
         <div><span className="text-muted-foreground">km</span> <span className="font-bold">{(shift.km_gps ?? 0).toFixed(2)}</span></div>
         {last?.spd != null && (
