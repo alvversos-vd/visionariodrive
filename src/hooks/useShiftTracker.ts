@@ -251,12 +251,14 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (since > WATCHDOG_FAIL_MS) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
         setShiftGpsStatus(turnoId, 'unavailable');
+        try { gpsTelemetry.event('watchdog_unavailable', { since_ms: since, isBg }); } catch { /* noop */ }
         return;
       }
 
       // Em foreground, se ficou sem fix por >15s, tenta uma única reinicialização limpa
       if (!isBg && since > HEARTBEAT_RESTART_MS && !restartedByHeartbeat) {
         restartedByHeartbeat = true;
+        try { gpsTelemetry.event('heartbeat_restart', { since_ms: since }); } catch { /* noop */ }
         setRestartKey(k => k + 1);
       }
     }, 5000);
@@ -264,8 +266,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     return () => {
       clearInterval(interval);
       handle.stop();
+      try { gpsTelemetry.event('watch_stopped', { turnoId }); } catch { /* noop */ }
       lastPoint.current = null;
     };
+
   }, [shift?.turno_id, shift?.status, restartKey]);
 
   return { gps, lastFixAt };

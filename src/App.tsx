@@ -10,6 +10,8 @@ import Auth from "./pages/Auth.tsx";
 import Legal from "./pages/Legal.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Onboarding from "./components/Onboarding.tsx";
+import GpsDebugButton from "./components/GpsDebugButton.tsx";
+
 
 const queryClient = new QueryClient();
 
@@ -42,7 +44,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <GpsDebugButton />
       <BrowserRouter>
+
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
