@@ -121,6 +121,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     const build = (key: 'vehicle' | 'rideType') => {
       const map = new Map<string, { count: number; earnings: number; cost: number; profit: number; km: number }>();
       entries.forEach(e => {
+        if (e.expenseOnly) return; // sintéticos não entram em breakdown por categoria
         const k = (e[key] || '—') as string;
         const cur = map.get(k) || { count: 0, earnings: 0, cost: 0, profit: 0, km: 0 };
         cur.count += 1;
