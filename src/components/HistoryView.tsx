@@ -206,10 +206,14 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     <div className="space-y-4 animate-slide-up">
       <ShiftHistoryView refresh={refresh} />
       <button
-        onClick={() => {
+        onClick={async () => {
           try {
-            exportHistoryPdf(entries);
-            toast.success('Relatório PDF gerado com sucesso');
+            const path = await exportHistoryPdf(entries);
+            if (path === 'failed') {
+              toast.error('Não foi possível salvar o PDF neste dispositivo');
+            } else {
+              toast.success('Relatório PDF gerado com sucesso');
+            }
           } catch (e) {
             toast.error('Erro ao gerar PDF');
           }
