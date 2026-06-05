@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DailyEntry } from './types';
+import { saveBlob, type SaveBlobPath } from './saveBlob';
+
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -69,8 +71,9 @@ function summarize(entries: DailyEntry[]) {
   };
 }
 
-export function exportHistoryPdf(entries: DailyEntry[]): void {
+export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobPath> {
   const doc = new jsPDF();
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const now = new Date();
 
@@ -169,5 +172,11 @@ export function exportHistoryPdf(entries: DailyEntry[]): void {
     ]),
   });
 
-  doc.save(`visionario-delivery-${now.toISOString().slice(0, 10)}.pdf`);
+  const filename = `visionario-delivery-${now.toISOString().slice(0, 10)}.pdf`;
+  const blob = doc.output('blob');
+  const path = await saveBlob(blob, filename);
+  // Diagnóstico em campo — útil para confirmar qual caminho funcionou no APK
+  console.info('[exportHistoryPdf] delivery path:', path);
+  return path;
 }
+
