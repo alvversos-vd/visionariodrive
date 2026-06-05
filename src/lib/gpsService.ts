@@ -14,6 +14,10 @@
  *  - Retorna um `stop()` idempotente.
  */
 
+import { gpsTelemetry } from './gpsTelemetry';
+
+
+
 export interface GpsFix {
   lat: number;
   lng: number;
@@ -75,15 +79,27 @@ class WebGpsProvider implements GpsProvider {
     }
 
     const seenTs = new Set<number>();
-    const ingest = (pos: GeolocationPosition) => {
+    const ingest = (pos: GeolocationPosition, source: 'watch' | 'poll') => {
       const t = pos.timestamp || Date.now();
-      if (seenTs.has(t)) return;
+      if (seenTs.has(t)) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'dup_ts', source, t }); } catch { /* noop */ }
+        return;
+      }
       seenTs.add(t);
       if (seenTs.size > 200) {
         const arr = Array.from(seenTs).slice(-100);
         seenTs.clear();
         arr.forEach(x => seenTs.add(x));
       }
+      try {
+        gpsTelemetry.event('raw_fix', {
+          source,
+          accuracy: pos.coords.accuracy ?? null,
+          speed: pos.coords.speed ?? null,
+          source_lag_ms: Date.now() - t,
+          hidden: typeof document !== 'undefined' ? document.hidden : null,
+        });
+      } catch { /* noop */ }
       onFix({
         lat: pos.coords.latitude,
         lng: pos.coords.longitude,
@@ -94,13 +110,14 @@ class WebGpsProvider implements GpsProvider {
       });
     };
 
+
     const onErr = (err: GeolocationPositionError) => {
       if (err.code === err.PERMISSION_DENIED) onError?.('denied', err);
       else if (err.code === err.POSITION_UNAVAILABLE) onError?.('unavailable', err);
       else if (err.code === err.TIMEOUT) onError?.('timeout', err);
     };
 
-    const watchId = navigator.geolocation.watchPosition(ingest, onErr, {
+    const watchId = navigator.geolocation.watchPosition(p => ingest(p, 'watch'), onErr, {
       enableHighAccuracy: true,
       maximumAge: 1000,
       timeout: 20000,
@@ -108,12 +125,13 @@ class WebGpsProvider implements GpsProvider {
 
     const poll = setInterval(() => {
       if (pausePollWhenHidden && typeof document !== 'undefined' && document.hidden) return;
-      navigator.geolocation.getCurrentPosition(ingest, () => {}, {
+      navigator.geolocation.getCurrentPosition(p => ingest(p, 'poll'), () => {}, {
         enableHighAccuracy: true,
         maximumAge: 2000,
         timeout: 10000,
       });
     }, pollMs);
+
 
     let stopped = false;
     return {
@@ -217,14 +235,17 @@ function pickProvider(): GpsProvider {
       const platform = w.Capacitor.getPlatform?.() ?? 'native';
       // eslint-disable-next-line no-console
       console.info(`[gpsService] Using NATIVE provider (Capacitor / ${platform})`);
+      try { gpsTelemetry.setProvider(`capacitor:${platform}`); } catch { /* noop */ }
       return new CapacitorGpsProvider();
     }
   } catch { /* fallback web */ }
   // eslint-disable-next-line no-console
   console.info('[gpsService] Using WEB provider (navigator.geolocation)');
+  try { gpsTelemetry.setProvider('web:navigator.geolocation'); } catch { /* noop */ }
   return new WebGpsProvider();
 }
 
 export const gpsService: GpsProvider = pickProvider();
+
 
 

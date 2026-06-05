@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { addGpsDistance, appendRoutePoint, flushShiftBuffers, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
 import { gpsService, GpsFix } from '@/lib/gpsService';
+import { gpsTelemetry } from '@/lib/gpsTelemetry';
+
 
 export type GpsState =
   | 'idle'
@@ -81,6 +83,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
     const onHidden = () => {
       hiddenAtRef.current = Date.now();
+      try { gpsTelemetry.event('visibility_change', { hidden: true }); } catch { /* noop */ }
       flushShiftBuffers(); // não perde pontos se o navegador suspender
       setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'background' : prev));
     };
@@ -88,6 +91,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     const onVisible = () => {
       const hiddenFor = hiddenAtRef.current ? Date.now() - hiddenAtRef.current : 0;
       hiddenAtRef.current = null;
+      try {
+        gpsTelemetry.event('visibility_change', { hidden: false, hidden_for_ms: hiddenFor });
+        if (hiddenFor > 0) gpsTelemetry.event('background_period', { duration_ms: hiddenFor });
+      } catch { /* noop */ }
 
       // Re-âncora — primeiro fix pós-background não deve gerar salto contábil
       lastPoint.current = null;
@@ -99,6 +106,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
         hiddenFor > THROTTLE_NOTICE_MS &&
         Date.now() - lastThrottleToastRef.current > THROTTLE_TOAST_COOLDOWN_MS
       ) {
+
         lastThrottleToastRef.current = Date.now();
         const sec = Math.round(hiddenFor / 1000);
         toast('Tracking reduzido em segundo plano', {
@@ -183,7 +191,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       });
       setShiftGpsStatus(turnoId, 'ok');
 
-      if (fix.accuracy > 100) return;
+      if (fix.accuracy > 100) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'low_accuracy', accuracy: fix.accuracy }); } catch { /* noop */ }
+        return;
+      }
 
       const cur: Point = {
         lat: fix.lat, lng: fix.lng, t: fix.t, acc: fix.accuracy,
@@ -193,21 +204,27 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (!prev) {
         lastPoint.current = cur;
         appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+        try { gpsTelemetry.event('fix_accepted', { reason: 'first_or_reanchor' }); } catch { /* noop */ }
         onTickRef.current?.();
         return;
       }
       const dt = Math.max(0.001, (cur.t - prev.t) / 1000);
       const meters = haversineMeters(prev, cur);
-      if (meters < 2) return;
+      if (meters < 2) {
+        try { gpsTelemetry.event('fix_dropped', { reason: 'micro_move', meters, speed_kmh: (meters / dt) * 3.6 }); } catch { /* noop */ }
+        return;
+      }
       const speedKmh = (meters / dt) * 3.6;
       if (speedKmh > 250) {
         // salto impossível — re-ancora sem somar (reconciliação anti-duplicação)
         lastPoint.current = cur;
+        try { gpsTelemetry.event('fix_dropped', { reason: 'impossible_jump', meters, speed_kmh: speedKmh }); } catch { /* noop */ }
         return;
       }
       addGpsDistance(turnoId, meters);
       appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
       lastPoint.current = cur;
+      try { gpsTelemetry.event('fix_accepted', { meters, speed_kmh: speedKmh }); } catch { /* noop */ }
       onTickRef.current?.();
     };
 
@@ -218,8 +235,11 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
           setGps('denied');
           setShiftGpsStatus(turnoId, 'denied');
         }
+        try { gpsTelemetry.event('error', { kind }); } catch { /* noop */ }
       },
     });
+    try { gpsTelemetry.event('watch_started', { turnoId }); } catch { /* noop */ }
+
 
     // Heartbeat/Watchdog (também propaga lastFixAt como state a cada 5s — cadência baixa
      // o suficiente para não causar renders excessivos no mobile).
@@ -231,12 +251,14 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (since > WATCHDOG_FAIL_MS) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
         setShiftGpsStatus(turnoId, 'unavailable');
+        try { gpsTelemetry.event('watchdog_unavailable', { since_ms: since, isBg }); } catch { /* noop */ }
         return;
       }
 
       // Em foreground, se ficou sem fix por >15s, tenta uma única reinicialização limpa
       if (!isBg && since > HEARTBEAT_RESTART_MS && !restartedByHeartbeat) {
         restartedByHeartbeat = true;
+        try { gpsTelemetry.event('heartbeat_restart', { since_ms: since }); } catch { /* noop */ }
         setRestartKey(k => k + 1);
       }
     }, 5000);
@@ -244,8 +266,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     return () => {
       clearInterval(interval);
       handle.stop();
+      try { gpsTelemetry.event('watch_stopped', { turnoId }); } catch { /* noop */ }
       lastPoint.current = null;
     };
+
   }, [shift?.turno_id, shift?.status, restartKey]);
 
   return { gps, lastFixAt };
