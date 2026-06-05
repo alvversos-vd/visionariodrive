@@ -789,11 +789,11 @@ export default function ShiftMode({ onChange }: Props) {
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => { exportRouteGpx(shift) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { (await exportRouteGpx(shift)) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
                 className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
-                onClick={() => { exportRouteKml(shift) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { (await exportRouteKml(shift)) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
                 className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>
