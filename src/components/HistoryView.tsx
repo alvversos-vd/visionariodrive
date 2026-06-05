@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
 import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter } from 'lucide-react';
+import { getExpenses } from '@/lib/expenses';
+import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
@@ -67,12 +69,20 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 }
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
-  const allEntries = useMemo(() => getEntries(), [refresh]);
+  const rawEntries = useMemo(() => getEntries(), [refresh]);
   const allRides = useMemo(() => getRides(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
+  const expenses = useMemo(() => getExpenses(), [refresh]);
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
+
+  // Merge expenses (read-side) into the canonical list used everywhere.
+  // No mutation of storage / DailyEntry / sync.
+  const allEntries: AdjustedDailyEntry[] = useMemo(
+    () => mergeExpensesIntoEntries(rawEntries, expenses),
+    [rawEntries, expenses],
+  );
 
   // Build option lists from data actually present
   const vehicleOptions = useMemo(() => {
@@ -95,7 +105,13 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     return true;
   };
 
-  const entries = useMemo(() => allEntries.filter(matches), [allEntries, vehicleFilter, rideTypeFilter]);
+  // When a filter is active, expense-only entries are dropped (they have no
+  // vehicle/rideType attribution) — this is intentional and surfaced via the
+  // "limpar filtros" hint.
+  const entries = useMemo(
+    () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matches(e))),
+    [allEntries, vehicleFilter, rideTypeFilter],
+  );
   const rides = useMemo(() => allRides.filter(matches), [allRides, vehicleFilter, rideTypeFilter]);
 
   const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
@@ -105,6 +121,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     const build = (key: 'vehicle' | 'rideType') => {
       const map = new Map<string, { count: number; earnings: number; cost: number; profit: number; km: number }>();
       entries.forEach(e => {
+        if (e.expenseOnly) return; // sintéticos não entram em breakdown por categoria
         const k = (e[key] || '—') as string;
         const cur = map.get(k) || { count: 0, earnings: 0, cost: 0, profit: 0, km: 0 };
         cur.count += 1;
@@ -415,7 +432,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         {entries.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-6">Nenhum registro com esse filtro.</p>
         ) : (
-          entries.map((entry: DailyEntry) => (
+          entries.map((entry) => (
             <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -427,27 +444,47 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                     {fmt(entry.profit)}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
-                </p>
-                {(entry.vehicle || entry.rideType) && (
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    {entry.vehicle && (
-                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
+                {entry.expenseOnly ? (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                      <Receipt size={11} /> Gastos avulsos sem turno registrado · {fmt(entry.expensesExtra)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 italic">
+                      Edite ou remova em "Gastos".
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
+                    </p>
+                    {entry.expensesExtra > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                        <Receipt size={10} /> inclui {fmt(entry.expensesExtra)} de gastos avulsos
+                      </p>
                     )}
-                    {entry.rideType && (
-                      <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
+                    {(entry.vehicle || entry.rideType) && (
+                      <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                        {entry.vehicle && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
+                        )}
+                        {entry.rideType && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
-              <button
-                onClick={() => handleDeleteEntry(entry.id)}
-                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                aria-label="Excluir registro"
-              >
-                <Trash2 size={16} />
-              </button>
+              {!entry.expenseOnly && (
+                <button
+                  onClick={() => handleDeleteEntry(entry.id)}
+                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Excluir registro"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))
         )}
