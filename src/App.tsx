@@ -46,6 +46,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <GpsDebugButton />
+      <ExportDebugButton />
       <BrowserRouter>
 
         <AuthProvider>
