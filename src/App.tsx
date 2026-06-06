@@ -11,6 +11,7 @@ import Legal from "./pages/Legal.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Onboarding from "./components/Onboarding.tsx";
 import GpsDebugButton from "./components/GpsDebugButton.tsx";
+import ExportDebugButton from "./components/ExportDebugButton.tsx";
 
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <GpsDebugButton />
+      <ExportDebugButton />
       <BrowserRouter>
 
         <AuthProvider>
