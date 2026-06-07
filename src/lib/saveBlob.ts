@@ -12,9 +12,62 @@
  * para evidenciar qual caminho realmente entrega o arquivo em cada ambiente
  * (Browser / PWA / Capacitor Android). NÃO altera o comportamento.
  */
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { exportTelemetry, type ExportType } from './exportTelemetry';
 
-export type SaveBlobPath = 'web-share' | 'anchor-download' | 'window-open' | 'failed';
+export type SaveBlobPath = 'native-share' | 'web-share' | 'anchor-download' | 'window-open' | 'failed';
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      // result = "data:<mime>;base64,<payload>"
+      const idx = result.indexOf(',');
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('FileReader error'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function nativeShare(blob: Blob, filename: string): Promise<SaveBlobPath> {
+  exportTelemetry.pathTried('native-share', 'Capacitor.isNativePlatform() === true');
+  const t0 = performance.now();
+  try {
+    const base64 = await blobToBase64(blob);
+    // Cache dir é gravável sem permissão e adequado para compartilhamento via FileProvider.
+    const writeRes = await Filesystem.writeFile({
+      path: filename,
+      data: base64,
+      directory: Directory.Cache,
+      recursive: true,
+    });
+    const fileUri = writeRes.uri;
+    await Share.share({
+      title: filename,
+      url: fileUri,
+      dialogTitle: 'Salvar ou compartilhar',
+    });
+    exportTelemetry.pathResult('native-share', 'resolved', performance.now() - t0);
+    exportTelemetry.finalOutcome('native-share', 'assumed');
+    return 'native-share';
+  } catch (err) {
+    const dur = performance.now() - t0;
+    const msg = err instanceof Error ? err.message : String(err);
+    // AbortError do Share = usuário fechou picker — arquivo já foi escrito.
+    if (err instanceof Error && /abort|cancel/i.test(err.name + ' ' + err.message)) {
+      exportTelemetry.pathResult('native-share', 'aborted', dur, msg);
+      exportTelemetry.finalOutcome('native-share', 'assumed');
+      return 'native-share';
+    }
+    exportTelemetry.pathResult('native-share', 'rejected', dur, msg);
+    exportTelemetry.finalOutcome('failed', 'failed');
+    return 'failed';
+  }
+}
 
 function inferType(filename: string): ExportType {
   const lower = filename.toLowerCase();
@@ -27,6 +80,22 @@ function inferType(filename: string): ExportType {
 
 export async function saveBlob(blob: Blob, filename: string): Promise<SaveBlobPath> {
   exportTelemetry.attempt(inferType(filename), blob, filename);
+
+  // Branch nativo (Capacitor Android/iOS): Filesystem + Share oficiais.
+  // Mantém cascata web intacta para browser/PWA.
+  try {
+    if (Capacitor.isNativePlatform()) {
+      return await nativeShare(blob, filename);
+    }
+  } catch (err) {
+    exportTelemetry.pathResult(
+      'native-share',
+      'rejected',
+      0,
+      err instanceof Error ? err.message : String(err),
+    );
+    // se a detecção falhar, segue cascata web
+  }
 
   // Capability probe
   const nav = navigator as Navigator & {

@@ -15,7 +15,7 @@
 import { Capacitor } from '@capacitor/core';
 
 export type ExportType = 'pdf' | 'gpx' | 'kml' | 'diag-json' | 'other';
-export type ExportPath = 'web-share' | 'anchor-download' | 'window-open' | 'failed';
+export type ExportPath = 'native-share' | 'web-share' | 'anchor-download' | 'window-open' | 'failed';
 export type ExportOutcome = 'resolved' | 'rejected' | 'aborted' | 'unknown';
 
 export type ExportEvent =
