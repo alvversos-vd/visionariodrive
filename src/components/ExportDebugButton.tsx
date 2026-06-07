@@ -33,7 +33,7 @@ export default function ExportDebugButton() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      setEnabled(params.get('exportDebug') === '1');
+      setEnabled(true);
     } catch {
       setEnabled(false);
     }
