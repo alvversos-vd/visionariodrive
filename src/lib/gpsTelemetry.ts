@@ -175,7 +175,7 @@ export const gpsTelemetry = {
     };
   },
 
-  async export(): Promise<'web-share' | 'anchor-download' | 'window-open' | 'failed'> {
+  async export(): Promise<'native-share' | 'web-share' | 'anchor-download' | 'window-open' | 'failed'> {
     const snap = this.snapshot();
     const blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
