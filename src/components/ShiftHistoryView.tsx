@@ -55,11 +55,22 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const [exportTo, setExportTo] = useState(todayIso);
 
   const handleExport = (kind: 'csv' | 'pdf') => {
-    if (exportFrom > exportTo) { toast.error('Período inválido: data inicial maior que final'); return; }
+    exportTelemetry.step('ShiftHistoryView.handleExport', 'click', { kind, from: exportFrom, to: exportTo });
+    if (exportFrom > exportTo) {
+      exportTelemetry.error('ShiftHistoryView.handleExport', 'invalid_range', new Error('from>to'));
+      toast.error('Período inválido: data inicial maior que final');
+      return;
+    }
     const fn = kind === 'csv' ? exportShiftsCsv : exportShiftsPdf;
-    const count = fn(exportFrom, exportTo);
-    if (count === 0) toast('Nenhum turno encontrado no período');
-    else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+    try {
+      const count = fn(exportFrom, exportTo);
+      exportTelemetry.step('ShiftHistoryView.handleExport', 'export_returned', { kind, count });
+      if (count === 0) toast('Nenhum turno encontrado no período');
+      else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+    } catch (err) {
+      exportTelemetry.error('ShiftHistoryView.handleExport', 'export_threw', err);
+      toast.error('Falha ao exportar');
+    }
   };
 
   const shifts = useMemo<Shift[]>(
