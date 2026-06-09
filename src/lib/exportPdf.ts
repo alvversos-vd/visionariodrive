@@ -182,11 +182,32 @@ export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobP
     ]),
   });
 
-  const filename = `visionario-delivery-${now.toISOString().slice(0, 10)}.pdf`;
-  const blob = doc.output('blob');
-  const path = await saveBlob(blob, filename);
-  // Diagnóstico em campo — útil para confirmar qual caminho funcionou no APK
-  console.info('[exportHistoryPdf] delivery path:', path);
-  return path;
+    const filename = `visionario-delivery-${now.toISOString().slice(0, 10)}.pdf`;
+    exportTelemetry.step(SCOPE, 'before_blob_output', { filename });
+    let blob: Blob;
+    try {
+      blob = doc.output('blob');
+    } catch (err) {
+      exportTelemetry.error(SCOPE, 'doc_output_blob', err);
+      throw err;
+    }
+    exportTelemetry.step(SCOPE, 'blob_created', {
+      hasBlob: !!blob,
+      size: blob?.size ?? 0,
+      type: blob?.type ?? null,
+      genDurationMs: Math.round(performance.now() - tStart),
+    });
+    if (!blob || blob.size === 0) {
+      exportTelemetry.error(SCOPE, 'blob_invalid', new Error(`blob size=${blob?.size ?? 'null'}`));
+    }
+    exportTelemetry.step(SCOPE, 'before_saveBlob');
+    const path = await saveBlob(blob, filename);
+    exportTelemetry.step(SCOPE, 'saveBlob_returned', { path, totalMs: Math.round(performance.now() - tStart) });
+    console.info('[exportHistoryPdf] delivery path:', path);
+    return path;
+  } catch (err) {
+    exportTelemetry.error(SCOPE, 'unhandled', err);
+    throw err;
+  }
 }
 
