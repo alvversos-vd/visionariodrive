@@ -73,7 +73,16 @@ function summarize(entries: DailyEntry[]) {
 }
 
 export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobPath> {
-  const doc = new jsPDF();
+  const SCOPE = 'exportHistoryPdf';
+  const tStart = performance.now();
+  exportTelemetry.step(SCOPE, 'begin', {
+    entriesCount: entries.length,
+    firstDate: entries[0]?.date ?? null,
+    lastDate: entries[entries.length - 1]?.date ?? null,
+  });
+  try {
+    const doc = new jsPDF();
+    exportTelemetry.step(SCOPE, 'jspdf_instance_created');
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const now = new Date();
