@@ -92,12 +92,23 @@ export function exportShiftsCsv(from: string, to: string): number {
 
   const csv = rows.map(r => r.map(escapeCsv).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  triggerDownload(blob, `visionario-historico_${from}_a_${to}.csv`);
+  exportTelemetry.step('exportShiftsCsv', 'blob_created', { hasBlob: !!blob, size: blob.size, type: blob.type });
+  exportTelemetry.step('exportShiftsCsv', 'before_saveBlob', { delivery: 'legacy_triggerDownload' });
+  try {
+    triggerDownload(blob, `visionario-historico_${from}_a_${to}.csv`);
+    exportTelemetry.step('exportShiftsCsv', 'saveBlob_returned', { path: 'legacy-anchor-download' });
+  } catch (err) {
+    exportTelemetry.error('exportShiftsCsv', 'delivery_failed', err);
+    throw err;
+  }
   return shifts.length;
 }
 
 export function exportShiftsPdf(from: string, to: string): number {
+  const SCOPE = 'exportShiftsPdf';
+  exportTelemetry.step(SCOPE, 'begin', { from, to });
   const shifts = getShiftsInRange(from, to);
+  exportTelemetry.step(SCOPE, 'data_loaded', { shiftsCount: shifts.length });
   if (shifts.length === 0) return 0;
 
   const doc = new jsPDF();
