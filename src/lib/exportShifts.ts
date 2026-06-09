@@ -28,14 +28,26 @@ function escapeCsv(v: string | number): string {
 }
 
 function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  // ⚠️ LEGACY PATH — usa anchor.click() + URL.createObjectURL.
+  // Não funciona em Capacitor WebView (Android APK): o anchor download é ignorado.
+  // O fluxo correto é saveBlob() (Filesystem + Share nativos), como em exportHistoryPdf.
+  exportTelemetry.step('exportShifts.triggerDownload', 'legacy_anchor_begin', {
+    filename, size: blob.size, type: blob.type,
+  });
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    exportTelemetry.step('exportShifts.triggerDownload', 'legacy_anchor_dispatched', { filename });
+  } catch (err) {
+    exportTelemetry.error('exportShifts.triggerDownload', 'legacy_anchor_failed', err);
+    throw err;
+  }
 }
 
 export function exportShiftsCsv(from: string, to: string): number {
