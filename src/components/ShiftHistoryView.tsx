@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
+import { exportTelemetry } from '@/lib/exportTelemetry';
 import { getGoals } from '@/lib/storage';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
 import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2 } from 'lucide-react';
