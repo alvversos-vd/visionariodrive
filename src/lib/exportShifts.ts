@@ -51,7 +51,10 @@ function triggerDownload(blob: Blob, filename: string) {
 }
 
 export function exportShiftsCsv(from: string, to: string): number {
+  const SCOPE = 'exportShiftsCsv';
+  exportTelemetry.step(SCOPE, 'begin', { from, to });
   const shifts = getShiftsInRange(from, to);
+  exportTelemetry.step(SCOPE, 'data_loaded', { shiftsCount: shifts.length });
   if (shifts.length === 0) return 0;
 
   const rows: (string | number)[][] = [];
