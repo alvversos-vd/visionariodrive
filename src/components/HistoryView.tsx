@@ -208,15 +208,20 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       <ShiftHistoryView refresh={refresh} />
       <button
         onClick={async () => {
+          const SCOPE = 'HistoryView.exportPdfButton';
+          exportTelemetry.step(SCOPE, 'click', { entriesCount: entries.length });
           try {
             const path = await exportHistoryPdf(entries);
+            exportTelemetry.step(SCOPE, 'export_resolved', { path });
             if (path === 'failed') {
               toast.error('Não foi possível salvar o PDF neste dispositivo');
             } else {
               toast.success('Relatório PDF gerado com sucesso');
             }
           } catch (e) {
-            toast.error('Erro ao gerar PDF');
+            exportTelemetry.error(SCOPE, 'export_threw', e);
+            const msg = e instanceof Error ? e.message : String(e);
+            toast.error(`Erro ao gerar PDF: ${msg}`);
           }
         }}
         disabled={entries.length === 0}
