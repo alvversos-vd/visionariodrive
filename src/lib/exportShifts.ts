@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Shift, computeTotals, formatTempo, formatOperationalDate, getShifts } from './shifts';
+import { exportTelemetry } from './exportTelemetry';
 import { getVehicleById, TIPO_LABEL } from './vehicles';
 
 function fmt(v: number) {
