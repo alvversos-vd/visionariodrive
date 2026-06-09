@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DailyEntry } from './types';
 import { saveBlob, type SaveBlobPath } from './saveBlob';
+import { exportTelemetry } from './exportTelemetry';
 
 
 function fmt(v: number) {
