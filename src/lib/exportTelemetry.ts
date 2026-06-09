@@ -61,6 +61,14 @@ export const exportTelemetry = {
   finalOutcome(path: ExportPath, delivered: 'confirmed' | 'assumed' | 'failed') {
     push({ t: Date.now(), kind: 'final_outcome', path, delivered });
   },
+  step(scope: string, step: string, data?: Record<string, unknown>) {
+    push({ t: Date.now(), kind: 'step', scope, step, data });
+  },
+  error(scope: string, step: string, err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    push({ t: Date.now(), kind: 'error', scope, step, message, stack });
+  },
   snapshot() {
     let isNative = false;
     let platform = 'unknown';
