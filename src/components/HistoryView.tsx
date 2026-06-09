@@ -5,6 +5,7 @@ import { getExpenses } from '@/lib/expenses';
 import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
+import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
 import PeriodComparison from './PeriodComparison';
