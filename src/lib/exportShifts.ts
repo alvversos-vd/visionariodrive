@@ -159,6 +159,23 @@ export function exportShiftsPdf(from: string, to: string): number {
     headStyles: { fillColor: [30, 30, 30] },
   });
 
-  doc.save(`visionario-historico_${from}_a_${to}.pdf`);
+  // ⚠️ LEGACY PATH — doc.save() internamente faz anchor.click(); NÃO funciona em Capacitor WebView.
+  // Correção definitiva: doc.output('blob') + saveBlob(), igual a exportHistoryPdf.
+  const filename = `visionario-historico_${from}_a_${to}.pdf`;
+  exportTelemetry.step('exportShiftsPdf', 'before_saveBlob', { delivery: 'legacy_doc.save', filename });
+  try {
+    let blob: Blob | null = null;
+    try {
+      blob = doc.output('blob');
+      exportTelemetry.step('exportShiftsPdf', 'blob_created', { hasBlob: !!blob, size: blob?.size ?? 0, type: blob?.type ?? null });
+    } catch (err) {
+      exportTelemetry.error('exportShiftsPdf', 'doc_output_blob', err);
+    }
+    doc.save(filename);
+    exportTelemetry.step('exportShiftsPdf', 'saveBlob_returned', { path: 'legacy-doc-save' });
+  } catch (err) {
+    exportTelemetry.error('exportShiftsPdf', 'delivery_failed', err);
+    throw err;
+  }
   return shifts.length;
 }
