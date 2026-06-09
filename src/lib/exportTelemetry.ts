@@ -23,7 +23,9 @@ export type ExportEvent =
   | { t: number; kind: 'capability_probe'; canShare: boolean; canShareFiles: boolean; isSecureContext: boolean; hasDownloadAttr: boolean }
   | { t: number; kind: 'path_tried'; path: ExportPath; reasonChosen: string }
   | { t: number; kind: 'path_result'; path: ExportPath; outcome: ExportOutcome; durationMs: number; errorMessage?: string }
-  | { t: number; kind: 'final_outcome'; path: ExportPath; delivered: 'confirmed' | 'assumed' | 'failed' };
+  | { t: number; kind: 'final_outcome'; path: ExportPath; delivered: 'confirmed' | 'assumed' | 'failed' }
+  | { t: number; kind: 'step'; scope: string; step: string; data?: Record<string, unknown> }
+  | { t: number; kind: 'error'; scope: string; step: string; message: string; stack?: string };
 
 const MAX_EVENTS = 500;
 const buf: ExportEvent[] = [];
