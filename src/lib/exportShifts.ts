@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Shift, computeTotals, formatTempo, formatOperationalDate, getShifts } from './shifts';
+import { exportTelemetry } from './exportTelemetry';
 import { getVehicleById, TIPO_LABEL } from './vehicles';
 
 function fmt(v: number) {
@@ -27,18 +28,33 @@ function escapeCsv(v: string | number): string {
 }
 
 function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  // ⚠️ LEGACY PATH — usa anchor.click() + URL.createObjectURL.
+  // Não funciona em Capacitor WebView (Android APK): o anchor download é ignorado.
+  // O fluxo correto é saveBlob() (Filesystem + Share nativos), como em exportHistoryPdf.
+  exportTelemetry.step('exportShifts.triggerDownload', 'legacy_anchor_begin', {
+    filename, size: blob.size, type: blob.type,
+  });
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    exportTelemetry.step('exportShifts.triggerDownload', 'legacy_anchor_dispatched', { filename });
+  } catch (err) {
+    exportTelemetry.error('exportShifts.triggerDownload', 'legacy_anchor_failed', err);
+    throw err;
+  }
 }
 
 export function exportShiftsCsv(from: string, to: string): number {
+  const SCOPE = 'exportShiftsCsv';
+  exportTelemetry.step(SCOPE, 'begin', { from, to });
   const shifts = getShiftsInRange(from, to);
+  exportTelemetry.step(SCOPE, 'data_loaded', { shiftsCount: shifts.length });
   if (shifts.length === 0) return 0;
 
   const rows: (string | number)[][] = [];
@@ -76,12 +92,23 @@ export function exportShiftsCsv(from: string, to: string): number {
 
   const csv = rows.map(r => r.map(escapeCsv).join(',')).join('\n');
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  triggerDownload(blob, `visionario-historico_${from}_a_${to}.csv`);
+  exportTelemetry.step('exportShiftsCsv', 'blob_created', { hasBlob: !!blob, size: blob.size, type: blob.type });
+  exportTelemetry.step('exportShiftsCsv', 'before_saveBlob', { delivery: 'legacy_triggerDownload' });
+  try {
+    triggerDownload(blob, `visionario-historico_${from}_a_${to}.csv`);
+    exportTelemetry.step('exportShiftsCsv', 'saveBlob_returned', { path: 'legacy-anchor-download' });
+  } catch (err) {
+    exportTelemetry.error('exportShiftsCsv', 'delivery_failed', err);
+    throw err;
+  }
   return shifts.length;
 }
 
 export function exportShiftsPdf(from: string, to: string): number {
+  const SCOPE = 'exportShiftsPdf';
+  exportTelemetry.step(SCOPE, 'begin', { from, to });
   const shifts = getShiftsInRange(from, to);
+  exportTelemetry.step(SCOPE, 'data_loaded', { shiftsCount: shifts.length });
   if (shifts.length === 0) return 0;
 
   const doc = new jsPDF();
@@ -132,6 +159,23 @@ export function exportShiftsPdf(from: string, to: string): number {
     headStyles: { fillColor: [30, 30, 30] },
   });
 
-  doc.save(`visionario-historico_${from}_a_${to}.pdf`);
+  // ⚠️ LEGACY PATH — doc.save() internamente faz anchor.click(); NÃO funciona em Capacitor WebView.
+  // Correção definitiva: doc.output('blob') + saveBlob(), igual a exportHistoryPdf.
+  const filename = `visionario-historico_${from}_a_${to}.pdf`;
+  exportTelemetry.step('exportShiftsPdf', 'before_saveBlob', { delivery: 'legacy_doc.save', filename });
+  try {
+    let blob: Blob | null = null;
+    try {
+      blob = doc.output('blob');
+      exportTelemetry.step('exportShiftsPdf', 'blob_created', { hasBlob: !!blob, size: blob?.size ?? 0, type: blob?.type ?? null });
+    } catch (err) {
+      exportTelemetry.error('exportShiftsPdf', 'doc_output_blob', err);
+    }
+    doc.save(filename);
+    exportTelemetry.step('exportShiftsPdf', 'saveBlob_returned', { path: 'legacy-doc-save' });
+  } catch (err) {
+    exportTelemetry.error('exportShiftsPdf', 'delivery_failed', err);
+    throw err;
+  }
   return shifts.length;
 }

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
+import { exportTelemetry } from '@/lib/exportTelemetry';
 import { getGoals } from '@/lib/storage';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
 import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2 } from 'lucide-react';
@@ -55,11 +56,22 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const [exportTo, setExportTo] = useState(todayIso);
 
   const handleExport = (kind: 'csv' | 'pdf') => {
-    if (exportFrom > exportTo) { toast.error('Período inválido: data inicial maior que final'); return; }
+    exportTelemetry.step('ShiftHistoryView.handleExport', 'click', { kind, from: exportFrom, to: exportTo });
+    if (exportFrom > exportTo) {
+      exportTelemetry.error('ShiftHistoryView.handleExport', 'invalid_range', new Error('from>to'));
+      toast.error('Período inválido: data inicial maior que final');
+      return;
+    }
     const fn = kind === 'csv' ? exportShiftsCsv : exportShiftsPdf;
-    const count = fn(exportFrom, exportTo);
-    if (count === 0) toast('Nenhum turno encontrado no período');
-    else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+    try {
+      const count = fn(exportFrom, exportTo);
+      exportTelemetry.step('ShiftHistoryView.handleExport', 'export_returned', { kind, count });
+      if (count === 0) toast('Nenhum turno encontrado no período');
+      else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
+    } catch (err) {
+      exportTelemetry.error('ShiftHistoryView.handleExport', 'export_threw', err);
+      toast.error('Falha ao exportar');
+    }
   };
 
   const shifts = useMemo<Shift[]>(
