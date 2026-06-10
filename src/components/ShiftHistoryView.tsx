@@ -55,7 +55,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const [exportFrom, setExportFrom] = useState(monthAgoIso);
   const [exportTo, setExportTo] = useState(todayIso);
 
-  const handleExport = (kind: 'csv' | 'pdf') => {
+  const handleExport = async (kind: 'csv' | 'pdf') => {
     exportTelemetry.step('ShiftHistoryView.handleExport', 'click', { kind, from: exportFrom, to: exportTo });
     if (exportFrom > exportTo) {
       exportTelemetry.error('ShiftHistoryView.handleExport', 'invalid_range', new Error('from>to'));
@@ -64,7 +64,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     }
     const fn = kind === 'csv' ? exportShiftsCsv : exportShiftsPdf;
     try {
-      const count = fn(exportFrom, exportTo);
+      const count = await fn(exportFrom, exportTo);
       exportTelemetry.step('ShiftHistoryView.handleExport', 'export_returned', { kind, count });
       if (count === 0) toast('Nenhum turno encontrado no período');
       else toast.success(`${count} turno${count === 1 ? '' : 's'} exportado${count === 1 ? '' : 's'} em ${kind.toUpperCase()}`);
