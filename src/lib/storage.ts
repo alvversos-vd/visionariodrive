@@ -41,7 +41,7 @@ export function saveEntry(entry: DailyEntry): void {
   const entries = getEntries();
   entries.unshift(entry);
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-  markDirty();
+  markDirty({ immediate: true });
 }
 
 /**
@@ -55,7 +55,7 @@ export function upsertEntry(entry: DailyEntry): void {
   if (idx >= 0) entries[idx] = entry;
   else entries.unshift(entry);
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
-  markDirty();
+  markDirty({ immediate: true });
 }
 
 export function getEntries(): DailyEntry[] {
@@ -162,7 +162,7 @@ export function saveRide(ride: RideEntry): void {
   const rides = getRides();
   rides.unshift(ride);
   localStorage.setItem(RIDES_KEY, JSON.stringify(rides));
-  markDirty();
+  markDirty({ immediate: true });
 }
 
 export function deleteRide(id: string): void {

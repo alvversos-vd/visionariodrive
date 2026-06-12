@@ -37,7 +37,7 @@ export function addExpense(input: { value: number; category: ExpenseCategory; de
   };
   const list = [expense, ...getExpenses()];
   localStorage.setItem(KEY, JSON.stringify(list));
-  markDirty();
+  markDirty({ immediate: true });
   return expense;
 }
 

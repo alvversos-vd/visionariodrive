@@ -120,7 +120,7 @@ export function markDirty(opts?: { immediate?: boolean }): Promise<void> | void 
     return pushToCloud();
   }
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => void pushToCloud(), 600);
+  saveTimer = setTimeout(() => void pushToCloud(), 300);
 }
 
 /**
@@ -148,9 +148,18 @@ async function pushToCloud() {
     .upsert(payload as never, { onConflict: 'user_id' });
 }
 
-/** Flush síncrono best-effort em eventos de ciclo de vida (mobile/PWA). */
+/** Flush síncrono best-effort em eventos de ciclo de vida (mobile/PWA).
+ *  P0: garante flush dos buffers do turno (GPS + rota) ANTES do push pro cloud,
+ *  para não perder os últimos metros registrados antes de minimizar/suspender. */
 function flushOnLifecycle() {
   if (!currentUserId || hydrating) return;
+  // Flush dos buffers do turno primeiro (escreve no localStorage), depois pushToCloud lê.
+  // Import dinâmico evita ciclo shifts <-> cloudSync.
+  try {
+    import('./shifts').then(m => {
+      try { m.flushShiftBuffers(); } catch { /* noop */ }
+    }).catch(() => { /* noop */ });
+  } catch { /* noop */ }
   if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
   void pushToCloud();
 }
