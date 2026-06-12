@@ -195,7 +195,7 @@ export function resumeShift(turno_id: string): Shift | null {
 // Buffer de distância para batch-flush (anti-flicker / debounce GPS).
 const _gpsBuffer: Record<string, number> = {};
 let _gpsFlushTimer: ReturnType<typeof setTimeout> | null = null;
-const GPS_FLUSH_MS = 1500;
+const GPS_FLUSH_MS = 500;
 
 function flushGpsBuffer(): void {
   _gpsFlushTimer = null;
