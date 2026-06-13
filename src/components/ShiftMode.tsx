@@ -20,6 +20,9 @@ import {
 } from '@/lib/vehicles';
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
 import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
+import BackgroundLocationConsentDialog, {
+  hasBackgroundGpsConsent, saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked,
+} from './BackgroundLocationConsentDialog';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
@@ -61,6 +64,8 @@ export default function ShiftMode({ onChange }: Props) {
   const fallbackShownRef = useRef<string | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   const [consentTurnoId, setConsentTurnoId] = useState<string | null>(null);
+  const [bgConsentOpen, setBgConsentOpen] = useState(false);
+  const [bgConsentTurnoId, setBgConsentTurnoId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -164,6 +169,15 @@ export default function ShiftMode({ onChange }: Props) {
       saveGpsConsent();
       toast.success('GPS ativo — km serão calculados automaticamente');
       refresh();
+      // Em plataforma nativa: oferecer rastreamento em background (foreground service Android)
+      // somente uma vez por dispositivo. Decisão fica salva em localStorage.
+      if (isNative && !wasBackgroundGpsAsked()) {
+        // Pequeno delay para o usuário absorver o toast antes do próximo diálogo
+        setTimeout(() => {
+          setBgConsentTurnoId(id);
+          setBgConsentOpen(true);
+        }, 600);
+      }
     };
 
     const handleDenied = () => {
