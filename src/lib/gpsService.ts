@@ -15,6 +15,7 @@
  */
 
 import { gpsTelemetry } from './gpsTelemetry';
+import { BackgroundGpsProvider } from './gpsBackgroundProvider';
 
 
 
