@@ -41,6 +41,11 @@ const config: CapacitorConfig = {
     Geolocation: {
       // Permissões reais do sistema serão pedidas pelo plugin nativo.
     },
+    BackgroundGeolocation: {
+      // Configurado em runtime via addWatcher (backgroundTitle/backgroundMessage).
+      // Estes textos definem o conteúdo da notificação persistente Android
+      // exibida durante turno ativo. Plugin requer foreground service.
+    },
   },
 };
 
