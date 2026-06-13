@@ -270,9 +270,6 @@ function pickProvider(): GpsProvider {
   let provider: GpsProvider;
   let label: string;
   if (useBg) {
-    // Lazy import para evitar carregar o módulo em web puro.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { BackgroundGpsProvider } = require('./gpsBackgroundProvider') as typeof import('./gpsBackgroundProvider');
     provider = new BackgroundGpsProvider();
     label = `capacitor-bg:${plat}`;
     try { gpsTelemetry.event('bg_provider_initialized', { platform: plat }); } catch { /* noop */ }
