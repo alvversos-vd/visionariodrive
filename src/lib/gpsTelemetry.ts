@@ -28,7 +28,15 @@ export type TelemetryEventName =
   | 'heartbeat_restart'
   | 'watchdog_unavailable'
   | 'background_period'
-  | 'error';
+  | 'error'
+  // Background GPS (C2 Fase 1)
+  | 'bg_provider_initialized'
+  | 'bg_watcher_added'
+  | 'bg_watcher_removed'
+  | 'bg_permission_granted'
+  | 'bg_permission_denied'
+  | 'bg_session_summary'
+  | 'shift_battery_snapshot';
 
 export interface TelemetryEvent {
   t: number;

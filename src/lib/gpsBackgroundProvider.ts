@@ -14,7 +14,12 @@
  * Não acopla nada do plugin fora deste arquivo.
  */
 
+import { registerPlugin } from '@capacitor/core';
+import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
 import type { GpsProvider, GpsWatchHandle, GpsWatchOptions } from './gpsService';
+
+// Plugin nativo sem entry-point JS — registramos via Capacitor core.
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 import { gpsTelemetry } from './gpsTelemetry';
 
 interface BgLocation {
@@ -80,8 +85,6 @@ export class BackgroundGpsProvider implements GpsProvider {
 
     (async () => {
       try {
-        const mod = await import('@capacitor-community/background-geolocation');
-        const BackgroundGeolocation = mod.BackgroundGeolocation;
         if (stopped) return;
 
         const id = await BackgroundGeolocation.addWatcher(
@@ -178,11 +181,7 @@ export class BackgroundGpsProvider implements GpsProvider {
         })();
 
         if (watcherId) {
-          import('@capacitor-community/background-geolocation')
-            .then(({ BackgroundGeolocation }) =>
-              BackgroundGeolocation.removeWatcher({ id: watcherId! }).catch(() => { /* noop */ }),
-            )
-            .catch(() => { /* noop */ });
+          BackgroundGeolocation.removeWatcher({ id: watcherId }).catch(() => { /* noop */ });
           try { gpsTelemetry.event('bg_watcher_removed', { id: watcherId }); } catch { /* noop */ }
           watcherId = null;
         }
