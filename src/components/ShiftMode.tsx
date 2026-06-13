@@ -873,6 +873,34 @@ export default function ShiftMode({ onChange }: Props) {
         }}
       />
 
+      <BackgroundLocationConsentDialog
+        open={bgConsentOpen}
+        onAccept={() => {
+          saveBackgroundGpsConsent();
+          setBgConsentOpen(false);
+          toast.success('Rastreamento em segundo plano ativado', {
+            description: 'Uma notificação ficará visível durante o turno.',
+          });
+          // Bounce do tracker (pause+resume instantâneo) para re-selecionar o provider
+          // e ativar o foreground service nativo no turno atual sem afetar km nem persistência.
+          const id = bgConsentTurnoId;
+          if (id) {
+            const paused = pauseShift(id);
+            if (paused) {
+              const resumed = resumeShift(id);
+              if (resumed) setShift({ ...resumed });
+            }
+          }
+        }}
+        onDecline={() => {
+          declineBackgroundGpsConsent();
+          setBgConsentOpen(false);
+          toast('Rastreamento limitado ao app aberto', {
+            description: 'Você pode habilitar depois nas configurações.',
+          });
+        }}
+      />
+
       {/* Finalizar turno — AlertDialog semântico + press-and-hold para evitar toque acidental */}
       <AlertDialog open={endConfirmOpen} onOpenChange={(o) => { if (!o) { cancelHoldEnd(); setEndConfirmOpen(false); } }}>
         <AlertDialogContent>
