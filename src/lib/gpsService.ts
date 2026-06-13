@@ -15,6 +15,7 @@
  */
 
 import { gpsTelemetry } from './gpsTelemetry';
+import { BackgroundGpsProvider } from './gpsBackgroundProvider';
 
 
 
@@ -221,31 +222,84 @@ class CapacitorGpsProvider implements GpsProvider {
 
 /**
  * Provider ativo — escolhido em runtime.
- * - Web/PWA: WebGpsProvider (atual, estável, sem regressão)
- * - App nativo (após `npx cap add ios|android` e build em device):
- *   CapacitorGpsProvider com permissões reais do sistema e tracking
- *   foreground/background nativo.
+ * - Web/PWA: WebGpsProvider
+ * - App nativo + flag VITE_BG_GPS=1 + consentimento background:
+ *   BackgroundGpsProvider (foreground service Android, notificação persistente)
+ * - App nativo (sem flag / sem consentimento): CapacitorGpsProvider (foreground only)
  *
- * A interface GpsProvider é a MESMA — `useShiftTracker` não muda.
+ * Feature flag obrigatória (C2 Fase 1): rollback rápido via `.env` sem mexer em nativo.
+ * Seleção é re-avaliada a cada `watch()` para refletir consentimento atualizado no app.
  */
-function pickProvider(): GpsProvider {
+function isNativePlatform(): boolean {
   try {
-    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string } }) : undefined;
-    if (w?.Capacitor?.isNativePlatform?.()) {
-      const platform = w.Capacitor.getPlatform?.() ?? 'native';
-      // eslint-disable-next-line no-console
-      console.info(`[gpsService] Using NATIVE provider (Capacitor / ${platform})`);
-      try { gpsTelemetry.setProvider(`capacitor:${platform}`); } catch { /* noop */ }
-      return new CapacitorGpsProvider();
-    }
-  } catch { /* fallback web */ }
-  // eslint-disable-next-line no-console
-  console.info('[gpsService] Using WEB provider (navigator.geolocation)');
-  try { gpsTelemetry.setProvider('web:navigator.geolocation'); } catch { /* noop */ }
-  return new WebGpsProvider();
+    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }) : undefined;
+    return !!w?.Capacitor?.isNativePlatform?.();
+  } catch { return false; }
 }
 
-export const gpsService: GpsProvider = pickProvider();
+function platformName(): string {
+  try {
+    const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { getPlatform?: () => string } }) : undefined;
+    return w?.Capacitor?.getPlatform?.() ?? 'unknown';
+  } catch { return 'unknown'; }
+}
+
+function bgFlagEnabled(): boolean {
+  try {
+    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+    // Default ligado; qualquer valor diferente de '1' desliga (rollback).
+    return (env.VITE_BG_GPS ?? '1') === '1';
+  } catch { return true; }
+}
+
+function hasBgConsent(): boolean {
+  try { return localStorage.getItem('vd-bg-gps-consent-v1') === '1'; } catch { return false; }
+}
+
+let lastPicked: { key: string; provider: GpsProvider } | null = null;
+
+function pickProvider(): GpsProvider {
+  const native = isNativePlatform();
+  const plat = platformName();
+  const flag = bgFlagEnabled();
+  const consent = native && hasBgConsent();
+  const useBg = native && flag && consent;
+
+  const key = `${native ? 'native' : 'web'}:${plat}:flag=${flag ? 1 : 0}:consent=${consent ? 1 : 0}`;
+  if (lastPicked?.key === key) return lastPicked.provider;
+
+  let provider: GpsProvider;
+  let label: string;
+  if (useBg) {
+    provider = new BackgroundGpsProvider();
+    label = `capacitor-bg:${plat}`;
+    try { gpsTelemetry.event('bg_provider_initialized', { platform: plat }); } catch { /* noop */ }
+  } else if (native) {
+    provider = new CapacitorGpsProvider();
+    label = `capacitor:${plat}${flag ? '' : ' (bg-flag-off)'}${consent ? '' : ' (no-bg-consent)'}`;
+  } else {
+    provider = new WebGpsProvider();
+    label = 'web:navigator.geolocation';
+  }
+
+  // eslint-disable-next-line no-console
+  console.info(`[gpsService] Provider: ${label}`);
+  try { gpsTelemetry.setProvider(label); } catch { /* noop */ }
+
+  lastPicked = { key, provider };
+  return provider;
+}
+
+/**
+ * Proxy do provider — re-resolve em cada chamada para refletir feature flag
+ * e consentimento background em runtime, sem reload.
+ */
+export const gpsService: GpsProvider = {
+  isAvailable: () => pickProvider().isAvailable(),
+  queryPermission: () => pickProvider().queryPermission(),
+  watch: (opts) => pickProvider().watch(opts),
+};
+
 
 
 
