@@ -21,7 +21,7 @@ import {
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
 import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
 import BackgroundLocationConsentDialog, {
-  hasBackgroundGpsConsent, saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked,
+  saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked,
 } from './BackgroundLocationConsentDialog';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
