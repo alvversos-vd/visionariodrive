@@ -30,6 +30,7 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { gpsTelemetry } from '@/lib/gpsTelemetry';
 
 
 
@@ -877,6 +878,9 @@ export default function ShiftMode({ onChange }: Props) {
         open={bgConsentOpen}
         onAccept={() => {
           saveBackgroundGpsConsent();
+          // eslint-disable-next-line no-console
+          console.info('[ShiftMode] Background GPS consent aceito', { turnoId: bgConsentTurnoId });
+          try { gpsTelemetry.event('bg_consent_accepted', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
           toast.success('Rastreamento em segundo plano ativado', {
             description: 'Uma notificação ficará visível durante o turno.',
@@ -885,6 +889,9 @@ export default function ShiftMode({ onChange }: Props) {
           // e ativar o foreground service nativo no turno atual sem afetar km nem persistência.
           const id = bgConsentTurnoId;
           if (id) {
+            // eslint-disable-next-line no-console
+            console.info('[ShiftMode] Background GPS restart bounce solicitado', { turnoId: id });
+            try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: id }); } catch { /* noop */ }
             const paused = pauseShift(id);
             if (paused) {
               const resumed = resumeShift(id);
@@ -894,6 +901,9 @@ export default function ShiftMode({ onChange }: Props) {
         }}
         onDecline={() => {
           declineBackgroundGpsConsent();
+          // eslint-disable-next-line no-console
+          console.info('[ShiftMode] Background GPS consent recusado', { turnoId: bgConsentTurnoId });
+          try { gpsTelemetry.event('bg_consent_declined', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
           toast('Rastreamento limitado ao app aberto', {
             description: 'Você pode habilitar depois nas configurações.',
