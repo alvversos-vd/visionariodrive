@@ -30,11 +30,19 @@ export type TelemetryEventName =
   | 'background_period'
   | 'error'
   // Background GPS (C2 Fase 1)
+  | 'bg_runtime_diagnostics'
   | 'bg_provider_initialized'
+  | 'bg_add_watcher_called'
   | 'bg_watcher_added'
+  | 'bg_watcher_started'
+  | 'bg_watcher_failed'
   | 'bg_watcher_removed'
+  | 'bg_foreground_service_start_requested'
   | 'bg_permission_granted'
   | 'bg_permission_denied'
+  | 'bg_consent_accepted'
+  | 'bg_consent_declined'
+  | 'bg_restart_bounce_requested'
   | 'bg_session_summary'
   | 'shift_battery_snapshot';
 

@@ -17,6 +17,8 @@
 import { gpsTelemetry } from './gpsTelemetry';
 import { BackgroundGpsProvider } from './gpsBackgroundProvider';
 
+const BG_CONSENT_KEY = 'vd-bg-gps-consent-v1';
+
 
 
 export interface GpsFix {
@@ -248,12 +250,20 @@ function bgFlagEnabled(): boolean {
   try {
     const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
     // Default ligado; qualquer valor diferente de '1' desliga (rollback).
-    return (env.VITE_BG_GPS ?? '1') === '1';
+    // Aceita também VITE_BG_ENABLED=1 para diagnóstico explícito da build instalada.
+    return (env.VITE_BG_GPS ?? env.VITE_BG_ENABLED ?? '1') === '1';
   } catch { return true; }
 }
 
 function hasBgConsent(): boolean {
-  try { return localStorage.getItem('vd-bg-gps-consent-v1') === '1'; } catch { return false; }
+  try { return localStorage.getItem(BG_CONSENT_KEY) === '1'; } catch { return false; }
+}
+
+function envValue(name: 'VITE_BG_GPS' | 'VITE_BG_ENABLED'): string | null {
+  try {
+    const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+    return env[name] ?? null;
+  } catch { return null; }
 }
 
 let lastPicked: { key: string; provider: GpsProvider } | null = null;
@@ -264,6 +274,9 @@ function pickProvider(): GpsProvider {
   const flag = bgFlagEnabled();
   const consent = native && hasBgConsent();
   const useBg = native && flag && consent;
+  const consentRaw = (() => {
+    try { return localStorage.getItem(BG_CONSENT_KEY); } catch { return 'unavailable'; }
+  })();
 
   const key = `${native ? 'native' : 'web'}:${plat}:flag=${flag ? 1 : 0}:consent=${consent ? 1 : 0}`;
   if (lastPicked?.key === key) return lastPicked.provider;
@@ -284,7 +297,32 @@ function pickProvider(): GpsProvider {
 
   // eslint-disable-next-line no-console
   console.info(`[gpsService] Provider: ${label}`);
+  // eslint-disable-next-line no-console
+  console.info('[gpsService] Runtime diagnostics', {
+    selectedProvider: label,
+    native,
+    platform: plat,
+    bgEnabled: flag,
+    VITE_BG_GPS: envValue('VITE_BG_GPS'),
+    VITE_BG_ENABLED: envValue('VITE_BG_ENABLED'),
+    bgConsent: consent,
+    bgConsentRaw: consentRaw,
+    useBackgroundProvider: useBg,
+  });
   try { gpsTelemetry.setProvider(label); } catch { /* noop */ }
+  try {
+    gpsTelemetry.event('bg_runtime_diagnostics', {
+      selected_provider: label,
+      native,
+      platform: plat,
+      bg_enabled: flag,
+      vite_bg_gps: envValue('VITE_BG_GPS'),
+      vite_bg_enabled: envValue('VITE_BG_ENABLED'),
+      bg_consent: consent,
+      bg_consent_raw: consentRaw,
+      use_background_provider: useBg,
+    });
+  } catch { /* noop */ }
 
   lastPicked = { key, provider };
   return provider;

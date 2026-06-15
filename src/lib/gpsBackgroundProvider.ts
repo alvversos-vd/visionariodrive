@@ -17,10 +17,10 @@
 import { registerPlugin } from '@capacitor/core';
 import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
 import type { GpsProvider, GpsWatchHandle, GpsWatchOptions } from './gpsService';
+import { gpsTelemetry } from './gpsTelemetry';
 
 // Plugin nativo sem entry-point JS — registramos via Capacitor core.
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
-import { gpsTelemetry } from './gpsTelemetry';
 
 interface BgLocation {
   latitude: number;
@@ -70,6 +70,28 @@ export class BackgroundGpsProvider implements GpsProvider {
     let lastFixAt: number | null = null;
     const sessionStart = Date.now();
     let batteryStart: number | null = null;
+    const watcherOptions = {
+      backgroundMessage: 'Toque para abrir o Visionario',
+      backgroundTitle: 'Visionario está registrando seu turno',
+      requestPermissions: true,
+      stale: false,
+      distanceFilter: 5,
+    };
+
+    // eslint-disable-next-line no-console
+    console.info('[BackgroundGpsProvider] watch() chamado — preparando addWatcher', watcherOptions);
+    try {
+      gpsTelemetry.event('bg_add_watcher_called', {
+        provider: 'background',
+        options: watcherOptions,
+        hidden: typeof document !== 'undefined' ? document.hidden : null,
+      });
+      gpsTelemetry.event('bg_foreground_service_start_requested', {
+        provider: 'background',
+        has_background_message: !!watcherOptions.backgroundMessage,
+        has_background_title: !!watcherOptions.backgroundTitle,
+      });
+    } catch { /* noop */ }
 
     (async () => {
       batteryStart = await readBatteryPct();
@@ -88,15 +110,11 @@ export class BackgroundGpsProvider implements GpsProvider {
         if (stopped) return;
 
         const id = await BackgroundGeolocation.addWatcher(
-          {
-            backgroundMessage: 'Toque para abrir o Visionario',
-            backgroundTitle: 'Visionario está registrando seu turno',
-            requestPermissions: true,
-            stale: false,
-            distanceFilter: 5,
-          },
+          watcherOptions,
           (location?: BgLocation, error?: { code?: string; message?: string }) => {
             if (error) {
+              // eslint-disable-next-line no-console
+              console.error('[BackgroundGpsProvider] callback error', error);
               const code = (error.code ?? '').toLowerCase();
               if (code.includes('denied') || code.includes('not authorized')) {
                 onError?.('denied', error);
@@ -105,7 +123,10 @@ export class BackgroundGpsProvider implements GpsProvider {
               } else {
                 onError?.('unavailable', error);
               }
-              try { gpsTelemetry.event('error', { kind: 'bg_plugin', code: error.code, msg: error.message }); } catch { /* noop */ }
+              try {
+                gpsTelemetry.event('bg_watcher_failed', { stage: 'callback', code: error.code, msg: error.message });
+                gpsTelemetry.event('error', { kind: 'bg_plugin', code: error.code, msg: error.message });
+              } catch { /* noop */ }
               return;
             }
             if (!location) return;
@@ -143,10 +164,20 @@ export class BackgroundGpsProvider implements GpsProvider {
         }
 
         watcherId = id;
-        try { gpsTelemetry.event('bg_watcher_added', { id }); } catch { /* noop */ }
+        // eslint-disable-next-line no-console
+        console.info('[BackgroundGpsProvider] addWatcher iniciado com sucesso', { id });
+        try {
+          gpsTelemetry.event('bg_watcher_added', { id });
+          gpsTelemetry.event('bg_watcher_started', { id, provider: 'background' });
+        } catch { /* noop */ }
       } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[BackgroundGpsProvider] addWatcher falhou', e);
         onError?.('unavailable', e);
-        try { gpsTelemetry.event('error', { kind: 'bg_init_failed', msg: String(e) }); } catch { /* noop */ }
+        try {
+          gpsTelemetry.event('bg_watcher_failed', { stage: 'addWatcher', msg: String(e) });
+          gpsTelemetry.event('error', { kind: 'bg_init_failed', msg: String(e) });
+        } catch { /* noop */ }
       }
     })();
 
