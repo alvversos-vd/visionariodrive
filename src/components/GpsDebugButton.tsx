@@ -44,9 +44,12 @@ export default function GpsDebugButton() {
         setEnabled(false);
       }
     };
+    const enableFromShortcut = () => setEnabled(true);
     detect();
+    window.addEventListener('vd-gps-debug-enable', enableFromShortcut);
     return () => {
       if (timer != null) window.clearTimeout(timer);
+      window.removeEventListener('vd-gps-debug-enable', enableFromShortcut);
     };
   }, []);
 
