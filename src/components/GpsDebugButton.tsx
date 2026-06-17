@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 
 /**
  * BUG-MVP-002 — Botão flutuante de exportação do diagnóstico GPS.
- * Renderizado apenas quando a URL contém `?gpsDebug=1`.
+ * Renderizado quando:
+ *   - a URL contém `?gpsDebug=1`; ou
+ *   - o app está rodando em plataforma nativa (Capacitor APK/IPA).
  * Não afeta tracking, persistência nem cálculos.
  */
 export default function GpsDebugButton() {
@@ -12,8 +15,9 @@ export default function GpsDebugButton() {
 
   useEffect(() => {
     try {
+      const isNative = Capacitor.isNativePlatform();
       const params = new URLSearchParams(window.location.search);
-      setEnabled(params.get('gpsDebug') === '1');
+      setEnabled(isNative || params.get('gpsDebug') === '1');
     } catch {
       setEnabled(false);
     }
