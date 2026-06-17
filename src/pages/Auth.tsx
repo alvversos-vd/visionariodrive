@@ -36,6 +36,16 @@ export default function Auth() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
   if (user) return <Navigate to="/" replace />;
 
+  const enableGpsDiag = () => {
+    try {
+      localStorage.setItem('vd-gps-debug-enabled', '1');
+      window.dispatchEvent(new Event('vd-gps-debug-enable'));
+      toast({ title: 'GPS diag ativado', description: 'O botão de diagnóstico GPS ficará visível neste aparelho.' });
+    } catch {
+      toast({ title: 'GPS diag', description: 'Não foi possível persistir o atalho, mas tente recarregar o app.' });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse({ email, password, nome_usuario: nomeUsuario || undefined });
@@ -88,7 +98,7 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="font-display">Visionario Drive</CardTitle>
+          <CardTitle className="font-display" onDoubleClick={enableGpsDiag} onContextMenu={(e) => { e.preventDefault(); enableGpsDiag(); }}>Visionario Drive</CardTitle>
           <p className="text-[11px] text-muted-foreground -mt-1">Lucro real • Decisão rápida • Controle</p>
           <CardDescription>
             {mode === 'login' ? 'Entre para ver seus dados.' : 'Crie sua conta gratuita.'}
