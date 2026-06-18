@@ -16,6 +16,8 @@
 import { saveBlob } from './saveBlob';
 
 const MAX_EVENTS = 5000;
+const STORAGE_KEY = 'vd-gps-telemetry-v1';
+const PERSIST_DEBOUNCE_MS = 1500;
 
 export type TelemetryEventName =
   | 'provider_selected'
@@ -70,6 +72,20 @@ const minutes = new Map<number, MinuteBucket>();
 let startedAt: number | null = null;
 let providerName: string = 'unknown';
 let lastFixAt: number | null = null;
+let sessionId: string | null = null;
+let hydrated = false;
+let lifecycleFlushInstalled = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+interface PersistedTelemetryState {
+  version: 1;
+  sessionId: string | null;
+  startedAt: number | null;
+  providerName: string;
+  lastFixAt: number | null;
+  events: TelemetryEvent[];
+  minutes: MinuteBucket[];
+}
 
 function bucket(t: number): MinuteBucket {
   const m = Math.floor(t / 60_000);
@@ -104,14 +120,128 @@ function push(ev: TelemetryEvent) {
   if (buffer.length > MAX_EVENTS) buffer.splice(0, buffer.length - MAX_EVENTS);
 }
 
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function normalizeBucket(raw: Partial<MinuteBucket>): MinuteBucket | null {
+  if (typeof raw.minute !== 'number') return null;
+  return {
+    minute: raw.minute,
+    received: typeof raw.received === 'number' ? raw.received : 0,
+    accepted: typeof raw.accepted === 'number' ? raw.accepted : 0,
+    dropped: raw.dropped && typeof raw.dropped === 'object' ? raw.dropped : {},
+    gaps_over_10s: typeof raw.gaps_over_10s === 'number' ? raw.gaps_over_10s : 0,
+    gaps_over_30s: typeof raw.gaps_over_30s === 'number' ? raw.gaps_over_30s : 0,
+    longest_gap_ms: typeof raw.longest_gap_ms === 'number' ? raw.longest_gap_ms : 0,
+    bg_periods: typeof raw.bg_periods === 'number' ? raw.bg_periods : 0,
+    accuracy_samples: Array.isArray(raw.accuracy_samples) ? raw.accuracy_samples.filter(v => typeof v === 'number') : [],
+    speed_samples: Array.isArray(raw.speed_samples) ? raw.speed_samples.filter(v => typeof v === 'number') : [],
+  };
+}
+
+function readPersistedState(): PersistedTelemetryState | null {
+  if (!canUseStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedTelemetryState>;
+    if (!Array.isArray(parsed.events)) return null;
+    return {
+      version: 1,
+      sessionId: parsed.sessionId ?? null,
+      startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : null,
+      providerName: typeof parsed.providerName === 'string' ? parsed.providerName : 'unknown',
+      lastFixAt: typeof parsed.lastFixAt === 'number' ? parsed.lastFixAt : null,
+      events: parsed.events.slice(-MAX_EVENTS),
+      minutes: Array.isArray(parsed.minutes)
+        ? parsed.minutes.map(normalizeBucket).filter((b): b is MinuteBucket => !!b)
+        : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function hydrateFromStorage() {
+  if (hydrated) return;
+  hydrated = true;
+  const persisted = readPersistedState();
+  if (!persisted || persisted.events.length === 0) return;
+  sessionId = persisted.sessionId;
+  startedAt = persisted.startedAt;
+  providerName = persisted.providerName;
+  lastFixAt = persisted.lastFixAt;
+  buffer.length = 0;
+  buffer.push(...persisted.events);
+  minutes.clear();
+  persisted.minutes.forEach(b => minutes.set(b.minute, b));
+}
+
+function persistNow() {
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+  if (!canUseStorage()) return;
+  try {
+    const state: PersistedTelemetryState = {
+      version: 1,
+      sessionId,
+      startedAt,
+      providerName,
+      lastFixAt,
+      events: buffer.slice(-MAX_EVENTS),
+      minutes: [...minutes.values()],
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch { /* storage cheio/indisponível — mantém buffer em memória */ }
+}
+
+function schedulePersist(immediate = false) {
+  if (immediate) {
+    persistNow();
+    return;
+  }
+  if (persistTimer || !canUseStorage()) return;
+  persistTimer = setTimeout(persistNow, PERSIST_DEBOUNCE_MS);
+}
+
+function ensureLifecycleFlush() {
+  if (lifecycleFlushInstalled || typeof window === 'undefined') return;
+  lifecycleFlushInstalled = true;
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) persistNow();
+    });
+    window.addEventListener('pagehide', persistNow);
+    window.addEventListener('beforeunload', persistNow);
+  } catch { /* noop */ }
+}
+
 export const gpsTelemetry = {
+  startSession(id: string) {
+    hydrateFromStorage();
+    ensureLifecycleFlush();
+    const nextId = String(id);
+    if (sessionId && sessionId !== nextId) this.reset();
+    if (!sessionId) sessionId = nextId;
+    if (!startedAt) startedAt = Date.now();
+    schedulePersist(true);
+  },
+
   setProvider(name: string) {
+    hydrateFromStorage();
+    ensureLifecycleFlush();
     providerName = name;
     if (!startedAt) startedAt = Date.now();
     push({ t: Date.now(), name: 'provider_selected', data: { provider: name } });
+    schedulePersist(true);
   },
 
   event(name: TelemetryEventName, data?: Record<string, unknown>) {
+    hydrateFromStorage();
+    ensureLifecycleFlush();
     if (!startedAt) startedAt = Date.now();
     const t = Date.now();
     push({ t, name, data });
@@ -138,6 +268,7 @@ export const gpsTelemetry = {
     } else if (name === 'background_period') {
       b.bg_periods += 1;
     }
+    schedulePersist(name === 'watch_stopped' || name === 'bg_session_summary');
   },
 
   reset() {
@@ -145,9 +276,18 @@ export const gpsTelemetry = {
     minutes.clear();
     startedAt = null;
     lastFixAt = null;
+    providerName = 'unknown';
+    sessionId = null;
+    if (persistTimer) {
+      clearTimeout(persistTimer);
+      persistTimer = null;
+    }
+    try { if (canUseStorage()) window.localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
   },
 
   snapshot() {
+    hydrateFromStorage();
+    persistNow();
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
     const w = typeof window !== 'undefined' ? (window as unknown as { Capacitor?: { getPlatform?: () => string; isNativePlatform?: () => boolean } }) : undefined;
     const platform = w?.Capacitor?.isNativePlatform?.()
@@ -181,6 +321,8 @@ export const gpsTelemetry = {
         platform,
         userAgent: ua,
         provider: providerName,
+        telemetrySessionId: sessionId,
+        telemetryStorageKey: STORAGE_KEY,
         startedAt: startedAt ? new Date(startedAt).toISOString() : null,
         endedAt: new Date().toISOString(),
         eventCount: buffer.length,
