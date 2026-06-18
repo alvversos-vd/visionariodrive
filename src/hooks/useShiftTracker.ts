@@ -181,6 +181,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     let lastFixLocal = Date.now();
     let restartedByHeartbeat = false;
     const turnoId = shift.turno_id;
+    try { gpsTelemetry.startSession(turnoId); } catch { /* noop */ }
 
     const onFix = (fix: GpsFix) => {
       lastFixLocal = Date.now();
