@@ -882,9 +882,30 @@ export default function ShiftMode({ onChange }: Props) {
           console.info('[ShiftMode] Background GPS consent aceito', { turnoId: bgConsentTurnoId });
           try { gpsTelemetry.event('bg_consent_accepted', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
-          toast.success('Rastreamento em segundo plano ativado', {
-            description: 'Uma notificação ficará visível durante o turno.',
+
+          // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
+          // é preciso enviar o usuário pra tela de Configurações do app. Mostramos um toast
+          // persistente com ação direta pra abrir os ajustes do app via plugin.
+          toast('Falta 1 passo: "Permitir o tempo todo"', {
+            description: 'Toque em "Abrir ajustes" → Permissões → Localização → "Permitir o tempo todo". Sem isso, o Android pausa o GPS quando você bloqueia a tela.',
+            duration: 15000,
+            action: {
+              label: 'Abrir ajustes',
+              onClick: async () => {
+                try {
+                  const { registerPlugin } = await import('@capacitor/core');
+                  const Bg = registerPlugin<{ openSettings: () => Promise<void> }>('BackgroundGeolocation');
+                  await Bg.openSettings();
+                  try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
+                } catch (e) {
+                  // eslint-disable-next-line no-console
+                  console.warn('[ShiftMode] openSettings falhou', e);
+                  toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
+                }
+              },
+            },
           });
+
           // Bounce do tracker (pause+resume instantâneo) para re-selecionar o provider
           // e ativar o foreground service nativo no turno atual sem afetar km nem persistência.
           const id = bgConsentTurnoId;

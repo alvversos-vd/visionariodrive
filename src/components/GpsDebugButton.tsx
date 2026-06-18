@@ -62,7 +62,7 @@ export default function GpsDebugButton() {
         const path = await gpsTelemetry.export();
         toast(path === 'failed' ? 'Falha ao exportar diagnóstico' : `Diagnóstico exportado (${path})`);
       }}
-      className="fixed bottom-4 right-4 z-[9999] px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg opacity-80 hover:opacity-100"
+      className="fixed bottom-4 right-4 z-40 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg opacity-80 hover:opacity-100"
       aria-label="Exportar diagnóstico GPS"
     >
       GPS diag

@@ -45,6 +45,7 @@ export type TelemetryEventName =
   | 'bg_consent_accepted'
   | 'bg_consent_declined'
   | 'bg_restart_bounce_requested'
+  | 'bg_open_settings_clicked'
   | 'bg_session_summary'
   | 'shift_battery_snapshot';
 
