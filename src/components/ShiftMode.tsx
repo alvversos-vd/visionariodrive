@@ -21,8 +21,9 @@ import {
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
 import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
 import BackgroundLocationConsentDialog, {
-  saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked,
+  saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked, hasBackgroundGpsConsent,
 } from './BackgroundLocationConsentDialog';
+import { isBgAlwaysVerified, openAppLocationSettings } from '@/lib/bgPermission';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
