@@ -18,6 +18,7 @@ import { registerPlugin } from '@capacitor/core';
 import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
 import type { GpsProvider, GpsWatchHandle, GpsWatchOptions } from './gpsService';
 import { gpsTelemetry } from './gpsTelemetry';
+import { markBgAlwaysVerified } from './bgPermission';
 
 // Plugin nativo sem entry-point JS — registramos via Capacitor core.
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
@@ -136,16 +137,24 @@ export class BackgroundGpsProvider implements GpsProvider {
             if (firstFixAt == null) firstFixAt = t;
             lastFixAt = t;
 
+            const hidden = typeof document !== 'undefined' ? document.hidden : null;
             try {
               gpsTelemetry.event('raw_fix', {
                 source: 'bg',
                 accuracy: location.accuracy ?? null,
                 speed: location.speed ?? null,
                 source_lag_ms: Date.now() - t,
-                hidden: typeof document !== 'undefined' ? document.hidden : null,
+                hidden,
                 simulated: !!location.simulated,
               });
             } catch { /* noop */ }
+
+            // Verificação empírica de "Permitir o tempo todo": se recebemos um
+            // fix real com a tela bloqueada/app em background, o sistema está
+            // de fato mantendo o GPS — permissão "always" foi concedida.
+            if (hidden === true && !location.simulated) {
+              try { markBgAlwaysVerified(); } catch { /* noop */ }
+            }
 
             onFix({
               lat: location.latitude,

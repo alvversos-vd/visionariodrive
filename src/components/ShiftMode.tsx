@@ -21,8 +21,9 @@ import {
 import { useShiftTracker, fmtDuracao, tempoOnlineMs } from '@/hooks/useShiftTracker';
 import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDialog';
 import BackgroundLocationConsentDialog, {
-  saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked,
+  saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked, hasBackgroundGpsConsent,
 } from './BackgroundLocationConsentDialog';
+import { isBgAlwaysVerified, openAppLocationSettings } from '@/lib/bgPermission';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
@@ -72,6 +73,36 @@ export default function ShiftMode({ onChange }: Props) {
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdStartRef = useRef<number>(0);
+
+  // Verificação REAL de "Permitir o tempo todo" — atualizada quando o
+  // BackgroundGpsProvider observa um fix com document.hidden=true.
+  const [bgVerified, setBgVerified] = useState<boolean>(() => isBgAlwaysVerified());
+  useEffect(() => {
+    const onChange = () => setBgVerified(isBgAlwaysVerified());
+    window.addEventListener('vd-bg-verified-changed', onChange);
+    // Re-checa também ao voltar pro app (após o usuário ir nas configs)
+    const onVis = () => { if (!document.hidden) setBgVerified(isBgAlwaysVerified()); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('vd-bg-verified-changed', onChange);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+  const isNativePlatform = (() => {
+    try {
+      const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+      return !!w.Capacitor?.isNativePlatform?.();
+    } catch { return false; }
+  })();
+
+  const openSettingsClick = async () => {
+    try { gpsTelemetry.event('bg_open_settings_clicked', { from: 'banner' }); } catch { /* noop */ }
+    const ok = await openAppLocationSettings();
+    if (!ok) {
+      toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"', { duration: 9000 });
+    }
+  };
 
 
   const refresh = () => {
@@ -744,6 +775,25 @@ export default function ShiftMode({ onChange }: Props) {
               <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
             </div>
           </div>
+        )}
+
+        {/* GPS Background não verificado — instrução clara e ação direta.
+            Some automaticamente quando recebemos fix com a tela bloqueada. */}
+        {isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && (
+          <button
+            type="button"
+            onClick={openSettingsClick}
+            className="w-full flex items-start gap-2 rounded-xl border border-accent/50 bg-accent/10 p-2.5 text-[11px] text-accent text-left active:scale-[0.99] transition-transform"
+          >
+            <MapPinOff size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">⚠️ GPS limitado ao app aberto</p>
+              <p className="text-accent/80">
+                Toque para habilitar <strong>"Permitir o tempo todo"</strong> nas configurações. Sem isso, o Android pausa o GPS quando a tela bloqueia.
+              </p>
+            </div>
+            <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
+          </button>
         )}
 
         {(gps === 'denied' || gps === 'unavailable') && (

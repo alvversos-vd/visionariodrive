@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
+import { subscribeBlockingModal } from '@/lib/uiModalState';
 
 const GPS_DEBUG_KEY = 'vd-gps-debug-enabled';
 
@@ -28,6 +29,10 @@ function shouldShowGpsDiag(): boolean {
  */
 export default function GpsDebugButton() {
   const [enabled, setEnabled] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => subscribeBlockingModal(setModalOpen), []);
+
 
   useEffect(() => {
     let attempts = 0;
@@ -53,7 +58,7 @@ export default function GpsDebugButton() {
     };
   }, []);
 
-  if (!enabled) return null;
+  if (!enabled || modalOpen) return null;
 
   return (
     <button
