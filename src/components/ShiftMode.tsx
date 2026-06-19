@@ -777,6 +777,25 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
         )}
 
+        {/* GPS Background não verificado — instrução clara e ação direta.
+            Some automaticamente quando recebemos fix com a tela bloqueada. */}
+        {isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && (
+          <button
+            type="button"
+            onClick={openSettingsClick}
+            className="w-full flex items-start gap-2 rounded-xl border border-accent/50 bg-accent/10 p-2.5 text-[11px] text-accent text-left active:scale-[0.99] transition-transform"
+          >
+            <MapPinOff size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">⚠️ GPS limitado ao app aberto</p>
+              <p className="text-accent/80">
+                Toque para habilitar <strong>"Permitir o tempo todo"</strong> nas configurações. Sem isso, o Android pausa o GPS quando a tela bloqueia.
+              </p>
+            </div>
+            <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
+          </button>
+        )}
+
         {(gps === 'denied' || gps === 'unavailable') && (
           <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
             <MapPinOff size={14} className="mt-0.5 shrink-0" />
