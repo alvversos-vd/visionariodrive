@@ -1,5 +1,6 @@
 import { MapPin, Bell, Battery, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { pushBlockingModal } from '@/lib/uiModalState';
 
 interface Props {
   open: boolean;
@@ -17,10 +18,16 @@ interface Props {
 export default function BackgroundLocationConsentDialog({ open, onAccept, onDecline }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { if (open) setMounted(true); }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const release = pushBlockingModal();
+    return release;
+  }, [open]);
   if (!open) return null;
 
   return (
     <div
+      data-vd-modal="consent"
       className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-200"
       onClick={onDecline}
     >

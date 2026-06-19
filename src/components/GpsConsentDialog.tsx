@@ -1,5 +1,6 @@
 import { MapPin, Shield, Navigation, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { pushBlockingModal } from '@/lib/uiModalState';
 
 interface Props {
   open: boolean;
@@ -15,6 +16,11 @@ interface Props {
 export default function GpsConsentDialog({ open, onAccept, onDecline }: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { if (open) setMounted(true); }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const release = pushBlockingModal();
+    return release;
+  }, [open]);
   if (!open) return null;
 
   // Detecta iOS para mostrar dica extra de "Permitir Sempre"
@@ -22,6 +28,7 @@ export default function GpsConsentDialog({ open, onAccept, onDecline }: Props) {
 
   return (
     <div
+      data-vd-modal="consent"
       className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-200"
       onClick={onDecline}
     >
