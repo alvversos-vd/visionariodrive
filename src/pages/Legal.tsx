@@ -304,7 +304,11 @@ function Localizacao() {
       <H2>O que não fazemos</H2>
       <UL>
         <li>não rastreamos o usuário fora do turno;</li>
-        <li>não mantemos rastreamento contínuo em segundo plano sem necessidade;</li>
+        <li>
+          o rastreamento em segundo plano só ocorre <strong>durante turnos ativos</strong>, com{' '}
+          <strong>autorização explícita do usuário</strong> e uma <strong>notificação visível</strong>{' '}
+          enquanto está ativo — ao encerrar ou pausar o turno, o rastreamento para imediatamente;
+        </li>
         <li>não compartilhamos sua localização com terceiros;</li>
         <li>não usamos sua localização para publicidade.</li>
       </UL>
