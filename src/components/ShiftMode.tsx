@@ -74,6 +74,36 @@ export default function ShiftMode({ onChange }: Props) {
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdStartRef = useRef<number>(0);
 
+  // Verificação REAL de "Permitir o tempo todo" — atualizada quando o
+  // BackgroundGpsProvider observa um fix com document.hidden=true.
+  const [bgVerified, setBgVerified] = useState<boolean>(() => isBgAlwaysVerified());
+  useEffect(() => {
+    const onChange = () => setBgVerified(isBgAlwaysVerified());
+    window.addEventListener('vd-bg-verified-changed', onChange);
+    // Re-checa também ao voltar pro app (após o usuário ir nas configs)
+    const onVis = () => { if (!document.hidden) setBgVerified(isBgAlwaysVerified()); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('vd-bg-verified-changed', onChange);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
+  const isNativePlatform = (() => {
+    try {
+      const w = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+      return !!w.Capacitor?.isNativePlatform?.();
+    } catch { return false; }
+  })();
+
+  const openSettingsClick = async () => {
+    try { gpsTelemetry.event('bg_open_settings_clicked', { from: 'banner' }); } catch { /* noop */ }
+    const ok = await openAppLocationSettings();
+    if (!ok) {
+      toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"', { duration: 9000 });
+    }
+  };
+
 
   const refresh = () => {
     const a = getActiveShift();
