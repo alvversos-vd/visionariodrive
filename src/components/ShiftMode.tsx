@@ -28,6 +28,7 @@ import {
   isBgAlwaysVerified,
   openAppLocationSettings,
   openNotificationSettings,
+  requestBackgroundLocationPermissionIfPossible,
   requestNotificationPermissionIfNeeded,
   type BackgroundPermissionStatus,
 } from '@/lib/bgPermission';
