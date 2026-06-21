@@ -984,12 +984,14 @@ export default function ShiftMode({ onChange }: Props) {
 
       <BackgroundLocationConsentDialog
         open={bgConsentOpen}
-        onAccept={() => {
+        onAccept={async () => {
           saveBackgroundGpsConsent();
           // eslint-disable-next-line no-console
           console.info('[ShiftMode] Background GPS consent aceito', { turnoId: bgConsentTurnoId });
           try { gpsTelemetry.event('bg_consent_accepted', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
+          const notificationStatus = await requestNotificationPermissionIfNeeded();
+          setBgPermissionStatus(notificationStatus);
 
           // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
           // é preciso enviar o usuário pra tela de Configurações do app. Mostramos um toast
@@ -1000,33 +1002,21 @@ export default function ShiftMode({ onChange }: Props) {
             action: {
               label: 'Abrir ajustes',
               onClick: async () => {
-                try {
-                  const { registerPlugin } = await import('@capacitor/core');
-                  const Bg = registerPlugin<{ openSettings: () => Promise<void> }>('BackgroundGeolocation');
-                  await Bg.openSettings();
-                  try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
-                } catch (e) {
+                const ok = await openAppLocationSettings();
+                try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId, from: 'consent-toast' }); } catch { /* noop */ }
+                if (!ok) {
                   // eslint-disable-next-line no-console
-                  console.warn('[ShiftMode] openSettings falhou', e);
+                  console.warn('[ShiftMode] openSettings falhou');
                   toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
                 }
               },
             },
           });
+          await syncBackgroundPermission('background-consent-accepted');
 
-          // Bounce do tracker (pause+resume instantâneo) para re-selecionar o provider
-          // e ativar o foreground service nativo no turno atual sem afetar km nem persistência.
-          const id = bgConsentTurnoId;
-          if (id) {
-            // eslint-disable-next-line no-console
-            console.info('[ShiftMode] Background GPS restart bounce solicitado', { turnoId: id });
-            try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: id }); } catch { /* noop */ }
-            const paused = pauseShift(id);
-            if (paused) {
-              const resumed = resumeShift(id);
-              if (resumed) setShift({ ...resumed });
-            }
-          }
+          // Reinício explícito do watcher para re-selecionar o provider sem alterar estado do turno.
+          try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: bgConsentTurnoId, method: 'restartSignal' }); } catch { /* noop */ }
+          setTrackerRestartSignal(v => v + 1);
         }}
         onDecline={() => {
           declineBackgroundGpsConsent();
