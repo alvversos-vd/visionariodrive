@@ -59,6 +59,23 @@ async function plugin(): Promise<VisionarioPermissionsPlugin | null> {
   }
 }
 
+async function withForegroundFallback(base: BackgroundPermissionStatus): Promise<BackgroundPermissionStatus> {
+  if (!base.native) return base;
+  try {
+    const { Geolocation } = await import('@capacitor/geolocation');
+    const perm = await Geolocation.checkPermissions();
+    const foreground = perm.location === 'granted' || perm.coarseLocation === 'granted';
+    return {
+      ...base,
+      foregroundLocationGranted: foreground || base.foregroundLocationGranted,
+      fineLocationGranted: perm.location === 'granted' || base.fineLocationGranted,
+      coarseLocationGranted: perm.coarseLocation === 'granted' || base.coarseLocationGranted,
+    };
+  } catch {
+    return base;
+  }
+}
+
 export function isBgAlwaysVerified(): boolean {
   try { return localStorage.getItem(BG_VERIFIED_KEY) === '1'; } catch { return false; }
 }
@@ -85,7 +102,7 @@ export function clearBgAlwaysVerified(): void {
 export async function getBackgroundPermissionStatus(): Promise<BackgroundPermissionStatus> {
   const base = fallbackStatus();
   const p = await plugin();
-  if (!p || !base.native || base.platform !== 'android') return base;
+  if (!p || !base.native || base.platform !== 'android') return withForegroundFallback(base);
   try {
     const native = await p.checkStatus();
     const status: BackgroundPermissionStatus = { ...base, ...native, native: true, platform: 'android' };
@@ -93,7 +110,7 @@ export async function getBackgroundPermissionStatus(): Promise<BackgroundPermiss
     else if (!status.foregroundLocationGranted) clearBgAlwaysVerified();
     return status;
   } catch {
-    return base;
+    return withForegroundFallback(base);
   }
 }
 
