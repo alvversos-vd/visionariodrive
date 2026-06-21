@@ -1019,7 +1019,14 @@ export default function ShiftMode({ onChange }: Props) {
               },
             },
           });
-          await syncBackgroundPermission('background-consent-accepted');
+          const bgStatus = await requestBackgroundLocationPermissionIfPossible();
+          setBgPermissionStatus(bgStatus);
+          if (bgStatus.backgroundLocationGranted) {
+            setBgVerified(true);
+            lastBgVerifiedRef.current = true;
+          } else {
+            await syncBackgroundPermission('background-consent-accepted');
+          }
 
           // Reinício explícito do watcher para re-selecionar o provider sem alterar estado do turno.
           try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: bgConsentTurnoId, method: 'restartSignal' }); } catch { /* noop */ }
