@@ -55,6 +55,16 @@ export default function BackgroundLocationConsentDialog({ open, onAccept, onDecl
             Sem essa permissão, o Android pausa o GPS após alguns minutos com a tela bloqueada — você perde km e o lucro/km fica errado.
           </p>
 
+          <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 space-y-2 text-sm">
+            <div className="flex items-center gap-2 font-display font-bold text-foreground">
+              <Bell size={16} className="text-primary shrink-0" />
+              <span>Notificação durante o turno</span>
+            </div>
+            <p className="text-muted-foreground">
+              Ela mantém o rastreamento ativo em segundo plano, aparece só enquanto existe turno ativo e desaparece ao encerrar. Sem essa notificação, o Android pode interromper o GPS com a tela bloqueada.
+            </p>
+          </div>
+
           <ul className="space-y-3 text-sm">
             <li className="flex items-start gap-2">
               <MapPin size={16} className="text-primary mt-0.5 shrink-0" />

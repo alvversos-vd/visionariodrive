@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil, Map as MapIcon,
+  Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
 import {
   Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
@@ -23,7 +23,15 @@ import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDia
 import BackgroundLocationConsentDialog, {
   saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked, hasBackgroundGpsConsent,
 } from './BackgroundLocationConsentDialog';
-import { isBgAlwaysVerified, openAppLocationSettings } from '@/lib/bgPermission';
+import {
+  getBackgroundPermissionStatus,
+  isBgAlwaysVerified,
+  openAppLocationSettings,
+  openNotificationSettings,
+  requestBackgroundLocationPermissionIfPossible,
+  requestNotificationPermissionIfNeeded,
+  type BackgroundPermissionStatus,
+} from '@/lib/bgPermission';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
@@ -73,21 +81,53 @@ export default function ShiftMode({ onChange }: Props) {
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdStartRef = useRef<number>(0);
+  const [trackerRestartSignal, setTrackerRestartSignal] = useState(0);
+  const [bgPermissionStatus, setBgPermissionStatus] = useState<BackgroundPermissionStatus | null>(null);
+  const lastBgVerifiedRef = useRef<boolean>(isBgAlwaysVerified());
 
-  // Verificação REAL de "Permitir o tempo todo" — atualizada quando o
-  // BackgroundGpsProvider observa um fix com document.hidden=true.
+  // Verificação REAL de "Permitir o tempo todo" — fonte primária é nativa Android.
   const [bgVerified, setBgVerified] = useState<boolean>(() => isBgAlwaysVerified());
+  const syncBackgroundPermission = useCallback(async (reason: string) => {
+    const status = await getBackgroundPermissionStatus();
+    setBgPermissionStatus(status);
+    const verified = status.backgroundLocationGranted || isBgAlwaysVerified();
+    setBgVerified(verified);
+    try { gpsTelemetry.event('bg_permission_state_checked', { reason, ...status }); } catch { /* noop */ }
+    if (verified && !lastBgVerifiedRef.current) setTrackerRestartSignal(v => v + 1);
+    lastBgVerifiedRef.current = verified;
+    return status;
+  }, []);
+
   useEffect(() => {
-    const onChange = () => setBgVerified(isBgAlwaysVerified());
+    let cancelled = false;
+    let appStateHandle: { remove: () => Promise<void> } | null = null;
+    const onChange = () => {
+      const verified = isBgAlwaysVerified();
+      setBgVerified(verified);
+      lastBgVerifiedRef.current = verified;
+      void syncBackgroundPermission('bg-verified-event');
+    };
     window.addEventListener('vd-bg-verified-changed', onChange);
     // Re-checa também ao voltar pro app (após o usuário ir nas configs)
-    const onVis = () => { if (!document.hidden) setBgVerified(isBgAlwaysVerified()); };
+    const onVis = () => { if (!document.hidden) void syncBackgroundPermission('visibility-return'); };
+    const onFocus = () => { void syncBackgroundPermission('focus-return'); };
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    import('@capacitor/app')
+      .then(({ App }) => App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) void syncBackgroundPermission('app-state-active');
+      }))
+      .then(handle => { if (cancelled) void handle.remove(); else appStateHandle = handle; })
+      .catch(() => { /* web/noop */ });
+    void syncBackgroundPermission('mount');
     return () => {
+      cancelled = true;
       window.removeEventListener('vd-bg-verified-changed', onChange);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+      if (appStateHandle) void appStateHandle.remove();
     };
-  }, []);
+  }, [syncBackgroundPermission]);
 
   const isNativePlatform = (() => {
     try {
@@ -111,7 +151,7 @@ export default function ShiftMode({ onChange }: Props) {
     onChange?.();
   };
 
-  const { gps, lastFixAt } = useShiftTracker(shift, { onTick: () => {
+  const { gps, lastFixAt } = useShiftTracker(shift, { restartSignal: trackerRestartSignal, onTick: () => {
     // re-pega snapshot do shift do storage para refletir km_gps acumulado
     const a = getActiveShift();
     if (a) setShift({ ...a });
@@ -167,7 +207,7 @@ export default function ShiftMode({ onChange }: Props) {
    * 2) somente após "Aceitar" dispara o prompt nativo do navegador
    * 3) trata permissão negada com mensagens iOS/Android específicas
    */
-  const requestGpsPermission = (turnoId?: string) => {
+  const requestGpsPermission = async (turnoId?: string) => {
     const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       if (id) setShiftGpsStatus(id, 'unavailable');
@@ -175,8 +215,14 @@ export default function ShiftMode({ onChange }: Props) {
       refresh();
       return;
     }
+    const cap = typeof window !== 'undefined'
+      ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      : undefined;
+    const isNative = !!cap?.isNativePlatform?.();
+    const nativeStatus = isNative ? await syncBackgroundPermission('gps-permission-entry') : null;
     // Se já consentiu antes, pula o modal e vai direto ao prompt nativo
-    if (hasGpsConsent()) {
+    // — exceto quando o Android mostra que a permissão real foi revogada/ausente.
+    if (hasGpsConsent() && (!isNative || nativeStatus?.foregroundLocationGranted)) {
       triggerNativePrompt(id);
       return;
     }
@@ -196,14 +242,15 @@ export default function ShiftMode({ onChange }: Props) {
       : undefined;
     const isNative = !!cap?.isNativePlatform?.();
 
-    const handleGranted = () => {
+    const handleGranted = async () => {
       if (id) setShiftGpsStatus(id, 'ok');
       saveGpsConsent();
       toast.success('GPS ativo — km serão calculados automaticamente');
       refresh();
+      const status = await syncBackgroundPermission('foreground-location-granted');
       // Em plataforma nativa: oferecer rastreamento em background (foreground service Android)
-      // somente uma vez por dispositivo. Decisão fica salva em localStorage.
-      if (isNative && !wasBackgroundGpsAsked()) {
+      // quando ainda não existe permissão real "Permitir o tempo todo".
+      if (isNative && !status.backgroundLocationGranted && !wasBackgroundGpsAsked()) {
         // Pequeno delay para o usuário absorver o toast antes do próximo diálogo
         setTimeout(() => {
           setBgConsentTurnoId(id);
@@ -245,7 +292,7 @@ export default function ShiftMode({ onChange }: Props) {
             enableHighAccuracy: true,
             timeout: 15000,
           });
-          handleGranted();
+          void handleGranted();
         } catch (e) {
           // eslint-disable-next-line no-console
           console.warn('[ShiftMode] Capacitor Geolocation falhou', e);
@@ -257,7 +304,7 @@ export default function ShiftMode({ onChange }: Props) {
 
     // Web / PWA — fluxo original via navigator.geolocation
     navigator.geolocation.getCurrentPosition(
-      () => handleGranted(),
+      () => { void handleGranted(); },
       err => {
         if (err.code === err.PERMISSION_DENIED) handleDenied();
         else handleUnavailable();
@@ -635,6 +682,10 @@ export default function ShiftMode({ onChange }: Props) {
   const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
   const gapSec = gapMs != null ? Math.floor(gapMs / 1000) : null;
   const longBackgroundGap = gps === 'background' || (gapSec != null && gapSec > 60);
+  const needsBackgroundPermission = isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable';
+  const needsNotificationPermission = isNativePlatform && hasBackgroundGpsConsent()
+    && !!bgPermissionStatus?.notificationPermissionRequired
+    && !bgPermissionStatus.notificationPermissionGranted;
   const fmtGap = (s: number) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}min` : `${Math.floor(s/3600)}h${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
 
   // === MODO FOCO ===
@@ -779,7 +830,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* GPS Background não verificado — instrução clara e ação direta.
             Some automaticamente quando recebemos fix com a tela bloqueada. */}
-        {isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && (
+        {needsBackgroundPermission && (
           <button
             type="button"
             onClick={openSettingsClick}
@@ -793,6 +844,30 @@ export default function ShiftMode({ onChange }: Props) {
               </p>
             </div>
             <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
+          </button>
+        )}
+
+        {needsNotificationPermission && (
+          <button
+            type="button"
+            onClick={async () => {
+              const status = await requestNotificationPermissionIfNeeded();
+              setBgPermissionStatus(status);
+              if (!status.notificationPermissionGranted) {
+                const ok = await openNotificationSettings();
+                if (!ok) toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Notificações → Permitir');
+              }
+            }}
+            className="w-full flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2.5 text-[11px] text-primary text-left active:scale-[0.99] transition-transform"
+          >
+            <Bell size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Notificação do turno pendente</p>
+              <p className="text-primary/80">
+                Ela mantém o GPS ativo enquanto o turno está rodando e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano.
+              </p>
+            </div>
+            <span className="text-[10px] underline shrink-0 mt-0.5">Permitir</span>
           </button>
         )}
 
@@ -815,7 +890,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
             Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
-        {longBackgroundGap && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
+        {longBackgroundGap && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
           <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
             <Satellite size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1">
@@ -926,49 +1001,45 @@ export default function ShiftMode({ onChange }: Props) {
 
       <BackgroundLocationConsentDialog
         open={bgConsentOpen}
-        onAccept={() => {
+        onAccept={async () => {
           saveBackgroundGpsConsent();
           // eslint-disable-next-line no-console
           console.info('[ShiftMode] Background GPS consent aceito', { turnoId: bgConsentTurnoId });
           try { gpsTelemetry.event('bg_consent_accepted', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
+          const notificationStatus = await requestNotificationPermissionIfNeeded();
+          setBgPermissionStatus(notificationStatus);
 
-          // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
-          // é preciso enviar o usuário pra tela de Configurações do app. Mostramos um toast
-          // persistente com ação direta pra abrir os ajustes do app via plugin.
-          toast('Falta 1 passo: "Permitir o tempo todo"', {
-            description: 'Toque em "Abrir ajustes" → Permissões → Localização → "Permitir o tempo todo". Sem isso, o Android pausa o GPS quando você bloqueia a tela.',
-            duration: 15000,
-            action: {
-              label: 'Abrir ajustes',
-              onClick: async () => {
-                try {
-                  const { registerPlugin } = await import('@capacitor/core');
-                  const Bg = registerPlugin<{ openSettings: () => Promise<void> }>('BackgroundGeolocation');
-                  await Bg.openSettings();
-                  try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
-                } catch (e) {
-                  // eslint-disable-next-line no-console
-                  console.warn('[ShiftMode] openSettings falhou', e);
-                  toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
-                }
+          const bgStatus = await requestBackgroundLocationPermissionIfPossible();
+          setBgPermissionStatus(bgStatus);
+          if (bgStatus.backgroundLocationGranted) {
+            setBgVerified(true);
+            lastBgVerifiedRef.current = true;
+          } else {
+            // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
+            // é preciso enviar o usuário pra tela de Configurações do app.
+            toast('Falta 1 passo: "Permitir o tempo todo"', {
+              description: 'Toque em "Abrir ajustes" → Permissões → Localização → "Permitir o tempo todo". Sem isso, o Android pausa o GPS quando você bloqueia a tela.',
+              duration: 15000,
+              action: {
+                label: 'Abrir ajustes',
+                onClick: async () => {
+                  const ok = await openAppLocationSettings();
+                  try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId, from: 'consent-toast' }); } catch { /* noop */ }
+                  if (!ok) {
+                    // eslint-disable-next-line no-console
+                    console.warn('[ShiftMode] openSettings falhou');
+                    toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
+                  }
+                },
               },
-            },
-          });
-
-          // Bounce do tracker (pause+resume instantâneo) para re-selecionar o provider
-          // e ativar o foreground service nativo no turno atual sem afetar km nem persistência.
-          const id = bgConsentTurnoId;
-          if (id) {
-            // eslint-disable-next-line no-console
-            console.info('[ShiftMode] Background GPS restart bounce solicitado', { turnoId: id });
-            try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: id }); } catch { /* noop */ }
-            const paused = pauseShift(id);
-            if (paused) {
-              const resumed = resumeShift(id);
-              if (resumed) setShift({ ...resumed });
-            }
+            });
+            await syncBackgroundPermission('background-consent-accepted');
           }
+
+          // Reinício explícito do watcher para re-selecionar o provider sem alterar estado do turno.
+          try { gpsTelemetry.event('bg_restart_bounce_requested', { turnoId: bgConsentTurnoId, method: 'restartSignal' }); } catch { /* noop */ }
+          setTrackerRestartSignal(v => v + 1);
         }}
         onDecline={() => {
           declineBackgroundGpsConsent();
