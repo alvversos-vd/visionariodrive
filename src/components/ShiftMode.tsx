@@ -80,21 +80,43 @@ export default function ShiftMode({ onChange }: Props) {
   const [holdProgress, setHoldProgress] = useState(0);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdStartRef = useRef<number>(0);
+  const [trackerRestartSignal, setTrackerRestartSignal] = useState(0);
+  const [bgPermissionStatus, setBgPermissionStatus] = useState<BackgroundPermissionStatus | null>(null);
+  const lastBgVerifiedRef = useRef<boolean>(isBgAlwaysVerified());
 
-  // Verificação REAL de "Permitir o tempo todo" — atualizada quando o
-  // BackgroundGpsProvider observa um fix com document.hidden=true.
+  // Verificação REAL de "Permitir o tempo todo" — fonte primária é nativa Android.
   const [bgVerified, setBgVerified] = useState<boolean>(() => isBgAlwaysVerified());
+  const syncBackgroundPermission = useCallback(async (reason: string) => {
+    const status = await getBackgroundPermissionStatus();
+    setBgPermissionStatus(status);
+    const verified = status.backgroundLocationGranted || isBgAlwaysVerified();
+    setBgVerified(verified);
+    try { gpsTelemetry.event('bg_permission_state_checked', { reason, ...status }); } catch { /* noop */ }
+    if (verified && !lastBgVerifiedRef.current) setTrackerRestartSignal(v => v + 1);
+    lastBgVerifiedRef.current = verified;
+    return status;
+  }, []);
+
   useEffect(() => {
-    const onChange = () => setBgVerified(isBgAlwaysVerified());
+    const onChange = () => {
+      const verified = isBgAlwaysVerified();
+      setBgVerified(verified);
+      lastBgVerifiedRef.current = verified;
+      void syncBackgroundPermission('bg-verified-event');
+    };
     window.addEventListener('vd-bg-verified-changed', onChange);
     // Re-checa também ao voltar pro app (após o usuário ir nas configs)
-    const onVis = () => { if (!document.hidden) setBgVerified(isBgAlwaysVerified()); };
+    const onVis = () => { if (!document.hidden) void syncBackgroundPermission('visibility-return'); };
+    const onFocus = () => { void syncBackgroundPermission('focus-return'); };
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
+    void syncBackgroundPermission('mount');
     return () => {
       window.removeEventListener('vd-bg-verified-changed', onChange);
       document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [syncBackgroundPermission]);
 
   const isNativePlatform = (() => {
     try {
