@@ -62,6 +62,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
   const lastPoint = useRef<Point | null>(null);
   const wakeLock = useRef<WakeLockSentinel | null>(null);
   const hiddenAtRef = useRef<number | null>(null);
+  const foregroundResumeAtRef = useRef<number | null>(null);
   const lastThrottleToastRef = useRef<number>(0);
   const onTickRef = useRef(opts?.onTick);
   onTickRef.current = opts?.onTick;
@@ -98,7 +99,8 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
       // Re-âncora — primeiro fix pós-background não deve gerar salto contábil
       lastPoint.current = null;
-      setLastFixAt(Date.now()); // evita banner/watchdog falso pelo tempo gasto em Configurações
+      foregroundResumeAtRef.current = Date.now();
+      setLastFixAt(foregroundResumeAtRef.current); // evita banner falso pelo tempo gasto em Configurações
       setRestartKey(k => k + 1); // força re-subscribe limpo
       setTick(t => t + 1);
       onTickRef.current?.();
@@ -246,9 +248,10 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     // Heartbeat/Watchdog (também propaga lastFixAt como state a cada 5s — cadência baixa
      // o suficiente para não causar renders excessivos no mobile).
     const interval = setInterval(() => {
-      const since = Date.now() - lastFixLocal;
+      const effectiveLastFix = Math.max(lastFixLocal, foregroundResumeAtRef.current ?? 0);
+      const since = Date.now() - effectiveLastFix;
       const isBg = typeof document !== 'undefined' && document.hidden;
-      setLastFixAt(lastFixLocal);
+      setLastFixAt(effectiveLastFix);
 
       if (since > WATCHDOG_FAIL_MS) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
