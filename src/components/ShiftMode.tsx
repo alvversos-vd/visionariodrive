@@ -1000,31 +1000,30 @@ export default function ShiftMode({ onChange }: Props) {
           const notificationStatus = await requestNotificationPermissionIfNeeded();
           setBgPermissionStatus(notificationStatus);
 
-          // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
-          // é preciso enviar o usuário pra tela de Configurações do app. Mostramos um toast
-          // persistente com ação direta pra abrir os ajustes do app via plugin.
-          toast('Falta 1 passo: "Permitir o tempo todo"', {
-            description: 'Toque em "Abrir ajustes" → Permissões → Localização → "Permitir o tempo todo". Sem isso, o Android pausa o GPS quando você bloqueia a tela.',
-            duration: 15000,
-            action: {
-              label: 'Abrir ajustes',
-              onClick: async () => {
-                const ok = await openAppLocationSettings();
-                try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId, from: 'consent-toast' }); } catch { /* noop */ }
-                if (!ok) {
-                  // eslint-disable-next-line no-console
-                  console.warn('[ShiftMode] openSettings falhou');
-                  toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
-                }
-              },
-            },
-          });
           const bgStatus = await requestBackgroundLocationPermissionIfPossible();
           setBgPermissionStatus(bgStatus);
           if (bgStatus.backgroundLocationGranted) {
             setBgVerified(true);
             lastBgVerifiedRef.current = true;
           } else {
+            // Android 11+: o sistema NÃO oferece "Permitir o tempo todo" no diálogo padrão —
+            // é preciso enviar o usuário pra tela de Configurações do app.
+            toast('Falta 1 passo: "Permitir o tempo todo"', {
+              description: 'Toque em "Abrir ajustes" → Permissões → Localização → "Permitir o tempo todo". Sem isso, o Android pausa o GPS quando você bloqueia a tela.',
+              duration: 15000,
+              action: {
+                label: 'Abrir ajustes',
+                onClick: async () => {
+                  const ok = await openAppLocationSettings();
+                  try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId, from: 'consent-toast' }); } catch { /* noop */ }
+                  if (!ok) {
+                    // eslint-disable-next-line no-console
+                    console.warn('[ShiftMode] openSettings falhou');
+                    toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
+                  }
+                },
+              },
+            });
             await syncBackgroundPermission('background-consent-accepted');
           }
 
