@@ -813,7 +813,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* GPS Background não verificado — instrução clara e ação direta.
             Some automaticamente quando recebemos fix com a tela bloqueada. */}
-        {isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && (
+        {needsBackgroundPermission && (
           <button
             type="button"
             onClick={openSettingsClick}
@@ -827,6 +827,30 @@ export default function ShiftMode({ onChange }: Props) {
               </p>
             </div>
             <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
+          </button>
+        )}
+
+        {needsNotificationPermission && (
+          <button
+            type="button"
+            onClick={async () => {
+              const status = await requestNotificationPermissionIfNeeded();
+              setBgPermissionStatus(status);
+              if (!status.notificationPermissionGranted) {
+                const ok = await openNotificationSettings();
+                if (!ok) toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Notificações → Permitir');
+              }
+            }}
+            className="w-full flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2.5 text-[11px] text-primary text-left active:scale-[0.99] transition-transform"
+          >
+            <Bell size={14} className="mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-display font-semibold">Notificação do turno pendente</p>
+              <p className="text-primary/80">
+                Ela mantém o GPS ativo enquanto o turno está rodando e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano.
+              </p>
+            </div>
+            <span className="text-[10px] underline shrink-0 mt-0.5">Permitir</span>
           </button>
         )}
 
@@ -849,7 +873,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
             Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
-        {longBackgroundGap && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
+        {longBackgroundGap && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
           <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
             <Satellite size={14} className="mt-0.5 shrink-0" />
             <div className="flex-1">
