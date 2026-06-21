@@ -22,7 +22,8 @@ import com.getcapacitor.annotation.PermissionCallback;
 @CapacitorPlugin(
         name = "VisionarioPermissions",
         permissions = {
-                @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications")
+                @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications"),
+                @Permission(strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, alias = "backgroundLocation")
         }
 )
 public class VisionarioPermissionsPlugin extends Plugin {
@@ -75,8 +76,26 @@ public class VisionarioPermissionsPlugin extends Plugin {
         requestPermissionForAlias("notifications", call, "notificationPermissionCallback");
     }
 
+    @PluginMethod
+    public void requestBackgroundLocationPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+            call.resolve(buildStatus());
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            call.resolve(buildStatus());
+            return;
+        }
+        requestPermissionForAlias("backgroundLocation", call, "backgroundLocationPermissionCallback");
+    }
+
     @PermissionCallback
     private void notificationPermissionCallback(PluginCall call) {
+        call.resolve(buildStatus());
+    }
+
+    @PermissionCallback
+    private void backgroundLocationPermissionCallback(PluginCall call) {
         call.resolve(buildStatus());
     }
 
