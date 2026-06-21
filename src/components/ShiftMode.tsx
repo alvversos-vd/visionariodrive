@@ -196,7 +196,7 @@ export default function ShiftMode({ onChange }: Props) {
    * 2) somente após "Aceitar" dispara o prompt nativo do navegador
    * 3) trata permissão negada com mensagens iOS/Android específicas
    */
-  const requestGpsPermission = (turnoId?: string) => {
+  const requestGpsPermission = async (turnoId?: string) => {
     const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       if (id) setShiftGpsStatus(id, 'unavailable');
@@ -204,8 +204,14 @@ export default function ShiftMode({ onChange }: Props) {
       refresh();
       return;
     }
+    const cap = typeof window !== 'undefined'
+      ? (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+      : undefined;
+    const isNative = !!cap?.isNativePlatform?.();
+    const nativeStatus = isNative ? await syncBackgroundPermission('gps-permission-entry') : null;
     // Se já consentiu antes, pula o modal e vai direto ao prompt nativo
-    if (hasGpsConsent()) {
+    // — exceto quando o Android mostra que a permissão real foi revogada/ausente.
+    if (hasGpsConsent() && (!isNative || nativeStatus?.foregroundLocationGranted)) {
       triggerNativePrompt(id);
       return;
     }
