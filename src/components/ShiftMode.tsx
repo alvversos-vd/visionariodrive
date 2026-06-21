@@ -99,6 +99,8 @@ export default function ShiftMode({ onChange }: Props) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let appStateHandle: { remove: () => Promise<void> } | null = null;
     const onChange = () => {
       const verified = isBgAlwaysVerified();
       setBgVerified(verified);
@@ -111,11 +113,19 @@ export default function ShiftMode({ onChange }: Props) {
     const onFocus = () => { void syncBackgroundPermission('focus-return'); };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('focus', onFocus);
+    import('@capacitor/app')
+      .then(({ App }) => App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) void syncBackgroundPermission('app-state-active');
+      }))
+      .then(handle => { if (cancelled) void handle.remove(); else appStateHandle = handle; })
+      .catch(() => { /* web/noop */ });
     void syncBackgroundPermission('mount');
     return () => {
+      cancelled = true;
       window.removeEventListener('vd-bg-verified-changed', onChange);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('focus', onFocus);
+      if (appStateHandle) void appStateHandle.remove();
     };
   }, [syncBackgroundPermission]);
 
