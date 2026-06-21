@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil, Map as MapIcon,
+  Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
 import {
   Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
@@ -23,7 +23,14 @@ import GpsConsentDialog, { hasGpsConsent, saveGpsConsent } from './GpsConsentDia
 import BackgroundLocationConsentDialog, {
   saveBackgroundGpsConsent, declineBackgroundGpsConsent, wasBackgroundGpsAsked, hasBackgroundGpsConsent,
 } from './BackgroundLocationConsentDialog';
-import { isBgAlwaysVerified, openAppLocationSettings } from '@/lib/bgPermission';
+import {
+  getBackgroundPermissionStatus,
+  isBgAlwaysVerified,
+  openAppLocationSettings,
+  openNotificationSettings,
+  requestNotificationPermissionIfNeeded,
+  type BackgroundPermissionStatus,
+} from '@/lib/bgPermission';
 import ShiftLiveMap from './ShiftLiveMap';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import VehiclesView from './VehiclesView';
