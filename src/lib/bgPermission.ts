@@ -24,6 +24,7 @@ export interface BackgroundPermissionStatus {
 type VisionarioPermissionsPlugin = {
   checkStatus: () => Promise<Partial<BackgroundPermissionStatus>>;
   requestNotificationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
+  requestBackgroundLocationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
   openLocationPermissionSettings: () => Promise<{ opened?: boolean; destination?: string }>;
   openNotificationSettings: () => Promise<{ opened?: boolean; destination?: string }>;
 };
@@ -110,6 +111,21 @@ export async function requestNotificationPermissionIfNeeded(): Promise<Backgroun
   try {
     const native = await p.requestNotificationPermission();
     return { ...before, ...native, native: true, platform: 'android' };
+  } catch {
+    return getBackgroundPermissionStatus();
+  }
+}
+
+export async function requestBackgroundLocationPermissionIfPossible(): Promise<BackgroundPermissionStatus> {
+  const before = await getBackgroundPermissionStatus();
+  if (!before.native || before.platform !== 'android' || before.backgroundLocationGranted) return before;
+  const p = await plugin();
+  if (!p) return before;
+  try {
+    const native = await p.requestBackgroundLocationPermission();
+    const status: BackgroundPermissionStatus = { ...before, ...native, native: true, platform: 'android' };
+    if (status.backgroundLocationGranted) markBgAlwaysVerified();
+    return status;
   } catch {
     return getBackgroundPermissionStatus();
   }
