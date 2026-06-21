@@ -665,6 +665,10 @@ export default function ShiftMode({ onChange }: Props) {
   const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
   const gapSec = gapMs != null ? Math.floor(gapMs / 1000) : null;
   const longBackgroundGap = gps === 'background' || (gapSec != null && gapSec > 60);
+  const needsBackgroundPermission = isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable';
+  const needsNotificationPermission = isNativePlatform && hasBackgroundGpsConsent()
+    && !!bgPermissionStatus?.notificationPermissionRequired
+    && !bgPermissionStatus.notificationPermissionGranted;
   const fmtGap = (s: number) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}min` : `${Math.floor(s/3600)}h${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
 
   // === MODO FOCO ===
