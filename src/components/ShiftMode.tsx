@@ -225,14 +225,15 @@ export default function ShiftMode({ onChange }: Props) {
       : undefined;
     const isNative = !!cap?.isNativePlatform?.();
 
-    const handleGranted = () => {
+    const handleGranted = async () => {
       if (id) setShiftGpsStatus(id, 'ok');
       saveGpsConsent();
       toast.success('GPS ativo — km serão calculados automaticamente');
       refresh();
+      const status = await syncBackgroundPermission('foreground-location-granted');
       // Em plataforma nativa: oferecer rastreamento em background (foreground service Android)
-      // somente uma vez por dispositivo. Decisão fica salva em localStorage.
-      if (isNative && !wasBackgroundGpsAsked()) {
+      // quando ainda não existe permissão real "Permitir o tempo todo".
+      if (isNative && !status.backgroundLocationGranted && !wasBackgroundGpsAsked()) {
         // Pequeno delay para o usuário absorver o toast antes do próximo diálogo
         setTimeout(() => {
           setBgConsentTurnoId(id);
@@ -274,7 +275,7 @@ export default function ShiftMode({ onChange }: Props) {
             enableHighAccuracy: true,
             timeout: 15000,
           });
-          handleGranted();
+          void handleGranted();
         } catch (e) {
           // eslint-disable-next-line no-console
           console.warn('[ShiftMode] Capacitor Geolocation falhou', e);
@@ -286,7 +287,7 @@ export default function ShiftMode({ onChange }: Props) {
 
     // Web / PWA — fluxo original via navigator.geolocation
     navigator.geolocation.getCurrentPosition(
-      () => handleGranted(),
+      () => { void handleGranted(); },
       err => {
         if (err.code === err.PERMISSION_DENIED) handleDenied();
         else handleUnavailable();
