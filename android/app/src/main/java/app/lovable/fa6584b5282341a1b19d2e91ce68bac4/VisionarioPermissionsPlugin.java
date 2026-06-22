@@ -27,7 +27,7 @@ import com.getcapacitor.annotation.PermissionCallback;
         }
 )
 public class VisionarioPermissionsPlugin extends Plugin {
-    private boolean hasPermission(String permission) {
+    private boolean hasAndroidPermission(String permission) {
         return getContext().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
     }
 
@@ -39,14 +39,14 @@ public class VisionarioPermissionsPlugin extends Plugin {
     }
 
     private JSObject buildStatus() {
-        boolean fine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-        boolean coarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
+        boolean fine = hasAndroidPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+        boolean coarse = hasAndroidPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
         boolean foreground = fine || coarse;
         boolean background = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
                 ? foreground
-                : hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
+                : hasAndroidPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION);
         boolean notificationRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU;
-        boolean notificationGranted = !notificationRequired || hasPermission(Manifest.permission.POST_NOTIFICATIONS);
+        boolean notificationGranted = !notificationRequired || hasAndroidPermission(Manifest.permission.POST_NOTIFICATIONS);
 
         JSObject status = new JSObject();
         status.put("native", true);
@@ -78,7 +78,7 @@ public class VisionarioPermissionsPlugin extends Plugin {
 
     @PluginMethod
     public void requestBackgroundLocationPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || hasAndroidPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
             call.resolve(buildStatus());
             return;
         }
