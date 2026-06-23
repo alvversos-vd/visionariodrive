@@ -19,6 +19,7 @@ export interface BackgroundPermissionStatus {
   locationServicesEnabled: boolean;
   notificationPermissionRequired: boolean;
   notificationPermissionGranted: boolean;
+  batteryOptimizationDisabled: boolean;
 }
 
 type VisionarioPermissionsPlugin = {
@@ -47,6 +48,7 @@ function fallbackStatus(): BackgroundPermissionStatus {
     locationServicesEnabled: true,
     notificationPermissionRequired: false,
     notificationPermissionGranted: true,
+    batteryOptimizationDisabled: true,
   };
 }
 
