@@ -149,6 +149,7 @@ export default function Index() {
         {renderContent()}
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
+      {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
     </div>
   );
 }
