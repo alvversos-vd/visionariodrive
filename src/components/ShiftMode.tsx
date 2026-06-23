@@ -40,7 +40,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
-import OperationalStatusBadge from './OperationalStatusBadge';
 import {
   subscribePermissionDiagnostic,
   refreshPermissionDiagnostic,
