@@ -23,7 +23,7 @@ import {
   openAppLocationSettings,
   openNotificationSettings,
 } from '@/lib/bgPermission';
-import { setModalOpen } from '@/lib/uiModalState';
+import { pushBlockingModal } from '@/lib/uiModalState';
 
 interface Props {
   onDone: (mode: 'automatic' | 'manual') => void;
@@ -46,9 +46,9 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    setModalOpen('permission-onboarding', true);
+    const release = pushBlockingModal();
     void refreshPermissionDiagnostic().then(setD);
-    return () => { setModalOpen('permission-onboarding', false); };
+    return () => { release(); };
   }, []);
 
   const isAndroidNative = d?.platform === 'android';
