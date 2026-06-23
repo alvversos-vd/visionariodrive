@@ -54,7 +54,7 @@ const THROTTLE_TOAST_COOLDOWN_MS = 5 * 60_000;
  *      • heartbeat — se ficar sem fix em foreground, reinicia watcher
  *      • toast discreto quando o sistema reduziu o tracking em background
  */
-export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void; restartSignal?: number }) {
+export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => void; restartSignal?: number; mode?: 'automatic' | 'manual' }) {
   const [gps, setGps] = useState<GpsState>('idle');
   const [lastFixAt, setLastFixAt] = useState<number | null>(null);
   const [, setTick] = useState(0);
@@ -168,6 +168,12 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       setGps('idle');
       return;
     }
+    // Modo manual — não inicia watcher GPS (zero drenagem de bateria).
+    if (opts?.mode === 'manual') {
+      setGps('idle');
+      lastPoint.current = null;
+      return;
+    }
     if (shift.status === 'pausado') {
       setGps('paused');
       lastPoint.current = null;
@@ -275,7 +281,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       lastPoint.current = null;
     };
 
-  }, [shift?.turno_id, shift?.status, restartKey, opts?.restartSignal]);
+  }, [shift?.turno_id, shift?.status, restartKey, opts?.restartSignal, opts?.mode]);
 
   return { gps, lastFixAt };
 }

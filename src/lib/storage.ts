@@ -34,6 +34,10 @@ export const APP_STORAGE_KEYS: string[] = [
   'lucro-delivery-fixed-costs-hint',
   'lucro-delivery-pwa-dismissed',
   'lucro-delivery-gps-consent',
+  'vd-bg-gps-consent-v1',
+  'vd-bg-always-verified-v1',
+  'vd-permission-onboarding-v1',
+  'vd-tracking-force-manual-v1',
   TOMBSTONES_KEY,
 ];
 

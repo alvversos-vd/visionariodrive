@@ -12,6 +12,7 @@ import {
 } from '@/lib/engagement';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle } from 'lucide-react';
+import OperationalStatusBadge from './OperationalStatusBadge';
 import ShiftMode from './ShiftMode';
 import { getActiveShift, computeTotals, formatTempo } from '@/lib/shifts';
 import { getObjectiveConfig, Objective } from '@/lib/objectives';
@@ -266,6 +267,8 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </div>
         );
       })()}
+
+      <OperationalStatusBadge />
 
       <ShiftMode />
 

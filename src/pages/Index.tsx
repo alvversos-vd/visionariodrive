@@ -12,6 +12,8 @@ import ProfileView from '@/components/ProfileView';
 import ExpensesView from '@/components/ExpensesView';
 import ProRequired from '@/components/ProRequired';
 import UpgradeView from '@/components/UpgradeView';
+import PermissionOnboarding from '@/components/PermissionOnboarding';
+import { isOnboardingCompleted } from '@/lib/permissionDiagnostic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
@@ -26,10 +28,17 @@ export default function Index() {
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
   const { isPro, dataVersion } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboardingCompleted());
 
   useEffect(() => {
     setRefresh(p => p + 1);
   }, [dataVersion]);
+
+  useEffect(() => {
+    const open = () => setShowOnboarding(true);
+    window.addEventListener('vd-open-permission-onboarding', open);
+    return () => window.removeEventListener('vd-open-permission-onboarding', open);
+  }, []);
 
   const handleCalculate = (entry: DailyEntry) => {
     setResult(entry);
@@ -140,6 +149,7 @@ export default function Index() {
         {renderContent()}
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
+      {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
     </div>
   );
 }

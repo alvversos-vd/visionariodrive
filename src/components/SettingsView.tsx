@@ -4,10 +4,11 @@ import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, get
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import { clearAllRoutes } from '@/lib/shifts';
 import { clearGpsConsent } from './GpsConsentDialog';
+import { isForcedManual, setForcedManual, resetOnboarding } from '@/lib/permissionDiagnostic';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, MapPin, ShieldOff } from 'lucide-react';
+import { AlertTriangle, MapPin, ShieldOff, Wrench, Settings2 } from 'lucide-react';
 import TagListEditor from './TagListEditor';
 import VehiclesView from './VehiclesView';
 
@@ -198,6 +199,43 @@ export default function SettingsView({ refresh, onChanged }: Props) {
           Para revogar a permissão do navegador, ajuste também nas configurações do site no Chrome/Safari.
         </p>
       </div>
+
+      <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <Settings2 className="text-primary" size={18} />
+          <p className="font-display font-semibold text-foreground">Rastreamento automático</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Reabra o assistente para refazer as permissões de GPS, segundo plano, notificações e bateria.
+          O Visionário funciona em modo manual quando o GPS não estiver disponível.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              resetOnboarding();
+              window.dispatchEvent(new CustomEvent('vd-open-permission-onboarding'));
+            }}
+          >
+            <Settings2 size={14} className="mr-1.5" /> Reconfigurar permissões
+          </Button>
+          <Button
+            variant={isForcedManual() ? 'default' : 'outline'}
+            className="w-full"
+            onClick={() => {
+              const next = !isForcedManual();
+              setForcedManual(next);
+              toast(next ? 'Modo manual forçado — GPS desativado nos turnos.' : 'Modo automático liberado quando as permissões estiverem ok.');
+              onChanged();
+            }}
+          >
+            <Wrench size={14} className="mr-1.5" /> {isForcedManual() ? 'Desativar modo manual forçado' : 'Forçar modo manual'}
+          </Button>
+        </div>
+      </div>
+
+
 
       <div className="bg-card rounded-lg p-4 border-2 border-destructive/30 shadow-sm space-y-3">
         <div className="flex items-center gap-2">
