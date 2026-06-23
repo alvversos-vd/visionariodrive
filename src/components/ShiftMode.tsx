@@ -89,6 +89,13 @@ export default function ShiftMode({ onChange }: Props) {
   const holdStartRef = useRef<number>(0);
   const [trackerRestartSignal, setTrackerRestartSignal] = useState(0);
   const [bgPermissionStatus, setBgPermissionStatus] = useState<BackgroundPermissionStatus | null>(null);
+  const [permDiag, setPermDiag] = useState<PermissionDiagnostic | null>(null);
+  useEffect(() => {
+    const unsub = subscribePermissionDiagnostic(setPermDiag);
+    void refreshPermissionDiagnostic();
+    return unsub;
+  }, []);
+  const trackingMode: 'automatic' | 'manual' = permDiag?.trackingMode ?? 'automatic';
   const lastBgVerifiedRef = useRef<boolean>(isBgAlwaysVerified());
 
   // Verificação REAL de "Permitir o tempo todo" — fonte primária é nativa Android.
