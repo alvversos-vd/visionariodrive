@@ -1,95 +1,140 @@
-# Reestruturação Mobile do Visionario Drive
 
-Objetivo: transformar o app num rastreador operacional confiável em celular real (Android/iOS, navegador e PWA), com GPS pedindo permissão corretamente, km contabilizado de verdade, turno sobrevivendo a minimizar/bloquear tela, e auto-save em tempo real.
+# Arquitetura definitiva: Permissões GPS resilientes a fabricantes Android
 
-Vou entregar em **4 fases**, da mais crítica pra mais visual. Você pode aprovar tudo de uma vez ou pedir pra eu parar entre fases.
+## Diagnóstico da causa raiz
 
----
+Hoje o app depende de:
+1. Intents específicas do Android (`ACTION_APPLICATION_DETAILS_SETTINGS`, `ACTION_LOCATION_SOURCE_SETTINGS`) que Samsung/Xiaomi/Realme/Motorola implementam de forma inconsistente.
+2. Consentimento UI (clique em "Aceitar") como proxy de permissão real — não reflete o estado nativo.
+3. Banner reativo após o turno iniciar — usuário descobre o problema tarde demais.
 
-## Fase 1 — GPS confiável + permissão profissional (CRÍTICO)
-
-Resolve "GPS não pede permissão" e "km não conta".
-
-- **Modal de explicação humanizada antes do prompt nativo**
-  - Componente `GpsConsentDialog` com o texto pedido (km, rota, lucro, custo/km, "nunca compartilhada")
-  - Só dispara `navigator.geolocation` depois do "Aceitar"
-  - Persiste em localStorage se o usuário já consentiu (não repete toda vez)
-- **Refatorar `useShiftTracker`** pra usar `watchPosition` com `enableHighAccuracy: true`, `maximumAge: 0`, `timeout: 15000`
-- **Detecção de permissão via `navigator.permissions.query({name:'geolocation'})`** quando disponível, fallback pro fluxo clássico no iOS Safari (que não suporta)
-- **Mensagens de ajuda específicas iOS vs Android** quando permissão for negada
-- **Filtros anti-jitter já existem** (`accuracy > 50`, `< 10m`, `> 200km/h`) — vou ajustar limiar mínimo pra 8m e adicionar filtro de `speed < 0.5 m/s` (parado)
-- **Captura completa**: salvar `speed` e `heading` no buffer pra usar no mapa
-
-## Fase 2 — Persistência real + recuperação de turno + background
-
-Resolve "estado do turno se perde" e "background instável".
-
-- **Migrar storage de turnos pra IndexedDB** via `idb-keyval` (mais robusto que localStorage, sobrevive a limpezas leves do iOS)
-  - Mantém fallback localStorage pra compat
-- **Timer baseado em timestamp** (já está assim em `tempoOnlineMs`, mas vou auditar pra garantir que nenhum lugar usa contador incremental)
-- **Auto-restore ao abrir o app**: na montagem do `ShiftMode`, se `getActiveShift()` retorna algo, restaura sem pedir ação do usuário (já existe parcialmente — vou validar e cobrir edge cases)
-- **`visibilitychange` + `pagehide`/`pageshow`**: ao voltar do background, recalcula km/timer usando timestamps reais; força flush do buffer GPS
-- **Wake Lock API** (`navigator.wakeLock.request('screen')`) opcional durante turno ativo pra reduzir kill em background no Android
-- **Service worker periodic sync** NÃO vou implementar (requer permissão especial e não funciona em iOS). Em vez disso, na volta de foreground reconciliamos tudo via timestamps.
-- ⚠️ **Limitação honesta**: navegadores web (especialmente iOS Safari) **suspendem JS em background**. Não existe geolocation contínua real em background num PWA puro de iOS. O GPS volta ao foreground. Pra background contínuo de verdade precisaria Capacitor + plugin nativo (Background Geolocation). Posso adicionar isso na Fase 4 se você quiser app nativo — me confirma.
-
-## Fase 3 — PWA instalável + offline
-
-- `vite-plugin-pwa` com `registerType: autoUpdate`, `devOptions.enabled: false`, guard de iframe (preview Lovable)
-- `manifest.json`: nome, ícones (192/512/maskable), `display: standalone`, theme/background color do brand, `start_url: /`
-- Splash screen via meta tags iOS
-- Service worker com `NetworkFirst` pra HTML, cache de assets estáticos
-- Denylist `/~oauth` no navigateFallback
-- Banner discreto "Instalar app" no Android (beforeinstallprompt) e instrução "Compartilhar → Tela de Início" no iOS
-
-## Fase 4 — Mapa ao vivo + otimização de bateria
-
-- **Leaflet** (open-source, sem API key) com tile OSM
-  - Polyline desenhando rota em tempo real conforme `watchPosition` dispara
-  - Marker com rotação baseada em `heading`
-  - Auto-pan suave (`map.panTo` com animação)
-- **Otimização adaptativa**:
-  - Se `speed < 1 m/s` por 60s → aumenta `maximumAge` pra reduzir custo
-  - Se movimento detectado → volta a 0
-- Toggle "Mostrar mapa" no `ShiftMode` (pode ser pesado pra alguns devices)
+**Causa raiz:** o app trata permissão como evento UI, não como **estado do dispositivo lido em tempo real**. A correção definitiva é inverter: a fonte da verdade é sempre `VisionarioPermissionsPlugin.getStatus()`, e o produto opera em dois modos baseados nesse status — nunca bloqueia o usuário.
 
 ---
 
-## Detalhes técnicos
+## O que será construído
 
-**Arquivos a criar:**
-- `src/components/GpsConsentDialog.tsx`
-- `src/lib/shiftStorage.ts` (camada IndexedDB + fallback)
-- `src/components/ShiftLiveMap.tsx` (Fase 4)
-- `public/manifest.json` + ícones
-- `vite.config.ts` com VitePWA
+### 1. `PermissionDiagnosticService` (src/lib/permissionDiagnostic.ts)
 
-**Arquivos a editar:**
-- `src/hooks/useShiftTracker.ts` — fluxo de consentimento, filtros, speed/heading, visibility handler
-- `src/lib/shifts.ts` — async storage, route polyline persistida
-- `src/components/ShiftMode.tsx` — integrar dialog, banners GPS, mapa
-- `index.html` — meta tags PWA iOS
+Serviço único, desacoplado, fonte da verdade para permissões:
 
-**Dependências novas:**
-- `idb-keyval` (~600B, IndexedDB simples)
-- `leaflet` + `react-leaflet` (Fase 4)
-- `vite-plugin-pwa` (Fase 3)
+```ts
+type PermissionDiagnostic = {
+  locationGranted: boolean;
+  backgroundLocationGranted: boolean;
+  notificationsGranted: boolean;
+  batteryOptimizationDisabled: boolean;
+  gpsReady: boolean;
+  trackingMode: "automatic" | "manual";
+  platform: "android" | "ios" | "web";
+  androidVersion: number | null;
+  reasons: string[]; // por que está em manual
+};
+```
 
-**Anti-bugs reforçados:**
-- `safeNum` já existe em `computeTotals`
-- Adicionar guards em km acumulado (max 1000 km/turno como sanity check)
-- Throttle de saves no IndexedDB (já existe debounce de 1.5s no buffer GPS)
+- Lê via `VisionarioPermissionsPlugin` no Android nativo.
+- Fallback via `navigator.permissions` + `Notification.permission` em PWA/web.
+- `trackingMode = "automatic"` apenas quando `locationGranted && backgroundLocationGranted && notificationsGranted && gpsReady`.
+- Cacheia última leitura + emite eventos (`onChange`) quando muda — consumido por dashboard, ShiftMode e onboarding.
+- Re-valida em: app resume, foco da janela, retorno de Settings, início de turno.
+
+### 2. Plugin nativo — extensões
+
+Adicionar em `VisionarioPermissionsPlugin.java`:
+- `isBatteryOptimizationDisabled()` via `PowerManager.isIgnoringBatteryOptimizations`.
+- `requestIgnoreBatteryOptimization()` via `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
+- `isLocationProviderEnabled()` via `LocationManager.isProviderEnabled(GPS_PROVIDER)`.
+- Manter o `requestBackgroundLocationPermission` atual; **não depender de intent específica de fabricante**.
+
+### 3. Onboarding guiado obrigatório (src/components/PermissionOnboarding.tsx)
+
+Fluxo bloqueante após cadastro / antes do primeiro turno, com 5 passos sequenciais. Cada passo:
+- Texto curto explicando o porquê.
+- Botão "Permitir" → dispara request nativo.
+- Após cada request: `PermissionDiagnosticService.refresh()` valida o estado **real**.
+- Só avança quando o status nativo confirma — não pelo clique.
+- Botão secundário "Pular e usar Modo Manual" em qualquer passo (não bloqueia o produto).
+
+Passos:
+1. Intro: "Visionário usa GPS para registrar km, tempo e ganhos automaticamente."
+2. Localização (fine).
+3. Localização em segundo plano ("Permitir o tempo todo").
+4. Notificações (Android 13+).
+5. Resumo: mostra diagnóstico final + escolhe modo.
+
+Flag persistida: `vd-permission-onboarding-completed-v1`.
+
+### 4. Dois modos operacionais
+
+**Modo Automático** (padrão quando elegível):
+- `useShiftTracker` ativo, GPS contínuo, polyline, km calculados.
+- Comportamento atual preservado.
+
+**Modo Manual** (quando faltar qualquer requisito crítico):
+- `useShiftTracker` não inicia GPS.
+- ShiftMode mostra formulário para inserção manual de km inicial/final, tempo e ganhos por corrida.
+- Reaproveita `RegisterRideFab` + `DailyInputForm`.
+- Persistência idêntica (mesmo schema de shifts/rides) — telemetria marca `source: "manual"`.
+
+Modo é decidido por `PermissionDiagnosticService.trackingMode`, com override manual do usuário (Configurações → "Forçar modo manual").
+
+### 5. Dashboard com status operacional permanente
+
+Componente novo `OperationalStatusBadge.tsx`, sempre visível no Dashboard e ShiftMode:
+- 🟢 "Rastreamento automático ativo"
+- 🟡 "Modo manual ativo" + razão curta (ex: "Localização em segundo plano não autorizada")
+- Botão "Corrigir configuração" → reabre `PermissionOnboarding` no passo pendente.
+
+### 6. Refator dos pontos atuais
+
+- `ShiftMode.tsx`: remover lógica ad-hoc de banner/permissão; consumir `PermissionDiagnosticService` + `OperationalStatusBadge`. Decide entre tracker automático e UI manual.
+- `useShiftTracker.ts`: aceita `mode: "automatic" | "manual"`; em manual, é no-op de GPS mas mantém estado do turno.
+- `bgPermission.ts`: torna-se wrapper fino sobre `PermissionDiagnosticService` (mantém compat) e depois é removido.
+- `GpsConsentDialog` / `BackgroundLocationConsentDialog`: descontinuados — substituídos pelos passos do `PermissionOnboarding`. Removidos da árvore.
+- `Index.tsx` / rota raiz: se autenticado e `!onboarding-completed`, renderiza `PermissionOnboarding` antes de qualquer outra tela.
+
+### 7. Resiliência a fabricantes
+
+- Zero dependência em intents específicas. O "Abrir configurações" abre o que conseguir (details → fallback location settings → fallback toast com instrução textual).
+- Se após N tentativas a permissão real continuar negada, o app **simplesmente opera em manual** — sem loop de erro, sem bloqueio.
+- Telemetria registra `manufacturer`, `androidVersion`, `permissionPath` para análise futura.
 
 ---
 
-## O que NÃO vou fazer sem confirmação
+## Arquivos
 
-- **Capacitor / app nativo real**: se você quer background GPS real em iOS, precisa ser app nativo. Posso configurar Capacitor numa fase 5, mas exige você exportar pro GitHub e rodar Xcode/Android Studio localmente. Me avisa se quer.
-- **Reescrever UI do `ShiftMode`**: mantenho a UI atual, só adiciono os elementos novos (dialog, banner, mapa opcional).
-- **Mexer em features não-relacionadas** (histórico, settings, legal, etc.) — ficam intactas.
+**Novos**
+- `src/lib/permissionDiagnostic.ts`
+- `src/components/PermissionOnboarding.tsx`
+- `src/components/OperationalStatusBadge.tsx`
+
+**Editados**
+- `android/.../VisionarioPermissionsPlugin.java` (battery + provider checks)
+- `src/components/ShiftMode.tsx` (consome diagnostic + badge + modo manual)
+- `src/hooks/useShiftTracker.ts` (suporta modo manual)
+- `src/components/Dashboard.tsx` (badge no topo)
+- `src/pages/Index.tsx` (gate de onboarding)
+- `src/components/SettingsView.tsx` (toggle "forçar manual" + reabrir onboarding)
+- `src/lib/bgPermission.ts` (wrapper sobre diagnostic)
+
+**Removidos da árvore (mantidos como deprecated 1 versão)**
+- `GpsConsentDialog.tsx`, `BackgroundLocationConsentDialog.tsx`
 
 ---
 
-## Pergunta antes de começar
+## Critérios de aceite
 
-Quer que eu execute **as 4 fases em sequência num único passo**, ou prefere que eu pare depois da Fase 1+2 (estabilidade GPS e persistência) pra você testar antes de eu seguir pra PWA e mapa?
+1. Usuário novo passa por onboarding antes do 1º turno.
+2. Cada passo só avança quando o status nativo confirma — não pelo clique.
+3. Negar background não bloqueia uso: cai em manual com badge 🟡.
+4. Voltar de Settings com permissão concedida → badge muda para 🟢 sem refresh.
+5. Nenhum fluxo crítico depende de intent específica de fabricante.
+6. `useShiftTracker` não inicia GPS em modo manual (zero drenagem de bateria).
+7. Persistência de turnos/corridas/km idêntica nos dois modos.
+
+---
+
+## Fora de escopo
+
+- Capacitor background-geolocation plugin (foreground service real). Fica anotado para fase 2 — a arquitetura proposta já está pronta para receber.
+- iOS native: o serviço já suporta, mas validação visual é só Android nesta entrega.
