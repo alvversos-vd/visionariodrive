@@ -760,7 +760,6 @@ export default function ShiftMode({ onChange }: Props) {
   // === HERO NORMAL ===
   return (
     <>
-      <OperationalStatusBadge />
       <div className={`relative rounded-2xl p-5 border-2 space-y-4 overflow-hidden ${pausado ? 'border-accent/40 bg-accent/5' : lucroOk ? 'border-profit/40 bg-profit/5' : 'border-loss/50 bg-loss/5'} shadow-premium`}>
         <div className={`absolute inset-x-0 top-0 h-1 ${pausado ? 'bg-accent' : lucroOk ? 'bg-profit-gradient' : 'bg-loss-gradient'}`} />
 
