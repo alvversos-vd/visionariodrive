@@ -132,6 +132,16 @@ public class VisionarioPermissionsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void requestForegroundLocationPermission(PluginCall call) {
+        if (hasAndroidPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                || hasAndroidPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            call.resolve(buildStatus());
+            return;
+        }
+        requestPermissionForAlias("foregroundLocation", call, "foregroundLocationPermissionCallback");
+    }
+
+    @PluginMethod
     public void requestBackgroundLocationPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || hasAndroidPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
             call.resolve(buildStatus());
@@ -151,6 +161,11 @@ public class VisionarioPermissionsPlugin extends Plugin {
 
     @PermissionCallback
     private void backgroundLocationPermissionCallback(PluginCall call) {
+        call.resolve(buildStatus());
+    }
+
+    @PermissionCallback
+    private void foregroundLocationPermissionCallback(PluginCall call) {
         call.resolve(buildStatus());
     }
 
