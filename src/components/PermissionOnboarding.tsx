@@ -85,17 +85,19 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const handleLocation = async () => {
     setBusy(true);
     try {
-      if (typeof window !== 'undefined') {
-        const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-        if (cap?.isNativePlatform?.()) {
-          const { Geolocation } = await import('@capacitor/geolocation');
-          await Geolocation.requestPermissions().catch(() => {});
-        } else if (navigator.geolocation) {
-          await new Promise<void>(resolve => navigator.geolocation.getCurrentPosition(() => resolve(), () => resolve(), { timeout: 10000 }));
+      // Fonte da verdade: o próprio plugin nativo (callback pós-diálogo do Android)
+      // ou Capacitor Geolocation em iOS/web. Não confiar só no clique do usuário.
+      const after = await requestForegroundLocationPermissionIfPossible();
+      let next = await refresh();
+      // Rede de segurança: alguns aparelhos demoram a propagar checkSelfPermission
+      // logo após o diálogo. Faz um polling curto antes de desistir.
+      if (!next.locationGranted && after.foregroundLocationGranted) {
+        for (let i = 0; i < 5 && !next.locationGranted; i++) {
+          await new Promise(r => setTimeout(r, 250));
+          next = await refresh();
         }
       }
-      const next = await refresh();
-      if (next.locationGranted) {
+      if (next.locationGranted || after.foregroundLocationGranted) {
         toast.success('Localização autorizada');
         goNext();
       } else {
