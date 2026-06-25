@@ -18,6 +18,7 @@ import {
   type PermissionDiagnostic,
 } from '@/lib/permissionDiagnostic';
 import {
+  requestForegroundLocationPermissionIfPossible,
   requestBackgroundLocationPermissionIfPossible,
   requestNotificationPermissionIfNeeded,
   openAppLocationSettings,
