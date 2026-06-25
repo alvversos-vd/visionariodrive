@@ -24,7 +24,11 @@ import com.getcapacitor.annotation.PermissionCallback;
         name = "VisionarioPermissions",
         permissions = {
                 @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications"),
-                @Permission(strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, alias = "backgroundLocation")
+                @Permission(strings = { Manifest.permission.ACCESS_BACKGROUND_LOCATION }, alias = "backgroundLocation"),
+                @Permission(strings = {
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }, alias = "foregroundLocation")
         }
 )
 public class VisionarioPermissionsPlugin extends Plugin {
