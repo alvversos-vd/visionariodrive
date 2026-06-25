@@ -25,6 +25,7 @@ export interface BackgroundPermissionStatus {
 type VisionarioPermissionsPlugin = {
   checkStatus: () => Promise<Partial<BackgroundPermissionStatus>>;
   requestNotificationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
+  requestForegroundLocationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
   requestBackgroundLocationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
   openLocationPermissionSettings: () => Promise<{ opened?: boolean; destination?: string }>;
   openNotificationSettings: () => Promise<{ opened?: boolean; destination?: string }>;
@@ -133,6 +134,30 @@ export async function requestNotificationPermissionIfNeeded(): Promise<Backgroun
   } catch {
     return getBackgroundPermissionStatus();
   }
+}
+
+export async function requestForegroundLocationPermissionIfPossible(): Promise<BackgroundPermissionStatus> {
+  const before = await getBackgroundPermissionStatus();
+  if (before.foregroundLocationGranted) return before;
+  // Caminho nativo (Android): callback resolve só após o diálogo do sistema fechar
+  // e o estado de checkSelfPermission já estar propagado — fonte da verdade.
+  if (before.native && before.platform === 'android') {
+    const p = await plugin();
+    if (p?.requestForegroundLocationPermission) {
+      try {
+        const native = await p.requestForegroundLocationPermission();
+        return { ...before, ...native, native: true, platform: 'android' };
+      } catch {
+        return getBackgroundPermissionStatus();
+      }
+    }
+  }
+  // Fallback: Capacitor Geolocation (iOS / web / plugin nativo indisponível)
+  try {
+    const { Geolocation } = await import('@capacitor/geolocation');
+    await Geolocation.requestPermissions({ permissions: ['location'] });
+  } catch { /* noop */ }
+  return getBackgroundPermissionStatus();
 }
 
 export async function requestBackgroundLocationPermissionIfPossible(): Promise<BackgroundPermissionStatus> {
