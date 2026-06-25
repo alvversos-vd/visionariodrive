@@ -25,6 +25,7 @@ export interface BackgroundPermissionStatus {
 type VisionarioPermissionsPlugin = {
   checkStatus: () => Promise<Partial<BackgroundPermissionStatus>>;
   requestNotificationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
+  requestForegroundLocationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
   requestBackgroundLocationPermission: () => Promise<Partial<BackgroundPermissionStatus>>;
   openLocationPermissionSettings: () => Promise<{ opened?: boolean; destination?: string }>;
   openNotificationSettings: () => Promise<{ opened?: boolean; destination?: string }>;
