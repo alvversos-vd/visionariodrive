@@ -58,8 +58,10 @@ export default function Index() {
   ];
 
   const tabClass = (active: boolean) =>
-    `relative flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 text-[10px] font-display font-semibold transition-colors rounded-md min-w-0 flex-1 ${
-      active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+    `relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-[10px] font-display font-semibold tracking-wide transition-all duration-150 rounded-md min-w-0 flex-1 press ${
+      active
+        ? 'bg-gradient-brand text-primary-foreground shadow-glow-sm'
+        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
     }`;
 
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
@@ -100,34 +102,39 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="bg-hero border-b border-border/60 px-4 pt-6 pb-4 shadow-premium">
+      <header className="bg-hero border-b border-border/60 px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
         <div className="container max-w-lg mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-xl font-bold text-foreground tracking-tight">Visionario Drive</h1>
-            <p className="text-[11px] text-muted-foreground">Lucro real • Decisão rápida • Controle</p>
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-xl bg-gradient-brand shadow-glow-sm flex items-center justify-center">
+              <span className="font-display font-bold text-primary-foreground text-lg leading-none">V</span>
+            </div>
+            <div>
+              <h1 className="font-display text-[17px] font-bold text-foreground tracking-tight leading-none">Visionario Drive</h1>
+              <p className="text-[10px] text-muted-foreground tracking-wide mt-1">Lucro real · Decisão rápida · Controle</p>
+            </div>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-1.5 items-center">
             <InstallAppButton />
             <button
               onClick={() => setTab('profile')}
-              className={`p-2 rounded-xl transition-colors ${tab === 'profile' ? 'bg-primary text-primary-foreground' : 'bg-secondary/70 text-foreground hover:bg-secondary'}`}
+              className={`p-2 rounded-xl transition-colors press ${tab === 'profile' ? 'bg-gradient-brand text-primary-foreground shadow-glow-sm' : 'bg-secondary/70 text-foreground/80 hover:bg-secondary hover:text-foreground'}`}
               aria-label="Perfil"
             >
-              <User size={20} />
+              <User size={18} />
             </button>
             <button
               onClick={() => setTab('settings')}
-              className={`p-2 rounded-xl transition-colors ${tab === 'settings' ? 'bg-primary text-primary-foreground' : 'bg-secondary/70 text-foreground hover:bg-secondary'}`}
+              className={`p-2 rounded-xl transition-colors press ${tab === 'settings' ? 'bg-gradient-brand text-primary-foreground shadow-glow-sm' : 'bg-secondary/70 text-foreground/80 hover:bg-secondary hover:text-foreground'}`}
               aria-label="Configurações"
             >
-              <SettingsIcon size={20} />
+              <SettingsIcon size={18} />
             </button>
           </div>
         </div>
       </header>
 
       <main className="container max-w-lg mx-auto px-4 mt-4 space-y-4">
-        <nav className="flex bg-secondary rounded-lg p-1 gap-1">
+        <nav className="flex bg-card/60 border border-border/60 rounded-xl p-1 gap-0.5">
           {tabs.map(t => (
             <button
               key={t.key}
