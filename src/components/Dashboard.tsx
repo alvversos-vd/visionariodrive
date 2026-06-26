@@ -533,27 +533,30 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
       {/* Performance highlights */}
       {entries.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-            <Flame size={16} className="mx-auto text-accent mb-0.5" />
-            <p className="text-[10px] text-muted-foreground">Sequência</p>
-            <p className="font-display font-bold text-foreground">{stats.streak}d</p>
-          </div>
-          <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-            <Trophy size={16} className="mx-auto text-accent mb-0.5" />
-            <p className="text-[10px] text-muted-foreground">Recorde</p>
-            <p className="font-display font-bold text-profit text-sm">{fmt(stats.recordProfit)}</p>
-          </div>
-          <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-            {stats.weekChangePct !== null && stats.weekChangePct < 0 ? (
-              <TrendingDown size={16} className="mx-auto text-loss mb-0.5" />
-            ) : (
-              <TrendingUp size={16} className="mx-auto text-profit mb-0.5" />
-            )}
-            <p className="text-[10px] text-muted-foreground">Semana</p>
-            <p className={`font-display font-bold text-sm ${stats.weekProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {fmt(stats.weekProfit)}
-            </p>
+        <div className="space-y-2 pt-2">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Desempenho</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
+              <Flame size={16} className="mx-auto text-warning mb-1" />
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Sequência</p>
+              <p className="font-mono-num font-semibold text-foreground mt-0.5">{stats.streak}<span className="text-xs text-muted-foreground ml-0.5">d</span></p>
+            </div>
+            <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
+              <Trophy size={16} className="mx-auto text-warning mb-1" />
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Recorde</p>
+              <p className="font-mono-num font-semibold text-primary text-sm mt-0.5">{fmt(stats.recordProfit)}</p>
+            </div>
+            <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
+              {stats.weekChangePct !== null && stats.weekChangePct < 0 ? (
+                <TrendingDown size={16} className="mx-auto text-loss mb-1" />
+              ) : (
+                <TrendingUp size={16} className="mx-auto text-primary mb-1" />
+              )}
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Semana</p>
+              <p className={`font-mono-num font-semibold text-sm mt-0.5 ${stats.weekProfit >= 0 ? 'text-primary' : 'text-loss'}`}>
+                {fmt(stats.weekProfit)}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -561,7 +564,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* PRO teasers — sempre visíveis (sem irritar) */}
       {!isPro && (
         <div className="space-y-2 pt-2">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground px-1">Funções PRO</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Funções PRO</p>
           <div className="grid grid-cols-3 gap-2">
             {[
               { icon: BarChart3, label: 'Relatórios' },
@@ -571,11 +574,11 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               <button
                 key={t.label}
                 onClick={onGoToUpgrade}
-                className="bg-card rounded-lg p-2.5 border text-center relative hover:border-primary/50 transition-colors"
+                className="bg-card rounded-xl p-3 border border-border/70 text-center relative hover:border-primary/50 transition-colors press"
               >
-                <t.icon size={14} className="mx-auto text-primary mb-1" />
+                <t.icon size={16} className="mx-auto text-primary mb-1.5" />
                 <p className="text-[10px] font-display font-semibold text-foreground">{t.label}</p>
-                <Lock size={9} className="absolute top-1 right-1 text-muted-foreground" />
+                <Lock size={9} className="absolute top-1.5 right-1.5 text-muted-foreground/70" />
               </button>
             ))}
           </div>
@@ -586,14 +589,17 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {!isPro && shouldShowUpgradePrompt() && (
         <button
           onClick={onGoToUpgrade}
-          className="w-full rounded-xl p-4 bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/30 text-left flex items-center gap-3 hover:from-primary/15 transition-colors"
+          className="w-full rounded-xl p-4 bg-card border border-primary/30 text-left flex items-center gap-3 hover:border-primary/50 transition-colors press relative overflow-hidden"
         >
-          <Sparkles className="text-primary shrink-0" size={20} />
-          <div className="flex-1 min-w-0">
-            <p className="font-display font-bold text-sm text-foreground">Pronto para lucrar de verdade?</p>
-            <p className="text-xs text-muted-foreground">Veja exatamente onde está perdendo dinheiro.</p>
+          <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-[0.12] bg-primary pointer-events-none" />
+          <div className="relative h-10 w-10 rounded-xl bg-gradient-brand shadow-glow-sm flex items-center justify-center shrink-0">
+            <Sparkles className="text-primary-foreground" size={18} />
           </div>
-          <ArrowRight size={16} className="text-primary shrink-0" />
+          <div className="relative flex-1 min-w-0">
+            <p className="font-display font-semibold text-sm text-foreground">Pronto para lucrar de verdade?</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Veja exatamente onde está perdendo dinheiro.</p>
+          </div>
+          <ArrowRight size={16} className="relative text-primary shrink-0" />
         </button>
       )}
         </>
