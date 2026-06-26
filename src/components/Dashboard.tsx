@@ -301,22 +301,23 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* ALERTA ÚNICO da tela */}
       {topAlert && (
         <div
-          className={`rounded-xl p-3 border flex items-center gap-3 animate-fade-in-up ${
+          className={`rounded-xl p-3 pl-3.5 border flex items-center gap-3 animate-fade-in-up relative overflow-hidden ${
             topAlert.tone === 'loss'
-              ? 'border-loss/50 bg-loss/10'
+              ? 'border-loss/40 bg-loss/[0.08]'
               : topAlert.tone === 'warn'
-              ? 'border-accent/50 bg-accent/10'
-              : 'border-primary/30 bg-primary/5'
+              ? 'border-warning/40 bg-warning/[0.08]'
+              : 'border-primary/30 bg-primary/[0.06]'
           }`}
         >
+          <span className={`absolute inset-y-0 left-0 w-[2px] ${topAlert.tone === 'loss' ? 'bg-loss' : topAlert.tone === 'warn' ? 'bg-warning' : 'bg-primary'}`} />
           {topAlert.tone === 'loss' || topAlert.tone === 'warn' ? (
-            <AlertTriangle size={16} className={topAlert.tone === 'loss' ? 'text-loss shrink-0' : 'text-accent shrink-0'} />
+            <AlertTriangle size={16} className={topAlert.tone === 'loss' ? 'text-loss shrink-0' : 'text-warning shrink-0'} />
           ) : (
             <Target size={16} className="text-primary shrink-0" />
           )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-display font-semibold text-foreground leading-snug">{topAlert.title}</p>
-            {topAlert.hint && <p className="text-[11px] text-muted-foreground leading-snug">{topAlert.hint}</p>}
+            {topAlert.hint && <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{topAlert.hint}</p>}
           </div>
         </div>
       )}
