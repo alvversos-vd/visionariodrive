@@ -285,11 +285,12 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       <ShiftMode />
 
       {focus ? (
-        <div className="space-y-3">
-          <div className="rounded-2xl p-5 bg-card border border-primary/30 shadow-glow text-center">
-            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5"><Compass size={12}/> Mínimo ideal por km</p>
-            <p className="text-4xl font-display font-bold text-primary mt-1 number-tabular">{fmt(minIdealKm)}</p>
-            <p className="text-xs text-muted-foreground mt-2">Aceite corridas acima de {fmt(minIdealKm)}/km</p>
+        <div className="space-y-3 animate-fade-in-up">
+          <div className="relative rounded-2xl p-6 bg-card border border-primary/30 shadow-glow-sm text-center overflow-hidden">
+            <div className="absolute -top-20 -left-20 w-48 h-48 rounded-full blur-3xl opacity-[0.12] bg-primary pointer-events-none" />
+            <p className="relative text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold inline-flex items-center justify-center gap-1.5"><Compass size={12} className="text-primary"/> Mínimo ideal por km</p>
+            <p className="relative text-[44px] font-mono-num font-semibold text-primary mt-2 leading-none">{fmt(minIdealKm)}</p>
+            <p className="relative text-[11px] text-muted-foreground mt-3">Aceite corridas acima de <span className="text-foreground font-mono-num">{fmt(minIdealKm)}</span>/km</p>
           </div>
           <p className="text-center text-sm text-muted-foreground italic">
             Foco hoje, {displayName}. Decisões melhores, mais lucro.
@@ -300,7 +301,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* ALERTA ÚNICO da tela */}
       {topAlert && (
         <div
-          className={`rounded-xl p-3 border flex items-center gap-3 ${
+          className={`rounded-xl p-3 border flex items-center gap-3 animate-fade-in-up ${
             topAlert.tone === 'loss'
               ? 'border-loss/50 bg-loss/10'
               : topAlert.tone === 'warn'
