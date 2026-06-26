@@ -171,16 +171,19 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
   return (
     <div className="space-y-4 animate-slide-up">
-      {/* HEADER humano */}
+      {/* HEADER — saudação humana, sem ruído */}
       <div className="px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">👋 {saudacaoHora}, <span className="text-foreground font-display font-semibold">{displayName}</span></p>
-          <p className="text-[13px] text-muted-foreground/90 mt-0.5 leading-snug">{heroSubtext}</p>
+          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{saudacaoHora}</p>
+          <p className="text-base font-display font-semibold text-foreground mt-0.5 leading-tight truncate">{displayName}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">{heroSubtext}</p>
         </div>
         <button
           onClick={toggleFocus}
-          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-display font-semibold border transition-colors ${
-            focus ? 'bg-primary text-primary-foreground border-primary' : 'bg-secondary/60 text-muted-foreground border-border hover:text-foreground'
+          className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-display font-semibold border transition-all press ${
+            focus
+              ? 'bg-gradient-brand text-primary-foreground border-transparent shadow-glow-sm'
+              : 'bg-card/60 text-muted-foreground border-border hover:text-foreground hover:border-border'
           }`}
           aria-pressed={focus}
           aria-label="Modo foco"
