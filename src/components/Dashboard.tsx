@@ -497,10 +497,13 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           <button
             key="metrics-empty"
             onClick={onGoToInput}
-            className="w-full bg-card rounded-lg p-6 border-2 border-dashed border-border text-center hover:border-primary transition-colors"
+            className="group w-full bg-card/40 rounded-xl p-6 border border-dashed border-border hover:border-primary/60 hover:bg-card transition-all text-center press"
           >
-            <p className="text-sm text-muted-foreground mb-1">Nenhum cálculo registrado hoje</p>
-            <p className="font-display font-bold text-primary">+ Fazer cálculo do dia</p>
+            <div className="mx-auto h-10 w-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+              <ArrowRight size={16} className="text-primary" />
+            </div>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold mt-3">Sem cálculo hoje</p>
+            <p className="text-sm font-display font-semibold text-foreground mt-1">Registrar dia de trabalho</p>
           </button>
         );
 
