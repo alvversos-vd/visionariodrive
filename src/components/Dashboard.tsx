@@ -345,9 +345,16 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         ) : null;
 
         const sectionMinKm = (
-          <div key="minkm" className="rounded-lg p-3 bg-primary/10 border border-primary/30 text-sm font-medium text-foreground flex items-center gap-2">
-            <Compass size={16} className="text-primary shrink-0" />
-            <span>Aceite corridas acima de <span className="font-display font-bold text-primary">{fmt(minIdealKm)}/km</span></span>
+          <div key="minkm" className="rounded-xl p-3.5 bg-primary/[0.06] border border-primary/30 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+              <Compass size={16} className="text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">Mínimo ideal por km</p>
+              <p className="text-sm text-foreground leading-snug mt-0.5">
+                Aceite acima de <span className="font-mono-num font-semibold text-primary">{fmt(minIdealKm)}</span>/km
+              </p>
+            </div>
           </div>
         );
 
@@ -355,91 +362,115 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           <button
             key="meta"
             onClick={onGoToGoals}
-            className={`w-full rounded-lg p-4 border shadow-sm text-left transition-colors ${
+            className={`w-full rounded-xl p-4 border text-left transition-all press shadow-elevated ${
               objective === 'bater_metas'
-                ? 'bg-primary/5 border-primary/40 hover:bg-primary/10'
-                : 'bg-card hover:bg-secondary/40'
+                ? 'bg-primary/[0.05] border-primary/40 hover:border-primary/60'
+                : 'bg-card border-border/70 hover:border-border'
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-display font-semibold text-foreground flex items-center gap-1.5">
-                <Target size={14} /> Meta diária: {fmt(goals.daily)}
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+                <Target size={11} className="text-primary" /> Meta diária
               </p>
-              <p className="text-xs text-muted-foreground">{goalProgress.toFixed(0)}%</p>
+              <p className="text-[11px] text-muted-foreground font-mono-num">{goalProgress.toFixed(0)}%</p>
             </div>
-            <div className={`w-full bg-secondary rounded-full overflow-hidden ${objective === 'bater_metas' ? 'h-3' : 'h-2.5'}`}>
-              <div
-                className={`h-full rounded-full transition-all ${
-                  today && today.profit >= goals.daily ? 'bg-profit' : 'bg-primary'
-                }`}
-                style={{ width: `${goalProgress}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between mt-2 text-xs">
-              <span className="text-muted-foreground">
-                Lucro hoje: <span className="font-semibold text-foreground">{fmt(Math.max(0, today?.profit ?? 0))}</span>
-              </span>
+            <div className="flex items-baseline justify-between gap-3 mb-3">
+              <p className="font-mono-num font-semibold text-2xl text-foreground">{fmt(goals.daily)}</p>
               {today && today.profit >= goals.daily ? (
-                <span className="font-display font-bold text-profit">✓ Meta batida! +{fmt(today.profit - goals.daily)}</span>
+                <span className="text-xs font-display font-semibold text-primary">✓ +{fmt(today.profit - goals.daily)}</span>
               ) : (
-                <span className="font-display font-bold text-primary">
-                  Faltam {fmt(goals.daily - Math.max(0, today?.profit ?? 0))}
+                <span className="text-xs font-display font-semibold text-foreground">
+                  Faltam <span className="font-mono-num">{fmt(goals.daily - Math.max(0, today?.profit ?? 0))}</span>
                 </span>
               )}
+            </div>
+            <div className="w-full bg-secondary/70 rounded-full overflow-hidden h-1.5">
+              <div
+                className="h-full rounded-full transition-[width] duration-700 ease-out bg-gradient-brand"
+                style={{ width: `${goalProgress}%` }}
+              />
             </div>
           </button>
         ) : null;
 
+        const KpiTile = ({
+          label,
+          value,
+          icon: Icon,
+          tone = 'default',
+          unit,
+        }: {
+          label: string;
+          value: string;
+          icon: typeof Banknote;
+          tone?: 'default' | 'loss' | 'primary';
+          unit?: string;
+        }) => (
+          <div className={`relative rounded-xl p-4 bg-card border shadow-elevated overflow-hidden ${
+            tone === 'loss' ? 'border-loss/30' : tone === 'primary' ? 'border-primary/30' : 'border-border/70'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">{label}</p>
+              <Icon size={14} className={tone === 'loss' ? 'text-loss/80' : tone === 'primary' ? 'text-primary' : 'text-muted-foreground'} />
+            </div>
+            <p className={`font-mono-num font-semibold text-xl leading-none tracking-tight ${
+              tone === 'loss' ? 'text-loss' : tone === 'primary' ? 'text-primary' : 'text-foreground'
+            }`}>
+              {value}{unit && <span className="text-muted-foreground text-sm font-medium ml-1">{unit}</span>}
+            </p>
+          </div>
+        );
+
         const sectionMetrics = today ? (
           <div key="metrics" className="space-y-3">
+            <div className="px-1 flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Cockpit · Hoje</p>
+              {today.hoursWorked > 0 && (
+                <p className="text-[10px] text-muted-foreground font-mono-num">{today.hoursWorked.toFixed(1)}h trabalhadas</p>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-card rounded-lg p-4 border shadow-sm">
-                <p className="text-xs text-muted-foreground">💰 Ganhos</p>
-                <p className="text-lg font-display font-bold text-foreground">{fmt(today.totalEarnings)}</p>
-              </div>
-              <div className={`rounded-lg p-4 border shadow-sm ${objective === 'controlar_gastos' ? 'bg-loss/5 border-loss/30' : 'bg-card'}`}>
-                <p className="text-xs text-muted-foreground">💸 Custo total</p>
-                <p className={`text-lg font-display font-bold ${objective === 'controlar_gastos' ? 'text-loss' : 'text-foreground'}`}>{fmt(today.totalCost)}</p>
-              </div>
-              <div className="bg-card rounded-lg p-4 border shadow-sm">
-                <p className="text-xs text-muted-foreground">🚗 Km rodados</p>
-                <p className="text-lg font-display font-bold text-foreground">{today.kmDriven.toFixed(0)} km</p>
-              </div>
-              <div className={`rounded-lg p-4 border shadow-sm ${objective === 'controlar_gastos' ? 'bg-loss/5 border-loss/30' : 'bg-card'}`}>
-                <p className="text-xs text-muted-foreground">⚙️ Custo por km</p>
-                <p className={`text-lg font-display font-bold ${objective === 'controlar_gastos' ? 'text-loss' : 'text-foreground'}`}>{fmt(costPerKm)}</p>
-              </div>
+              <KpiTile label="Ganhos" value={fmt(today.totalEarnings)} icon={Banknote} />
+              <KpiTile label="Custo total" value={fmt(today.totalCost)} icon={Receipt} tone={objective === 'controlar_gastos' ? 'loss' : 'default'} />
+              <KpiTile label="Km rodados" value={today.kmDriven.toFixed(0)} unit="km" icon={Route} />
+              <KpiTile label="Custo / km" value={fmt(costPerKm)} icon={Gauge} tone={objective === 'controlar_gastos' ? 'loss' : 'default'} />
             </div>
 
-            <div className={`rounded-lg p-4 border shadow-sm ${objective === 'evitar_prejuizo' ? 'bg-primary/5 border-primary/40' : 'bg-card'}`}>
-              <p className="text-xs text-muted-foreground">🎯 Mínimo ideal por km</p>
-              <p className="text-2xl font-display font-bold text-primary">{fmt(minIdealKm)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Margem: {((settings.profitMargin - 1) * 100).toFixed(0)}%
+            <div className={`rounded-xl p-4 border shadow-elevated relative overflow-hidden ${objective === 'evitar_prejuizo' ? 'bg-primary/[0.05] border-primary/40' : 'bg-card border-border/70'}`}>
+              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-[0.10] bg-primary pointer-events-none" />
+              <p className="relative text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+                <Target size={11} className="text-primary" /> Mínimo ideal por km
+              </p>
+              <p className="relative font-mono-num font-semibold text-3xl text-primary mt-2 leading-none">{fmt(minIdealKm)}</p>
+              <p className="relative text-[11px] text-muted-foreground mt-2">
+                Margem aplicada · <span className="font-mono-num">{((settings.profitMargin - 1) * 100).toFixed(0)}%</span>
               </p>
             </div>
 
             {expensesToday > 0 && (
-              <div className="bg-loss/10 border border-loss/30 rounded-lg p-4 space-y-2">
+              <div className="rounded-xl p-4 border border-loss/30 bg-loss/[0.06] space-y-3 relative overflow-hidden">
+                <span className="absolute inset-y-0 left-0 w-[2px] bg-loss" />
                 <div>
-                  <p className="text-xs text-loss/90 flex items-center gap-1.5"><Wallet size={12} /> Gastos extras de hoje</p>
-                  <p className="text-2xl font-display font-bold text-loss">{fmt(expensesToday)}</p>
-                  <p className="text-xs text-muted-foreground">Já incluídos no custo total e no lucro do dia</p>
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-loss/90 font-display font-semibold inline-flex items-center gap-1.5">
+                    <Wallet size={11} /> Gastos extras de hoje
+                  </p>
+                  <p className="font-mono-num font-semibold text-2xl text-loss mt-1 leading-none">{fmt(expensesToday)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">Já incluídos no custo total e no lucro do dia</p>
                 </div>
-                <div className="space-y-1 pt-1">
+                <div className="space-y-1.5 pt-1">
                   {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
                     const pct = (expensesByCat[c].total / expensesToday) * 100;
                     return (
                       <div key={c}>
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-foreground">{c}</span>
-                          <span className="font-semibold text-foreground">
-                            {fmt(expensesByCat[c].total)}
-                            <span className="text-muted-foreground ml-1">({pct.toFixed(0)}%)</span>
+                          <span className="font-display font-semibold text-foreground">
+                            <span className="font-mono-num">{fmt(expensesByCat[c].total)}</span>
+                            <span className="text-muted-foreground ml-1.5 font-mono-num">{pct.toFixed(0)}%</span>
                           </span>
                         </div>
-                        <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden">
-                          <div className="h-full bg-loss rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden mt-1">
+                          <div className="h-full bg-loss rounded-full transition-[width] duration-500" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     );
@@ -449,13 +480,15 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             )}
 
             {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
-              <div className="bg-card rounded-lg p-4 border shadow-sm">
-                <p className="text-xs text-muted-foreground">🔮 Previsão para {settings.estimatedHours}h</p>
-                <p className="text-2xl font-display font-bold text-accent">
+              <div className="rounded-xl p-4 border border-border/70 bg-card shadow-elevated">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+                  <TrendingUp size={11} className="text-info" /> Previsão para {settings.estimatedHours}h
+                </p>
+                <p className="font-mono-num font-semibold text-2xl text-info mt-2 leading-none">
                   {fmt((today.totalEarnings / today.hoursWorked) * settings.estimatedHours)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Baseado no ritmo atual ({fmt(today.totalEarnings / today.hoursWorked)}/h)
+                <p className="text-[11px] text-muted-foreground mt-1.5">
+                  Ritmo atual · <span className="font-mono-num text-foreground">{fmt(today.totalEarnings / today.hoursWorked)}</span>/h
                 </p>
               </div>
             )}
