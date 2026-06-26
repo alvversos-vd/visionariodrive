@@ -1,140 +1,135 @@
+# Sprint Visual — Visionário Drive Premium
 
-# Arquitetura definitiva: Permissões GPS resilientes a fabricantes Android
+Sprint **100% visual**. Sem mexer em regras de negócio, GPS, tracking, auth, banco ou arquitetura. Apenas tokens, componentes e refino de telas existentes.
 
-## Diagnóstico da causa raiz
+## 1. Leitura da marca (logo)
 
-Hoje o app depende de:
-1. Intents específicas do Android (`ACTION_APPLICATION_DETAILS_SETTINGS`, `ACTION_LOCATION_SOURCE_SETTINGS`) que Samsung/Xiaomi/Realme/Motorola implementam de forma inconsistente.
-2. Consentimento UI (clique em "Aceitar") como proxy de permissão real — não reflete o estado nativo.
-3. Banner reativo após o turno iniciar — usuário descobre o problema tarde demais.
+A logo entrega 4 sinais que viram a base do sistema:
 
-**Causa raiz:** o app trata permissão como evento UI, não como **estado do dispositivo lido em tempo real**. A correção definitiva é inverter: a fonte da verdade é sempre `VisionarioPermissionsPlugin.getStatus()`, e o produto opera em dois modos baseados nesse status — nunca bloqueia o usuário.
+- **Verde neon (mint glow)** sobre **preto carbono** — tecnologia + precisão
+- **Anel orbital** ao redor do "V" — movimento, GPS, rastreamento
+- **Pin de localização** integrado — operação real do motorista
+- **Acabamento metálico do aro** — sofisticação, "instrumento profissional"
 
----
+Tradução em design: dark mode nativo, grafite em camadas, verde usado com parcimônia como "sinal vivo" (turno ativo, GPS, ação primária), tipografia técnica, geometria limpa.
 
-## O que será construído
+## 2. Design Tokens (index.css + tailwind.config.ts)
 
-### 1. `PermissionDiagnosticService` (src/lib/permissionDiagnostic.ts)
+### Paleta (HSL, dark-first)
 
-Serviço único, desacoplado, fonte da verdade para permissões:
+```text
+Brand
+  --brand-primary       142 72% 58%   (verde Visionário, derivado da logo)
+  --brand-primary-glow  142 90% 68%
+  --brand-primary-deep  148 55% 32%
 
-```ts
-type PermissionDiagnostic = {
-  locationGranted: boolean;
-  backgroundLocationGranted: boolean;
-  notificationsGranted: boolean;
-  batteryOptimizationDisabled: boolean;
-  gpsReady: boolean;
-  trackingMode: "automatic" | "manual";
-  platform: "android" | "ios" | "web";
-  androidVersion: number | null;
-  reasons: string[]; // por que está em manual
-};
+Surfaces (grafite em camadas — NUNCA #000 absoluto)
+  --bg-base       222 18% 6%      fundo app
+  --bg-elevated   222 16% 9%      cards
+  --bg-overlay    222 14% 12%     bottom sheets / modais
+  --bg-inset      222 20% 4%      inputs / wells
+
+Linhas / divisores
+  --border-subtle 222 12% 16%
+  --border-strong 222 14% 22%
+  --ring          142 72% 58%
+
+Texto
+  --fg-primary    210 20% 96%
+  --fg-secondary  215 14% 70%
+  --fg-muted      218 10% 50%
+  --fg-onBrand    222 30% 6%
+
+Status (alinhados ao tom da marca, sem cores genéricas)
+  --success 142 72% 58%   (mesma família da brand)
+  --warning  38 92% 60%
+  --danger    0 78% 62%
+  --info    198 85% 60%
 ```
 
-- Lê via `VisionarioPermissionsPlugin` no Android nativo.
-- Fallback via `navigator.permissions` + `Notification.permission` em PWA/web.
-- `trackingMode = "automatic"` apenas quando `locationGranted && backgroundLocationGranted && notificationsGranted && gpsReady`.
-- Cacheia última leitura + emite eventos (`onChange`) quando muda — consumido por dashboard, ShiftMode e onboarding.
-- Re-valida em: app resume, foco da janela, retorno de Settings, início de turno.
+### Gradientes & efeitos
+```text
+--gradient-brand      linear 135deg, primary → primary-glow
+--gradient-surface    linear 180deg, bg-elevated → bg-base
+--glow-brand-sm       0 0 16px hsl(brand / .35)
+--glow-brand-md       0 0 28px hsl(brand / .45)
+--shadow-elevated     0 1px 0 hsl(border-subtle), 0 8px 24px hsl(0 0% 0% / .4)
+```
+Profundidade vem de contraste de superfície + 1px hairline, **não** de sombras flutuantes.
 
-### 2. Plugin nativo — extensões
+### Tipografia
+- Display/KPIs: **Space Grotesk** (técnica, geométrica)
+- Texto: **Inter** (mantém leitura, já no projeto)
+- Mono (números financeiros tabulares): **JetBrains Mono** com `font-variant-numeric: tabular-nums`
 
-Adicionar em `VisionarioPermissionsPlugin.java`:
-- `isBatteryOptimizationDisabled()` via `PowerManager.isIgnoringBatteryOptimizations`.
-- `requestIgnoreBatteryOptimization()` via `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
-- `isLocationProviderEnabled()` via `LocationManager.isProviderEnabled(GPS_PROVIDER)`.
-- Manter o `requestBackgroundLocationPermission` atual; **não depender de intent específica de fabricante**.
+Escala: `display 32 / h1 24 / h2 20 / h3 17 / body 15 / label 13 / caption 11`. Pesos: 600 para títulos/KPIs, 500 para labels, 400 para corpo.
 
-### 3. Onboarding guiado obrigatório (src/components/PermissionOnboarding.tsx)
+### Espaçamento & raio
+- Spacing scale única: 4 · 8 · 12 · 16 · 20 · 24 · 32 · 48
+- Raio único: `--radius: 14px` (cards/sheets), `10px` (inputs/buttons), `999px` (pills)
+- Safe-area iOS respeitada em todos containers full-bleed
 
-Fluxo bloqueante após cadastro / antes do primeiro turno, com 5 passos sequenciais. Cada passo:
-- Texto curto explicando o porquê.
-- Botão "Permitir" → dispara request nativo.
-- Após cada request: `PermissionDiagnosticService.refresh()` valida o estado **real**.
-- Só avança quando o status nativo confirma — não pelo clique.
-- Botão secundário "Pular e usar Modo Manual" em qualquer passo (não bloqueia o produto).
+### Glow rule
+Glow verde **só** em: turno ativo, GPS ativo, badge operacional 🟢, botão primário em estado pressed/loading, ring de foco. Nunca decorativo.
 
-Passos:
-1. Intro: "Visionário usa GPS para registrar km, tempo e ganhos automaticamente."
-2. Localização (fine).
-3. Localização em segundo plano ("Permitir o tempo todo").
-4. Notificações (Android 13+).
-5. Resumo: mostra diagnóstico final + escolhe modo.
+## 3. Componentes (shadcn variants — sem refazer API)
 
-Flag persistida: `vd-permission-onboarding-completed-v1`.
+Refino via `class-variance-authority` + tokens novos. Sem novos componentes, sem novas libs.
 
-### 4. Dois modos operacionais
+- **Button**: variantes `primary` (gradient brand + glow no hover), `secondary` (bg-elevated + border-subtle), `ghost`, `danger`. Altura 44 mobile / 40 desktop. Pressed state com scale 0.98.
+- **Card**: bg-elevated, border hairline, raio 14, sem shadow flutuante; variante `kpi` com number em mono + label uppercase tracking-wide.
+- **Input/Select/Switch**: bg-inset, border-subtle, focus-ring brand.
+- **Bottom Sheet / Dialog**: bg-overlay, drag handle, raio 20 topo, backdrop blur 20.
+- **Badge/Chip**: outline-first; preenchimento só para status crítico.
+- **Toast**: ícone + título + descrição, accent lateral 2px na cor do status.
+- **Skeleton**: shimmer sutil sobre bg-inset.
+- **Empty state**: ícone outline grande + título + 1 ação.
 
-**Modo Automático** (padrão quando elegível):
-- `useShiftTracker` ativo, GPS contínuo, polyline, km calculados.
-- Comportamento atual preservado.
+## 4. Telas refinadas (sem mudar lógica)
 
-**Modo Manual** (quando faltar qualquer requisito crítico):
-- `useShiftTracker` não inicia GPS.
-- ShiftMode mostra formulário para inserção manual de km inicial/final, tempo e ganhos por corrida.
-- Reaproveita `RegisterRideFab` + `DailyInputForm`.
-- Persistência idêntica (mesmo schema de shifts/rides) — telemetria marca `source: "manual"`.
+1. **Dashboard (cockpit)** — hierarquia: KPI hero "Lucro líquido hoje" em display 32 mono, abaixo grid 2×2 (ganhos · despesas · km · tempo), depois OperationalStatusBadge, depois ações. Mais respiro, menos chips.
+2. **ShiftMode** — hero do turno ativo com glow brand pulsante discreto, KPIs tabulares, botões de ação destacados.
+3. **PermissionOnboarding** — vira "assistente de configuração": ilustração/ícone grande por etapa, copy em 2 níveis, progress dots, transição fade+slide 200ms.
+4. **Bottom Nav** — ícones lucide outline 22px, label 11, item ativo: ícone preenchido + dot brand + glow-sm. Altura 64 + safe-area.
+5. **SettingsView** — listas com section header uppercase, divisores hairline, sem cards aninhados.
+6. **Auth** — fundo bg-base, logo centralizada com leve glow brand, card único bg-elevated.
 
-Modo é decidido por `PermissionDiagnosticService.trackingMode`, com override manual do usuário (Configurações → "Forçar modo manual").
+## 5. Microinterações (CSS/Tailwind only, sem libs novas)
 
-### 5. Dashboard com status operacional permanente
+- KPI updates: `transition-[color,transform] duration-200`, flash brand 400ms ao recalcular
+- Turno start/stop: pulse glow 1.6s ease-in-out infinite no badge
+- Tap feedback: `active:scale-[0.98] transition-transform duration-100`
+- Sheet/Modal: já usa Radix — só refinar tokens
+- Tudo via `tailwindcss-animate` já instalado. Zero framer-motion novo.
 
-Componente novo `OperationalStatusBadge.tsx`, sempre visível no Dashboard e ShiftMode:
-- 🟢 "Rastreamento automático ativo"
-- 🟡 "Modo manual ativo" + razão curta (ex: "Localização em segundo plano não autorizada")
-- Botão "Corrigir configuração" → reabre `PermissionOnboarding` no passo pendente.
+## 6. Performance
 
-### 6. Refator dos pontos atuais
+- Sem novas dependências
+- Fontes via `<link rel="preconnect">` Google Fonts, `display=swap`, subset latin
+- Glow via `box-shadow` (compositor), sem filter blur em listas
+- Animações ≤ 300ms, `prefers-reduced-motion` respeitado
 
-- `ShiftMode.tsx`: remover lógica ad-hoc de banner/permissão; consumir `PermissionDiagnosticService` + `OperationalStatusBadge`. Decide entre tracker automático e UI manual.
-- `useShiftTracker.ts`: aceita `mode: "automatic" | "manual"`; em manual, é no-op de GPS mas mantém estado do turno.
-- `bgPermission.ts`: torna-se wrapper fino sobre `PermissionDiagnosticService` (mantém compat) e depois é removido.
-- `GpsConsentDialog` / `BackgroundLocationConsentDialog`: descontinuados — substituídos pelos passos do `PermissionOnboarding`. Removidos da árvore.
-- `Index.tsx` / rota raiz: se autenticado e `!onboarding-completed`, renderiza `PermissionOnboarding` antes de qualquer outra tela.
+## 7. Arquivos que serão tocados (apenas visual)
 
-### 7. Resiliência a fabricantes
+- `src/index.css` — tokens HSL, gradientes, glow, base typography
+- `tailwind.config.ts` — cores semânticas, fontFamily, boxShadow, borderRadius
+- `index.html` — preconnect + link Google Fonts (Space Grotesk + JetBrains Mono)
+- `src/components/ui/button.tsx` `card.tsx` `badge.tsx` `input.tsx` `dialog.tsx` `sheet.tsx` `toast.tsx` — só variants/classes
+- `src/components/Dashboard.tsx` `ShiftMode.tsx` `SettingsView.tsx` `PermissionOnboarding.tsx` `OperationalStatusBadge.tsx` — só JSX/classes
+- Bottom nav (componente atual) — só classes
 
-- Zero dependência em intents específicas. O "Abrir configurações" abre o que conseguir (details → fallback location settings → fallback toast com instrução textual).
-- Se após N tentativas a permissão real continuar negada, o app **simplesmente opera em manual** — sem loop de erro, sem bloqueio.
-- Telemetria registra `manufacturer`, `androidVersion`, `permissionPath` para análise futura.
+Nenhum hook, service, lib de GPS, storage, auth, supabase ou regra de negócio será alterado.
 
----
+## 8. Critério de aceite
 
-## Arquivos
-
-**Novos**
-- `src/lib/permissionDiagnostic.ts`
-- `src/components/PermissionOnboarding.tsx`
-- `src/components/OperationalStatusBadge.tsx`
-
-**Editados**
-- `android/.../VisionarioPermissionsPlugin.java` (battery + provider checks)
-- `src/components/ShiftMode.tsx` (consome diagnostic + badge + modo manual)
-- `src/hooks/useShiftTracker.ts` (suporta modo manual)
-- `src/components/Dashboard.tsx` (badge no topo)
-- `src/pages/Index.tsx` (gate de onboarding)
-- `src/components/SettingsView.tsx` (toggle "forçar manual" + reabrir onboarding)
-- `src/lib/bgPermission.ts` (wrapper sobre diagnostic)
-
-**Removidos da árvore (mantidos como deprecated 1 versão)**
-- `GpsConsentDialog.tsx`, `BackgroundLocationConsentDialog.tsx`
+- App em dark mode com 4 níveis de superfície visíveis
+- Verde da marca aparece **apenas** em sinais operacionais e CTA primário
+- KPIs financeiros em fonte mono tabular, alinhados
+- Bottom nav minimalista com estado ativo claro
+- Onboarding sente "assistente", não "popup"
+- Zero regressão funcional (tracking, turno, permissões, persistência)
+- Bundle não cresce mais que ~15KB (apenas 2 famílias de fonte via CDN)
 
 ---
 
-## Critérios de aceite
-
-1. Usuário novo passa por onboarding antes do 1º turno.
-2. Cada passo só avança quando o status nativo confirma — não pelo clique.
-3. Negar background não bloqueia uso: cai em manual com badge 🟡.
-4. Voltar de Settings com permissão concedida → badge muda para 🟢 sem refresh.
-5. Nenhum fluxo crítico depende de intent específica de fabricante.
-6. `useShiftTracker` não inicia GPS em modo manual (zero drenagem de bateria).
-7. Persistência de turnos/corridas/km idêntica nos dois modos.
-
----
-
-## Fora de escopo
-
-- Capacitor background-geolocation plugin (foreground service real). Fica anotado para fase 2 — a arquitetura proposta já está pronta para receber.
-- iOS native: o serviço já suporta, mas validação visual é só Android nesta entrega.
+Posso seguir com a implementação nesta ordem: **(1) tokens + fontes → (2) componentes base → (3) bottom nav + dashboard → (4) shift + onboarding → (5) settings + auth**. Confirma?
