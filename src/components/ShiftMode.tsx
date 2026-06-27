@@ -999,62 +999,70 @@ export default function ShiftMode({ onChange }: Props) {
 
         {/* Mapa ao vivo (opt-in) */}
         {showMap && (shift.rota?.length ?? 0) > 0 && (
-          <div className="space-y-2">
+          <div className="relative space-y-2">
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={async () => { (await exportRouteGpx(shift)) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
-                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
                 onClick={async () => { (await exportRouteKml(shift)) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
-                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>
           </div>
         )}
 
-
-        {/* Actions */}
-        <div className="grid grid-cols-4 gap-2">
-          <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
-            {pausado ? <Play size={14} /> : <Pause size={14} />}
+        {/* Actions principais */}
+        <div className="relative grid grid-cols-4 gap-2">
+          <button onClick={handlePause} title={pausado ? 'Retomar' : 'Pausar'} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm flex items-center justify-center press">
+            {pausado ? <Play size={16} /> : <Pause size={16} />}
           </button>
           <button
             onClick={() => setShowMap(v => !v)}
             title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
-            className={`p-3 rounded-xl font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform ${showMap ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-secondary text-foreground'}`}
+            className={`h-12 rounded-xl font-display font-semibold text-sm flex items-center justify-center press ${showMap ? 'bg-primary/15 text-primary border border-primary/40 shadow-glow-sm' : 'surface-inset border border-border/60 text-foreground'}`}
           >
-            <MapIcon size={14} />
+            <MapIcon size={16} />
           </button>
-          <button onClick={openRide} disabled={pausado} className="col-span-2 p-3 rounded-xl bg-profit-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform disabled:opacity-50">
-            <Plus size={18} /> Corrida
+          <button
+            onClick={openRide}
+            disabled={pausado}
+            className="col-span-2 h-12 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow press disabled:opacity-50 disabled:shadow-none"
+          >
+            <Plus size={18} strokeWidth={2.5} /> Registrar corrida
           </button>
         </div>
 
-
         {/* Últimas corridas */}
         {shift.rides.length > 0 && (
-          <div className="space-y-1 pt-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Últimas corridas</p>
-            {shift.rides.slice(0, 5).map(r => (
-              <div key={r.corrida_id} className="flex items-center justify-between gap-1 bg-card border rounded px-2.5 py-1.5 text-xs">
-                <span>{r.resultado === 'boa' ? '🟢' : r.resultado === 'aceitavel' ? '🟡' : '🔴'}</span>
-                <span className="font-semibold">{fmt(r.valor)}</span>
-                <span className="text-muted-foreground flex items-center gap-1">
-                  {r.km.toFixed(1)} km
-                  {r.edicoes && r.edicoes.length > 0 && (
-                    <span title="Corrida editada" className="text-[9px] text-accent">✎</span>
-                  )}
-                </span>
-                <span className="font-display font-bold">{fmt(r.valor_por_km)}/km</span>
-                <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary" title="Editar km/valor"><Pencil size={12} /></button>
-                <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
-              </div>
-            ))}
+          <div className="relative space-y-1.5 pt-1">
+            <p className="text-label">Últimas corridas</p>
+            <div className="space-y-1">
+              {shift.rides.slice(0, 5).map(r => {
+                const dotCls = r.resultado === 'boa' ? 'bg-profit' : r.resultado === 'aceitavel' ? 'bg-warning' : 'bg-loss';
+                return (
+                  <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-[12px]">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
+                    <span className="font-display font-semibold font-mono-num">{fmt(r.valor)}</span>
+                    <span className="text-muted-foreground font-mono-num text-[11px]">
+                      {r.km.toFixed(1)} km
+                    </span>
+                    {r.edicoes && r.edicoes.length > 0 && (
+                      <span title="Corrida editada" className="text-[9px] text-warning">✎</span>
+                    )}
+                    <span className="font-display font-bold font-mono-num text-[11px] ml-auto">{fmt(r.valor_por_km)}/km</span>
+                    <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary press" title="Editar"><Pencil size={11} /></button>
+                    <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss press" title="Remover"><X size={11} /></button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
+
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
