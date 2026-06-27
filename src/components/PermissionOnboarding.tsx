@@ -1,16 +1,24 @@
 /**
- * Assistente de configuração de permissões.
+ * Assistente de configuração de permissões — versão premium.
  *
  * Doutrina:
  *  - Nunca bloqueia o uso. O usuário pode pular e usar modo manual.
  *  - Cada passo é validado pela leitura REAL das APIs nativas após o request.
  *  - Resiliente a fabricantes: se o pedido nativo falhar, mostra instrução
  *    textual + botão "Abrir configurações" e segue em frente.
+ *
+ * UX:
+ *  - Linguagem visual idêntica ao Dashboard/Cockpit (mesmo design system).
+ *  - Sensação de assistente guiado, não de popup de permissões.
+ *  - Hero com brand glow, micro-step indicator, status pills consistentes.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Navigation, MapPin, Bell, BatteryCharging, ShieldCheck, ChevronRight, X, Wrench, Sparkles } from 'lucide-react';
+import {
+  Navigation, MapPin, Bell, BatteryCharging, ShieldCheck, ChevronRight,
+  X, Wrench, Sparkles, Check, ArrowLeft, ExternalLink,
+} from 'lucide-react';
 import {
   refreshPermissionDiagnostic,
   markOnboardingCompleted,
@@ -32,13 +40,13 @@ interface Props {
 
 type StepId = 'intro' | 'location' | 'background' | 'notifications' | 'battery' | 'summary';
 
-const STEP_TITLES: Record<StepId, string> = {
-  intro: 'Bem-vindo ao Visionário Drive',
-  location: 'Localização do aparelho',
-  background: 'Rastreamento em segundo plano',
-  notifications: 'Notificação do turno',
-  battery: 'Bateria sem restrições',
-  summary: 'Tudo pronto',
+const STEP_META: Record<StepId, { eyebrow: string; title: string }> = {
+  intro:         { eyebrow: 'Configuração inicial', title: 'Bem-vindo ao Visionário' },
+  location:      { eyebrow: 'Permissão 1 de 3',    title: 'Localização do aparelho' },
+  background:    { eyebrow: 'Permissão 2 de 3',    title: 'Rastreio em segundo plano' },
+  notifications: { eyebrow: 'Permissão 3 de 3',    title: 'Notificação do turno' },
+  battery:       { eyebrow: 'Opcional',             title: 'Bateria sem restrições' },
+  summary:       { eyebrow: 'Tudo pronto',          title: 'Configuração concluída' },
 };
 
 export default function PermissionOnboarding({ onDone }: Props) {
@@ -68,7 +76,6 @@ export default function PermissionOnboarding({ onDone }: Props) {
 
   const skip = () => finish('manual');
 
-  // ===== Steps =====
   const stepOrder: StepId[] = useMemo(() => {
     if (isWeb) return ['intro', 'location', 'summary'];
     const list: StepId[] = ['intro', 'location', 'background'];
@@ -77,20 +84,15 @@ export default function PermissionOnboarding({ onDone }: Props) {
     return list;
   }, [isWeb, d?.notificationsRequired]);
 
-  const goNext = () => {
-    const i = stepOrder.indexOf(step);
-    setStep(stepOrder[Math.min(stepOrder.length - 1, i + 1)]);
-  };
+  const currentIndex = stepOrder.indexOf(step);
+  const goNext = () => setStep(stepOrder[Math.min(stepOrder.length - 1, currentIndex + 1)]);
+  const goBack = () => setStep(stepOrder[Math.max(0, currentIndex - 1)]);
 
   const handleLocation = async () => {
     setBusy(true);
     try {
-      // Fonte da verdade: o próprio plugin nativo (callback pós-diálogo do Android)
-      // ou Capacitor Geolocation em iOS/web. Não confiar só no clique do usuário.
       const after = await requestForegroundLocationPermissionIfPossible();
       let next = await refresh();
-      // Rede de segurança: alguns aparelhos demoram a propagar checkSelfPermission
-      // logo após o diálogo. Faz um polling curto antes de desistir.
       if (!next.locationGranted && after.foregroundLocationGranted) {
         for (let i = 0; i < 5 && !next.locationGranted; i++) {
           await new Promise(r => setTimeout(r, 250));
@@ -115,10 +117,9 @@ export default function PermissionOnboarding({ onDone }: Props) {
         toast.success('Localização em segundo plano autorizada');
         goNext();
       } else {
-        // Android 11+: prompt nativo não oferece "O tempo todo".
         const opened = await openAppLocationSettings();
         if (!opened) {
-          toast.error('Abra manualmente: Ajustes → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"', { duration: 9000 });
+          toast.error('Abra: Ajustes → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"', { duration: 9000 });
         }
       }
     } finally { setBusy(false); }
@@ -151,168 +152,397 @@ export default function PermissionOnboarding({ onDone }: Props) {
     } finally { setBusy(false); }
   };
 
-  // ===== Render =====
+  const meta = STEP_META[step];
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-card w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl border-t sm:border max-h-[95vh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        <div className="sticky top-0 bg-card/95 backdrop-blur px-5 pt-4 pb-3 border-b flex items-center justify-between z-10">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-display font-semibold">Configuração inicial</p>
-            <h2 className="font-display font-bold text-base truncate">{STEP_TITLES[step]}</h2>
+    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div
+        key={step}
+        className="
+          surface-1 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl
+          border-t border-border/60 sm:border shadow-premium
+          max-h-[95vh] overflow-y-auto
+          pb-[max(1.5rem,env(safe-area-inset-bottom))]
+          animate-fade-in-up
+        "
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 surface-1/95 backdrop-blur-xl px-5 pt-4 pb-3 border-b border-border/40 flex items-center gap-3">
+          {currentIndex > 0 && step !== 'summary' ? (
+            <button
+              onClick={goBack}
+              aria-label="Voltar"
+              className="p-2 -ml-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-glow-sm">
+              <span className="font-display font-black text-[15px] text-primary-foreground leading-none">V</span>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
+              {meta.eyebrow}
+            </p>
+            <h2 className="font-display font-bold text-[15px] truncate leading-tight">{meta.title}</h2>
           </div>
-          <button onClick={skip} aria-label="Pular" className="p-2 -mr-2 text-muted-foreground hover:text-foreground">
+          <button
+            onClick={skip}
+            aria-label="Pular"
+            className="p-2 -mr-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
 
-        <div className="px-5 py-5 space-y-5">
+        {/* Body */}
+        <div className="px-5 pt-6 pb-2">
           {step === 'intro' && (
-            <Section icon={<Sparkles className="text-primary" size={22} />} title="Sua gestão financeira no controle">
-              <p>
-                O Visionário é uma <strong>plataforma de gestão financeira</strong> para motoristas. O GPS é opcional e serve para automatizar km, tempo e rota.
-              </p>
-              <p className="text-muted-foreground">
-                Vamos configurar 3 permissões para liberar o modo automático. Você pode pular e usar tudo manualmente — nada do financeiro depende disso.
-              </p>
-              <Primary onClick={goNext}>Começar configuração</Primary>
-              <Secondary onClick={skip}>Pular e usar modo manual</Secondary>
-            </Section>
+            <Intro onStart={goNext} onSkip={skip} />
           )}
 
           {step === 'location' && (
-            <Section icon={<MapPin className="text-primary" size={22} />} title="Localização">
-              <p>Permite que o app leia a posição do GPS para calcular km percorridos automaticamente.</p>
-              <Status ok={!!d?.locationGranted} okLabel="Localização autorizada" pendingLabel="Aguardando autorização" />
-              <Primary disabled={busy} onClick={handleLocation}>
-                {d?.locationGranted ? 'Continuar' : 'Permitir localização'}
-              </Primary>
-              {d?.locationGranted && <Secondary onClick={goNext}>Continuar</Secondary>}
-              <Secondary onClick={skip}>Pular configuração</Secondary>
-            </Section>
+            <Step
+              icon={<MapPin size={28} className="text-primary" />}
+              eyebrow="Necessário para automação"
+              title="Permita acessar sua localização"
+              body="O Visionário usa o GPS para calcular automaticamente os km percorridos a cada corrida. Sem isso, você ainda pode lançar km manualmente."
+              ok={!!d?.locationGranted}
+              okLabel="Localização autorizada"
+              pendingLabel="Aguardando autorização"
+              primaryLabel={d?.locationGranted ? 'Continuar' : 'Permitir localização'}
+              onPrimary={d?.locationGranted ? goNext : handleLocation}
+              busy={busy}
+              onSkip={skip}
+            />
           )}
 
           {step === 'background' && (
-            <Section icon={<Navigation className="text-primary" size={22} />} title='"Permitir o tempo todo"'>
-              <p>Sem essa permissão, o Android pausa o GPS quando a tela bloqueia. O cálculo automático de km depende dela.</p>
-              <p className="text-muted-foreground text-xs">
-                Em alguns aparelhos, o Android abre as configurações em vez de mostrar o diálogo. Marque <strong>"Permitir o tempo todo"</strong> e volte.
-              </p>
-              <Status ok={!!d?.backgroundLocationGranted} okLabel="Segundo plano autorizado" pendingLabel="Permitir o tempo todo" />
-              <Primary disabled={busy} onClick={handleBackground}>
-                {d?.backgroundLocationGranted ? 'Continuar' : 'Permitir o tempo todo'}
-              </Primary>
-              {d?.backgroundLocationGranted && <Secondary onClick={goNext}>Continuar</Secondary>}
-              {isAndroidNative && (
-                <Secondary onClick={async () => { await openAppLocationSettings(); }}>
-                  Abrir configurações do Android
-                </Secondary>
-              )}
-              <Secondary onClick={skip}>Pular configuração</Secondary>
-            </Section>
+            <Step
+              icon={<Navigation size={28} className="text-primary" />}
+              eyebrow={isAndroidNative ? 'Android exige passo manual' : 'Necessário para tela bloqueada'}
+              title={'Marque "Permitir o tempo todo"'}
+              body={
+                <>
+                  Sem esta permissão, o Android <strong className="text-foreground">pausa o GPS</strong> quando você bloqueia a tela. Toque abaixo — pode ser que o Android abra direto a tela de Ajustes. Selecione <strong className="text-foreground">"Permitir o tempo todo"</strong> e volte ao app.
+                </>
+              }
+              ok={!!d?.backgroundLocationGranted}
+              okLabel="Segundo plano autorizado"
+              pendingLabel='"Permitir o tempo todo" pendente'
+              primaryLabel={d?.backgroundLocationGranted ? 'Continuar' : 'Permitir o tempo todo'}
+              primaryIcon={!d?.backgroundLocationGranted && isAndroidNative ? <ExternalLink size={16} /> : undefined}
+              onPrimary={d?.backgroundLocationGranted ? goNext : handleBackground}
+              busy={busy}
+              onSkip={skip}
+              secondary={
+                isAndroidNative && !d?.backgroundLocationGranted ? {
+                  label: 'Abrir configurações do Android',
+                  onClick: async () => { await openAppLocationSettings(); },
+                } : undefined
+              }
+            />
           )}
 
           {step === 'notifications' && (
-            <Section icon={<Bell className="text-primary" size={22} />} title="Notificação do turno">
-              <p>Uma notificação fica visível enquanto o turno está ativo. Ela mantém o GPS rodando e some quando o turno encerra.</p>
-              <Status ok={!!d?.notificationsGranted} okLabel="Notificações autorizadas" pendingLabel="Aguardando autorização" />
-              <Primary disabled={busy} onClick={handleNotifications}>
-                {d?.notificationsGranted ? 'Continuar' : 'Permitir notificações'}
-              </Primary>
-              {d?.notificationsGranted && <Secondary onClick={goNext}>Continuar</Secondary>}
-              <Secondary onClick={skip}>Pular configuração</Secondary>
-            </Section>
+            <Step
+              icon={<Bell size={28} className="text-primary" />}
+              eyebrow="Mantém o turno vivo"
+              title="Notificação persistente do turno"
+              body="Uma notificação fica visível enquanto o turno está ativo — ela mantém o GPS rodando no segundo plano. Some automaticamente quando você encerra."
+              ok={!!d?.notificationsGranted}
+              okLabel="Notificações autorizadas"
+              pendingLabel="Aguardando autorização"
+              primaryLabel={d?.notificationsGranted ? 'Continuar' : 'Permitir notificações'}
+              onPrimary={d?.notificationsGranted ? goNext : handleNotifications}
+              busy={busy}
+              onSkip={skip}
+            />
           )}
 
           {step === 'battery' && (
-            <Section icon={<BatteryCharging className="text-primary" size={22} />} title="Bateria sem restrições">
-              <p>Pede para o Android não suspender o app por economia de bateria durante o turno. Recomendado em Samsung, Xiaomi, Motorola e Realme.</p>
-              <Status ok={!!d?.batteryOptimizationDisabled} okLabel="Sem restrições" pendingLabel="Recomendado" />
-              <Primary disabled={busy} onClick={handleBattery}>
-                {d?.batteryOptimizationDisabled ? 'Continuar' : 'Solicitar permissão'}
-              </Primary>
-              <Secondary onClick={goNext}>Pular esse passo</Secondary>
-            </Section>
+            <Step
+              icon={<BatteryCharging size={28} className="text-primary" />}
+              eyebrow="Recomendado"
+              title="Bateria sem restrições"
+              body="Pede ao Android para não suspender o app durante o turno. Essencial em Samsung, Xiaomi, Motorola e Realme — esses fabricantes matam apps em segundo plano para economizar bateria."
+              ok={!!d?.batteryOptimizationDisabled}
+              okLabel="Sem restrições"
+              pendingLabel="Recomendado para fabricantes agressivos"
+              primaryLabel={d?.batteryOptimizationDisabled ? 'Continuar' : 'Solicitar permissão'}
+              onPrimary={d?.batteryOptimizationDisabled ? goNext : handleBattery}
+              busy={busy}
+              onSkip={goNext}
+              skipLabel="Pular este passo"
+            />
           )}
 
           {step === 'summary' && d && (
-            <Section
-              icon={d.trackingMode === 'automatic' ? <ShieldCheck className="text-profit" size={22} /> : <Wrench className="text-accent" size={22} />}
-              title={d.trackingMode === 'automatic' ? '🟢 Automação ativa' : '🟡 Modo manual ativo'}
-            >
-              {d.trackingMode === 'automatic' ? (
-                <p>Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.</p>
-              ) : (
-                <>
-                  <p>Você pode usar o app normalmente em modo manual. Para registrar uma corrida em menos de 10 segundos, basta tocar no botão <strong>+</strong> e informar valor e km.</p>
-                  <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
-                    {d.reasons.map(r => <li key={r}>{r}</li>)}
-                  </ul>
-                </>
-              )}
-              <Primary onClick={() => finish(d.trackingMode)}>
-                {d.trackingMode === 'automatic' ? 'Começar a usar' : 'Continuar em modo manual'}
-              </Primary>
-              {d.trackingMode === 'manual' && (
-                <Secondary onClick={() => setStep('location')}>Tentar configurar novamente</Secondary>
-              )}
-            </Section>
+            <Summary diagnostic={d} onFinish={() => finish(d.trackingMode)} onRetry={() => setStep('location')} />
           )}
         </div>
 
-        <Progress current={stepOrder.indexOf(step)} total={stepOrder.length} />
+        {/* Progress */}
+        <Progress current={currentIndex} total={stepOrder.length} />
       </div>
     </div>
   );
 }
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+/* ============================================================
+   Sub-components
+   ============================================================ */
+
+function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   return (
-    <div className="space-y-3 text-sm">
-      <div className="flex items-start gap-3">
-        <div className="shrink-0 w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">{icon}</div>
-        <h3 className="font-display font-bold text-lg leading-tight mt-1">{title}</h3>
+    <div className="space-y-6">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-hero p-6 text-center">
+        <div className="absolute inset-x-0 -top-20 h-40 bg-primary/20 blur-3xl opacity-60 pointer-events-none" />
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-glow animate-pulse-glow">
+            <Sparkles size={28} className="text-primary-foreground" strokeWidth={2.5} />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="font-display font-bold text-xl tracking-tight">Sua gestão financeira no controle</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. O GPS é opcional — serve apenas para automatizar km, tempo e rota.
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="space-y-3">{children}</div>
+
+      {/* Checklist */}
+      <div className="space-y-2">
+        <p className="text-label">O que vamos configurar</p>
+        <div className="space-y-2">
+          <BulletRow icon={<MapPin size={14} />} title="Localização" desc="Cálculo automático de km" />
+          <BulletRow icon={<Navigation size={14} />} title="Segundo plano" desc="GPS continua com tela bloqueada" />
+          <BulletRow icon={<Bell size={14} />} title="Notificação" desc="Indica que o turno está ativo" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <PrimaryButton onClick={onStart}>Começar configuração</PrimaryButton>
+        <GhostButton onClick={onSkip}>Pular — usar em modo manual</GhostButton>
+      </div>
     </div>
   );
 }
 
-function Primary({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
+function Step({
+  icon, eyebrow, title, body, ok, okLabel, pendingLabel,
+  primaryLabel, primaryIcon, onPrimary, busy, onSkip, skipLabel, secondary,
+}: {
+  icon: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  body: React.ReactNode;
+  ok: boolean;
+  okLabel: string;
+  pendingLabel: string;
+  primaryLabel: string;
+  primaryIcon?: React.ReactNode;
+  onPrimary: () => void;
+  busy: boolean;
+  onSkip: () => void;
+  skipLabel?: string;
+  secondary?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className="space-y-6">
+      {/* Hero compacto */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-hero p-5">
+        <div className="absolute -top-12 -right-12 w-40 h-40 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="relative flex items-start gap-4">
+          <div className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center border ${ok ? 'bg-profit/10 border-profit/30' : 'bg-primary/10 border-primary/20'}`}>
+            {ok ? <Check size={26} className="text-profit" strokeWidth={2.5} /> : icon}
+          </div>
+          <div className="min-w-0 pt-0.5">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold mb-1">
+              {eyebrow}
+            </p>
+            <h3 className="font-display font-bold text-[17px] leading-tight tracking-tight">{title}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <p className="text-sm text-muted-foreground leading-relaxed px-1">{body}</p>
+
+      {/* Status pill */}
+      <StatusPill ok={ok} okLabel={okLabel} pendingLabel={pendingLabel} />
+
+      {/* Actions */}
+      <div className="space-y-2">
+        <PrimaryButton onClick={onPrimary} disabled={busy} icon={primaryIcon}>
+          {primaryLabel}
+        </PrimaryButton>
+        {secondary && (
+          <SecondaryButton onClick={secondary.onClick}>{secondary.label}</SecondaryButton>
+        )}
+        <GhostButton onClick={onSkip}>{skipLabel ?? 'Pular configuração'}</GhostButton>
+      </div>
+    </div>
+  );
+}
+
+function Summary({
+  diagnostic, onFinish, onRetry,
+}: { diagnostic: PermissionDiagnostic; onFinish: () => void; onRetry: () => void }) {
+  const isAuto = diagnostic.trackingMode === 'automatic';
+  return (
+    <div className="space-y-6">
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-hero p-6 text-center">
+        <div className={`absolute inset-x-0 -top-20 h-40 blur-3xl opacity-50 pointer-events-none ${isAuto ? 'bg-profit/30' : 'bg-warning/20'}`} />
+        <div className="relative flex flex-col items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${isAuto ? 'bg-profit/10 border-profit/40 shadow-glow-sm' : 'bg-warning/10 border-warning/30'}`}>
+            {isAuto
+              ? <ShieldCheck size={30} className="text-profit" strokeWidth={2.5} />
+              : <Wrench size={28} className="text-warning" strokeWidth={2.5} />}
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="font-display font-bold text-xl tracking-tight">
+              {isAuto ? 'Automação ativa' : 'Modo manual ativo'}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {isAuto
+                ? 'Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.'
+                : 'O app funciona normalmente em modo manual — basta tocar no + para lançar uma corrida em segundos.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {!isAuto && diagnostic.reasons.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-label">Pendências detectadas</p>
+          <ul className="space-y-1.5 text-xs text-muted-foreground">
+            {diagnostic.reasons.map(r => (
+              <li key={r} className="flex items-start gap-2">
+                <span className="w-1 h-1 rounded-full bg-warning mt-1.5 shrink-0" />
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <PrimaryButton onClick={onFinish}>
+          {isAuto ? 'Começar a usar' : 'Continuar em modo manual'}
+        </PrimaryButton>
+        {!isAuto && <GhostButton onClick={onRetry}>Tentar configurar novamente</GhostButton>}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Atoms
+   ============================================================ */
+
+function BulletRow({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl surface-inset border border-border/40">
+      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-display font-semibold text-[13px] leading-tight">{title}</p>
+        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatusPill({ ok, okLabel, pendingLabel }: { ok: boolean; okLabel: string; pendingLabel: string }) {
+  return (
+    <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${ok
+      ? 'bg-profit/10 border-profit/30 text-profit'
+      : 'bg-warning/10 border-warning/30 text-warning'}`}
+    >
+      <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-profit' : 'bg-warning animate-pulse-dot'}`} />
+      <span className="font-display font-semibold text-[12px] tracking-tight">
+        {ok ? okLabel : pendingLabel}
+      </span>
+    </div>
+  );
+}
+
+function PrimaryButton({
+  children, onClick, disabled, icon,
+}: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full p-3.5 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.99] transition-transform disabled:opacity-50"
+      className="
+        w-full h-12 rounded-xl bg-brand-gradient text-primary-foreground
+        font-display font-bold text-[14px] tracking-tight
+        flex items-center justify-center gap-2
+        shadow-glow-sm press
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
+        transition-all
+      "
     >
-      {children} <ChevronRight size={16} />
+      {children}
+      {icon ?? <ChevronRight size={16} strokeWidth={2.5} />}
     </button>
   );
 }
 
-function Secondary({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function SecondaryButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="w-full p-2.5 rounded-xl bg-secondary text-foreground font-display font-semibold text-xs hover:bg-secondary/80 transition-colors">
+    <button
+      onClick={onClick}
+      className="
+        w-full h-11 rounded-xl surface-inset border border-border/60
+        font-display font-semibold text-[13px] text-foreground
+        flex items-center justify-center gap-2
+        hover:bg-secondary/80 press transition-colors
+      "
+    >
+      <ExternalLink size={14} />
       {children}
     </button>
   );
 }
 
-function Status({ ok, okLabel, pendingLabel }: { ok: boolean; okLabel: string; pendingLabel: string }) {
+function GhostButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
   return (
-    <p className={`text-xs font-display font-semibold inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md ${ok ? 'text-profit bg-profit/10' : 'text-accent bg-accent/10'}`}>
-      {ok ? '✓' : '○'} {ok ? okLabel : pendingLabel}
-    </p>
+    <button
+      onClick={onClick}
+      className="
+        w-full h-10 rounded-lg
+        font-display font-medium text-[12px] text-muted-foreground
+        hover:text-foreground hover:bg-secondary/40 press transition-colors
+      "
+    >
+      {children}
+    </button>
   );
 }
 
 function Progress({ current, total }: { current: number; total: number }) {
-  const pct = ((current + 1) / total) * 100;
   return (
-    <div className="px-5 pb-4">
-      <div className="h-1 bg-secondary rounded-full overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+    <div className="px-5 pt-3 pb-1">
+      <div className="flex items-center gap-1.5">
+        {Array.from({ length: total }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+              i < current ? 'bg-primary/70'
+              : i === current ? 'bg-brand-gradient shadow-glow-sm'
+              : 'bg-border/50'
+            }`}
+          />
+        ))}
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5 text-center font-display">Passo {current + 1} de {total}</p>
+      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-2 text-center font-display font-semibold">
+        Passo {current + 1} de {total}
+      </p>
     </div>
   );
 }
