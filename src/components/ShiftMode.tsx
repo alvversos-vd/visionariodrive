@@ -58,6 +58,17 @@ function fmtHora(iso?: string) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function KpiTile({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="surface-inset rounded-xl p-2.5 border border-border/40 text-center">
+      {icon && <div className="text-muted-foreground mb-1 flex justify-center">{icon}</div>}
+      <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{label}</p>
+      <p className="font-display font-bold text-[13px] font-mono-num mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
