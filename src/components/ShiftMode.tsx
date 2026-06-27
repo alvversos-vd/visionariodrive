@@ -58,6 +58,53 @@ function fmtHora(iso?: string) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function KpiTile({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="surface-inset rounded-xl p-2.5 border border-border/40 text-center">
+      {icon && <div className="text-muted-foreground mb-1 flex justify-center">{icon}</div>}
+      <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{label}</p>
+      <p className="font-display font-bold text-[13px] font-mono-num mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function AlertBanner({
+  tone, icon, title, body, cta, onClick,
+}: {
+  tone: 'warning' | 'info' | 'loss';
+  icon: React.ReactNode;
+  title: string;
+  body: React.ReactNode;
+  cta?: string;
+  onClick?: () => void;
+}) {
+  const toneCls =
+    tone === 'warning' ? 'border-warning/30 bg-warning/5 text-warning' :
+    tone === 'loss' ? 'border-loss/30 bg-loss/5 text-loss' :
+    'border-info/30 bg-info/5 text-info';
+  const stripeCls =
+    tone === 'warning' ? 'bg-warning' :
+    tone === 'loss' ? 'bg-loss' :
+    'bg-info';
+  const Wrapper: React.ElementType = onClick ? 'button' : 'div';
+  return (
+    <Wrapper
+      onClick={onClick}
+      className={`relative w-full overflow-hidden flex items-start gap-2.5 rounded-xl border p-3 text-[11px] text-left ${toneCls} ${onClick ? 'press transition-transform' : ''}`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-0.5 ${stripeCls}`} />
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        {title && <p className="font-display font-semibold leading-tight">{title}</p>}
+        <p className="opacity-80 leading-relaxed mt-0.5">{body}</p>
+      </div>
+      {cta && <span className="text-[10px] font-display font-semibold underline shrink-0 mt-0.5">{cta}</span>}
+    </Wrapper>
+  );
+}
+
+
+
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
@@ -503,44 +550,52 @@ export default function ShiftMode({ onChange }: Props) {
     );
   }
 
-  // Resumo final estilo Strava
+  // Resumo final — cockpit premium
   if (summary) {
     const t = computeTotals(summary);
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
     const m = metaProgresso(summary, t.lucro_total);
     return (
-      <div className="rounded-2xl p-5 bg-card border-2 border-primary/40 space-y-4 animate-slide-up shadow-premium">
+      <div className="rounded-2xl p-5 surface-1 border border-border/60 space-y-5 animate-fade-in-up shadow-premium">
         <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-lg flex items-center gap-2">
-            <Trophy className="text-accent" size={20} /> Resumo do turno
-          </h3>
-          <button onClick={() => setSummary(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <Trophy className="text-primary" size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno encerrado</p>
+              <h3 className="font-display font-bold text-base leading-tight">Resumo do turno</h3>
+            </div>
+          </div>
+          <button onClick={() => setSummary(null)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press"><X size={18} /></button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · ⏱ {formatTempo(Math.max(0, t.tempo_online_minutos))}
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · {formatTempo(Math.max(0, t.tempo_online_minutos))}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
         </p>
-        <div className={`rounded-2xl p-5 text-center ${positivo ? 'bg-profit-gradient' : 'bg-loss-gradient'} shadow-glow`}>
-          <p className="text-xs text-primary-foreground/80 uppercase tracking-wider">💰 Lucro do turno</p>
-          <p className="text-5xl font-display font-bold text-primary-foreground number-tabular mt-1">{fmt(t.lucro_total)}</p>
+        <div className={`relative overflow-hidden rounded-2xl p-6 text-center border ${positivo ? 'border-profit/40 bg-hero' : 'border-loss/40 bg-hero'}`}>
+          <div className={`absolute inset-x-0 -top-16 h-32 blur-3xl opacity-50 pointer-events-none ${positivo ? 'bg-profit/30' : 'bg-loss/30'}`} />
+          <p className="relative text-label">Lucro do turno</p>
+          <p className={`relative text-[44px] leading-none font-display font-bold font-mono-num mt-2 ${positivo ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
           {m.meta > 0 && (
-            <p className="text-xs text-primary-foreground/90 mt-2">
-              {m.atingida ? `🎯 Meta atingida (${m.pct.toFixed(0)}%)` : `🎯 ${m.pct.toFixed(0)}% da meta`}
+            <p className="relative text-[11px] text-muted-foreground font-display font-semibold mt-3 inline-flex items-center gap-1.5">
+              <Target size={11} className={m.atingida ? 'text-profit' : 'text-info'} />
+              {m.atingida ? `Meta atingida · ${m.pct.toFixed(0)}%` : `${m.pct.toFixed(0)}% da meta diária`}
             </p>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-secondary/40 rounded-xl p-3"><Navigation size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Km</p><p className="font-display font-bold number-tabular">{t.km_total.toFixed(1)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Clock size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Tempo</p><p className="font-display font-bold number-tabular">{formatTempo(t.tempo_online_minutos)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Wallet size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Corridas</p><p className="font-display font-bold number-tabular">{t.corridas_total}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Zap size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">R$/km</p><p className="font-display font-bold number-tabular">{fmt(t.media_por_km)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><p className="text-[10px] text-muted-foreground uppercase">Ganho</p><p className="font-display font-bold number-tabular">{fmt(t.ganho_total)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><p className="text-[10px] text-muted-foreground uppercase">Custos</p><p className="font-display font-bold number-tabular">{fmt(t.custo_total)}</p></div>
+        <div className="grid grid-cols-3 gap-2">
+          <KpiTile icon={<Navigation size={12} />} label="Km" value={t.km_total.toFixed(1)} />
+          <KpiTile icon={<Clock size={12} />} label="Tempo" value={formatTempo(t.tempo_online_minutos)} />
+          <KpiTile icon={<Wallet size={12} />} label="Corridas" value={String(t.corridas_total)} />
+          <KpiTile icon={<Zap size={12} />} label="R$/km" value={fmt(t.media_por_km)} />
+          <KpiTile label="Ganho" value={fmt(t.ganho_total)} />
+          <KpiTile label="Custos" value={fmt(t.custo_total)} />
         </div>
-        <p className={`text-center text-sm font-display ${positivo ? 'text-profit' : 'text-loss'}`}>
-          {positivo ? 'Bom trabalho hoje 👊' : 'Você pode melhorar amanhã'}
+        <p className={`text-center text-[12px] font-display font-semibold ${positivo ? 'text-profit' : 'text-loss'}`}>
+          {positivo ? 'Bom trabalho hoje.' : 'Você pode melhorar amanhã.'}
         </p>
       </div>
     );
@@ -552,22 +607,37 @@ export default function ShiftMode({ onChange }: Props) {
       <>
         <button
           onClick={openPicker}
-          className="w-full rounded-2xl p-5 bg-info-gradient text-info-foreground font-display font-bold text-base flex items-center justify-center gap-2.5 shadow-premium active:scale-[0.99] transition-transform"
+          className="
+            relative w-full overflow-hidden rounded-2xl p-5 surface-1 border border-border/60
+            text-foreground font-display font-bold text-base
+            flex items-center justify-center gap-3 shadow-premium press transition-all
+            hover:border-primary/40
+          "
         >
-          <Play size={20} fill="currentColor" /> Iniciar turno
+          <span className="absolute inset-x-0 -top-12 h-24 bg-primary/10 blur-3xl opacity-60 pointer-events-none" />
+          <span className="relative w-11 h-11 rounded-xl bg-brand-gradient flex items-center justify-center shadow-glow-sm">
+            <Play size={20} fill="currentColor" className="text-primary-foreground ml-0.5" />
+          </span>
+          <span className="relative flex flex-col items-start">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Pronto para rodar</span>
+            <span className="text-[15px] tracking-tight">Iniciar turno</span>
+          </span>
         </button>
 
         {pickerOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={() => setPickerOpen(false)}>
-            <div className="bg-card rounded-xl p-5 w-full max-w-sm space-y-3 border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPickerOpen(false)}>
+            <div className="surface-1 sm:rounded-2xl rounded-t-3xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
               {step === 'date' && (
                 <>
-                  <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Etapa 1 de 3</p>
+                    <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  </div>
                   <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional.</p>
-                  <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-primary text-primary-foreground font-semibold">
+                  <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm press shadow-glow-sm">
                     Hoje · {formatOperationalDate(todayOperationalDate())}
                   </button>
-                  <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-secondary text-foreground font-semibold">
+                  <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm press">
                     Ontem · {formatOperationalDate(yesterdayOperationalDate())}
                   </button>
                 </>
@@ -575,8 +645,10 @@ export default function ShiftMode({ onChange }: Props) {
 
               {step === 'vehicle' && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <Car size={16} className="text-primary" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                      <Car size={11} /> Etapa {new Date().getHours() < 5 ? '2' : '1'} de {new Date().getHours() < 5 ? '3' : '2'}
+                    </p>
                     <h3 className="font-display font-bold text-base">Qual veículo será usado?</h3>
                   </div>
                   <div className="space-y-2">
@@ -584,27 +656,27 @@ export default function ShiftMode({ onChange }: Props) {
                       <button
                         key={v.veiculo_id}
                         onClick={() => setPickedVehicleId(v.veiculo_id)}
-                        className={`w-full text-left p-3 rounded-lg border ${pickedVehicleId === v.veiculo_id ? 'border-primary bg-primary/10' : 'bg-secondary/40'}`}
+                        className={`w-full text-left p-3 rounded-xl border press transition-colors ${pickedVehicleId === v.veiculo_id ? 'border-primary bg-primary/10 shadow-glow-sm' : 'border-border/60 surface-inset hover:border-border'}`}
                       >
-                        <p className="font-display font-bold text-sm">{TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="font-display font-bold text-sm tracking-tight">{TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           {v.km_por_litro ? `${v.km_por_litro} km/L` : 'sem combustível'}
                           {v.custo_fixo_mensal > 0 ? ` · R$ ${v.custo_fixo_mensal.toFixed(0)}/mês` : ''}
                         </p>
                       </button>
                     ))}
-                    <button onClick={() => { setPickerOpen(false); setVehiclesOpen(true); }} className="w-full p-2 rounded-lg border-2 border-dashed text-xs text-primary font-semibold">
+                    <button onClick={() => { setPickerOpen(false); setVehiclesOpen(true); }} className="w-full p-2.5 rounded-xl border border-dashed border-border/80 text-xs text-primary font-display font-semibold hover:bg-primary/5 press">
                       + Adicionar veículo
                     </button>
                   </div>
                   <div className="flex gap-2">
                     {new Date().getHours() < 5 && (
-                      <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                      <button onClick={() => setStep('date')} className="flex-1 p-2.5 rounded-xl surface-inset border border-border/60 text-xs font-display font-semibold press">Voltar</button>
                     )}
                     <button
                       disabled={!pickedVehicleId}
                       onClick={() => setStep('app')}
-                      className="flex-1 p-2 rounded-lg bg-primary text-primary-foreground font-display font-bold text-sm disabled:opacity-40"
+                      className="flex-1 h-11 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm disabled:opacity-40 disabled:shadow-none shadow-glow-sm press transition-all"
                     >
                       Continuar
                     </button>
@@ -614,8 +686,10 @@ export default function ShiftMode({ onChange }: Props) {
 
               {step === 'app' && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <Smartphone size={16} className="text-primary" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                      <Smartphone size={11} /> Última etapa
+                    </p>
                     <h3 className="font-display font-bold text-base">Qual app você vai usar?</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -623,26 +697,27 @@ export default function ShiftMode({ onChange }: Props) {
                       <button
                         key={a}
                         onClick={() => setPickedApp(a)}
-                        className={`p-2.5 rounded-lg text-sm font-display font-semibold border ${pickedApp === a ? 'border-primary bg-primary/10 text-primary' : 'bg-secondary/40 text-foreground'}`}
+                        className={`p-3 rounded-xl text-sm font-display font-semibold border press transition-colors ${pickedApp === a ? 'border-primary bg-primary/10 text-primary shadow-glow-sm' : 'border-border/60 surface-inset text-foreground hover:border-border'}`}
                       >
                         {a}
                       </button>
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setStep('vehicle')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    <button onClick={() => setStep('vehicle')} className="flex-1 p-2.5 rounded-xl surface-inset border border-border/60 text-xs font-display font-semibold press">Voltar</button>
                     <button
                       disabled={!pickedApp}
                       onClick={finalizeStart}
-                      className="flex-1 p-2.5 rounded-lg bg-profit text-primary-foreground font-display font-bold disabled:opacity-40"
+                      className="flex-1 h-11 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm disabled:opacity-40 disabled:shadow-none shadow-glow press transition-all flex items-center justify-center gap-1.5"
                     >
-                      Iniciar turno
+                      <Play size={14} fill="currentColor" /> Iniciar turno
                     </button>
                   </div>
                 </>
               )}
 
-              <button onClick={() => setPickerOpen(false)} className="w-full text-xs text-muted-foreground py-1">Cancelar</button>
+              <button onClick={() => setPickerOpen(false)} className="w-full text-[11px] text-muted-foreground hover:text-foreground py-1.5 font-display">Cancelar</button>
+
             </div>
           </div>
         )}
@@ -682,13 +757,14 @@ export default function ShiftMode({ onChange }: Props) {
   const previewClass = previewValid ? classifyRide(vNum, kNum, shift) : null;
 
   const gpsBadge =
-    gps === 'tracking' ? { icon: <Satellite size={11} className="animate-pulse" />, label: '🟢 Tracking ativo', cls: 'text-profit bg-profit/10' } :
-    gps === 'background' ? { icon: <Satellite size={11} />, label: '🟡 Em segundo plano', cls: 'text-accent bg-accent/10' } :
-    gps === 'requesting' ? { icon: <Satellite size={11} />, label: 'GPS…', cls: 'text-accent bg-accent/10' } :
-    gps === 'paused' ? { icon: <Pause size={11} />, label: 'GPS pausado', cls: 'text-muted-foreground bg-secondary' } :
-    gps === 'denied' ? { icon: <MapPinOff size={11} />, label: '🔴 GPS negado', cls: 'text-loss bg-loss/10' } :
-    gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: '🔴 Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
-    { icon: <Satellite size={11} />, label: '...', cls: 'text-muted-foreground bg-secondary' };
+    gps === 'tracking' ? { icon: <Satellite size={10} className="animate-pulse" />, label: 'GPS ativo', cls: 'text-profit bg-profit/10 border-profit/30' } :
+    gps === 'background' ? { icon: <Satellite size={10} />, label: 'Segundo plano', cls: 'text-warning bg-warning/10 border-warning/30' } :
+    gps === 'requesting' ? { icon: <Satellite size={10} />, label: 'Conectando…', cls: 'text-info bg-info/10 border-info/30' } :
+    gps === 'paused' ? { icon: <Pause size={10} />, label: 'GPS pausado', cls: 'text-muted-foreground bg-secondary border-border/60' } :
+    gps === 'denied' ? { icon: <MapPinOff size={10} />, label: 'GPS negado', cls: 'text-loss bg-loss/10 border-loss/30' } :
+    gps === 'unavailable' ? { icon: <MapPinOff size={10} />, label: 'Sem GPS', cls: 'text-muted-foreground bg-secondary border-border/60' } :
+    { icon: <Satellite size={10} />, label: '...', cls: 'text-muted-foreground bg-secondary border-border/60' };
+
 
   // Tempo desde a última posição GPS (para UX honesta + banner de background longo)
   const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
@@ -703,49 +779,62 @@ export default function ShiftMode({ onChange }: Props) {
   // === MODO FOCO ===
   if (focus) {
     return (
-      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`relative flex h-2.5 w-2.5`}>
-              <span className={`absolute inline-flex h-full w-full rounded-full ${pausado ? 'bg-accent' : 'bg-profit'} opacity-60 animate-pulse-dot`} />
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${pausado ? 'bg-accent' : 'bg-profit'}`} />
+      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-6 animate-fade-in-up">
+        {/* Glow ambiente */}
+        <div className={`absolute inset-x-0 top-0 h-64 blur-3xl opacity-40 pointer-events-none ${pausado ? 'bg-warning/20' : lucroOk ? 'bg-primary/25' : 'bg-loss/25'}`} />
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-pulse-dot ${pausado ? 'bg-warning' : 'bg-profit'}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
             </span>
-            <p className="font-display font-semibold text-sm">{pausado ? 'Pausado' : 'Modo foco'}</p>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold leading-none">
+                {pausado ? 'Turno pausado' : 'Modo foco'}
+              </p>
+              <p className="font-display font-bold text-[13px] font-mono-num leading-tight mt-0.5">{tempoLive}</p>
+            </div>
           </div>
-          <button onClick={() => setFocus(false)} className="p-2 rounded-lg bg-secondary text-foreground">
+          <button onClick={() => setFocus(false)} aria-label="Sair do modo foco" className="p-2.5 rounded-xl surface-inset border border-border/60 text-foreground hover:bg-secondary/80 press">
             <Minimize2 size={18} />
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
+        <div className="relative flex-1 flex flex-col items-center justify-center text-center gap-8">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-display">Lucro real agora</p>
-            <p className={`text-7xl font-display font-bold number-tabular mt-2 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
+            <p className="text-label">Lucro real agora</p>
+            <p className={`text-[72px] leading-none font-display font-bold font-mono-num mt-3 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
               {fmt(t.lucro_total)}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
-            <div><p className="text-[10px] uppercase text-muted-foreground">Tempo</p><p className="font-display font-bold text-2xl number-tabular">{tempoLive}</p></div>
-            <div><p className="text-[10px] uppercase text-muted-foreground">Km</p><p className="font-display font-bold text-2xl number-tabular">{t.km_total.toFixed(1)}</p></div>
-            <div><p className="text-[10px] uppercase text-muted-foreground">Corridas</p><p className="font-display font-bold text-2xl number-tabular">{t.corridas_total}</p></div>
+          <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+            <KpiTile icon={<Clock size={12} />} label="Tempo" value={tempoLive} />
+            <KpiTile icon={<Navigation size={12} />} label="Km" value={t.km_total.toFixed(1)} />
+            <KpiTile icon={<Wallet size={12} />} label="Corridas" value={String(t.corridas_total)} />
           </div>
           {meta && meta.meta > 0 && (
             <div className="w-full max-w-sm">
-              <div className="flex justify-between text-xs mb-1"><span className="text-muted-foreground">Meta</span><span className="font-display font-bold">{meta.pct.toFixed(0)}%</span></div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden"><div className={`h-full ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'} transition-all`} style={{ width: `${meta.pct}%` }} /></div>
+              <div className="flex justify-between text-[11px] mb-1.5">
+                <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta</span>
+                <span className="font-display font-bold font-mono-num">{meta.pct.toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 surface-inset rounded-full overflow-hidden">
+                <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
+              </div>
             </div>
           )}
         </div>
 
-        <div className="space-y-2">
-          <button onClick={openRide} className="w-full rounded-2xl p-5 bg-profit-gradient text-primary-foreground font-display font-bold text-lg flex items-center justify-center gap-2 shadow-glow active:scale-[0.98]">
-            <Plus size={22} /> Registrar corrida
+        <div className="relative space-y-2">
+          <button onClick={openRide} className="w-full h-14 rounded-2xl bg-brand-gradient text-primary-foreground font-display font-bold text-[15px] tracking-tight flex items-center justify-center gap-2 shadow-glow press">
+            <Plus size={20} strokeWidth={2.5} /> Registrar corrida
           </button>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-2">
+            <button onClick={handlePause} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
               {pausado ? <><Play size={14} /> Retomar</> : <><Pause size={14} /> Pausar</>}
             </button>
-            <button onClick={handleEnd} className="p-3 rounded-xl bg-loss/90 text-primary-foreground font-display font-semibold text-sm flex items-center justify-center gap-2">
+            <button onClick={handleEnd} className="h-12 rounded-xl bg-loss/15 border border-loss/40 text-loss font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
               <Square size={14} /> Finalizar
             </button>
           </div>
@@ -756,112 +845,106 @@ export default function ShiftMode({ onChange }: Props) {
     );
   }
 
-  // === HERO NORMAL ===
+
+  // === HERO NORMAL — Cockpit do turno ===
   return (
     <>
-      <div className={`relative rounded-2xl p-5 border-2 space-y-4 overflow-hidden ${pausado ? 'border-accent/40 bg-accent/5' : lucroOk ? 'border-profit/40 bg-profit/5' : 'border-loss/50 bg-loss/5'} shadow-premium`}>
-        <div className={`absolute inset-x-0 top-0 h-1 ${pausado ? 'bg-accent' : lucroOk ? 'bg-profit-gradient' : 'bg-loss-gradient'}`} />
+      <div className="relative rounded-2xl p-5 surface-1 border border-border/60 space-y-4 overflow-hidden shadow-premium">
+        {/* Faixa lateral de status */}
+        <div className={`absolute inset-y-0 left-0 w-1 ${pausado ? 'bg-warning' : lucroOk ? 'bg-brand-gradient' : 'bg-loss-gradient'}`} />
+        {/* Glow ambiente */}
+        <div className={`absolute -top-16 -right-16 w-48 h-48 blur-3xl rounded-full opacity-30 pointer-events-none ${pausado ? 'bg-warning/30' : lucroOk ? 'bg-primary/30' : 'bg-loss/30'}`} />
 
         {/* Top: status + actions */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            {/* Status row */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`relative flex h-2 w-2`}>
-                <span className={`absolute inline-flex h-full w-full rounded-full ${pausado ? 'bg-accent' : 'bg-profit'} opacity-60 animate-pulse-dot`} />
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-accent' : 'bg-profit'}`} />
+              <span className="relative flex h-2 w-2">
+                <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-pulse-dot ${pausado ? 'bg-warning' : 'bg-profit'}`} />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
               </span>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
-                {pausado ? '🟡 Turno pausado' : '🟢 Turno ativo'} · {fmtHora(shift.inicio_turno)} → agora · ⏱ {tempoLive}
+                {pausado ? 'Turno pausado' : 'Turno ativo'}
               </p>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-display font-semibold flex items-center gap-1 ${gpsBadge.cls}`}>
+              <span className="text-[10px] text-muted-foreground font-display font-mono-num">
+                {fmtHora(shift.inicio_turno)} · {tempoLive}
+              </span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
               </span>
               {gapSec != null && (gps === 'tracking' || gps === 'background') && (
-                <span className="text-[9px] text-muted-foreground font-display">
-                  · última posição há {fmtGap(gapSec)}
+                <span className="text-[9px] text-muted-foreground font-display font-mono-num">
+                  · {fmtGap(gapSec)}
                 </span>
               )}
             </div>
 
-            {/* Lucro gigante */}
-            <p className={`text-5xl font-display font-bold mt-1 number-tabular ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
-            <p className="text-[11px] text-muted-foreground">💰 Lucro real agora</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-              {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} ${veh.nome_veiculo}` : 'Sem veículo'}
+            {/* Lucro hero */}
+            <div>
+              <p className="text-label">Lucro real agora</p>
+              <p className={`text-[42px] leading-none font-display font-bold font-mono-num mt-1.5 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
+                {fmt(t.lucro_total)}
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground truncate font-display">
+              {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} · ${veh.nome_veiculo}` : 'Sem veículo'}
               {shift.app_utilizado && ` · ${shift.app_utilizado}`}
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <button onClick={() => setFocus(true)} title="Modo foco" className="p-2 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 transition-colors">
+            <button onClick={() => setFocus(true)} title="Modo foco" className="p-2.5 rounded-xl surface-inset border border-border/60 text-foreground hover:bg-secondary/80 press">
               <Maximize2 size={14} />
             </button>
-            <button onClick={handleEnd} className="p-2 rounded-xl bg-loss/90 hover:bg-loss text-primary-foreground transition-colors" title="Finalizar">
+            <button onClick={handleEnd} className="p-2.5 rounded-xl bg-loss/15 border border-loss/40 text-loss hover:bg-loss/25 press" title="Finalizar turno">
               <Square size={14} fill="currentColor" />
             </button>
           </div>
         </div>
 
-        {/* 4 stats ao vivo */}
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Clock size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Tempo</p>
-            <p className="font-display font-bold text-xs number-tabular">{tempoLive}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Navigation size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Km</p>
-            <p className="font-display font-bold text-xs number-tabular">{t.km_total.toFixed(1)}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Wallet size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Corridas</p>
-            <p className="font-display font-bold text-xs number-tabular">{t.corridas_total}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Zap size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">R$/km</p>
-            <p className="font-display font-bold text-xs number-tabular">{rPorKm.toFixed(2)}</p>
-          </div>
+        {/* 4 KPIs ao vivo */}
+        <div className="relative grid grid-cols-4 gap-2">
+          <KpiTile icon={<Clock size={11} />} label="Tempo" value={tempoLive} />
+          <KpiTile icon={<Navigation size={11} />} label="Km" value={t.km_total.toFixed(1)} />
+          <KpiTile icon={<Wallet size={11} />} label="Corridas" value={String(t.corridas_total)} />
+          <KpiTile icon={<Zap size={11} />} label="R$/km" value={rPorKm.toFixed(2)} />
         </div>
 
         {/* Meta */}
         {meta && meta.meta > 0 && (
-          <div>
-            <div className="flex items-center justify-between text-[11px] mb-1">
-              <span className="text-muted-foreground flex items-center gap-1"><Target size={11}/> Meta diária</span>
-              <span className="font-display font-bold">
-                {meta.pct.toFixed(0)}% {meta.atingida ? '· 🎯 atingida!' : `· faltam ${fmt(meta.faltam)}`}
+          <div className="relative">
+            <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta diária</span>
+              <span className="font-display font-bold font-mono-num">
+                {meta.pct.toFixed(0)}% {meta.atingida ? '· atingida' : `· faltam ${fmt(meta.faltam)}`}
               </span>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
+            <div className="h-1.5 surface-inset rounded-full overflow-hidden">
+              <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient shadow-glow-sm' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
             </div>
           </div>
         )}
 
-        {/* GPS Background não verificado — instrução clara e ação direta.
-            Some automaticamente quando recebemos fix com a tela bloqueada. */}
+
+        {/* Alertas — estilo banner premium com stripe lateral, sem saturar */}
         {needsBackgroundPermission && (
-          <button
-            type="button"
+          <AlertBanner
+            tone="warning"
+            icon={<MapPinOff size={14} />}
+            title="GPS limitado ao app aberto"
+            body={<>Toque para habilitar <strong>"Permitir o tempo todo"</strong>. Sem isso, o Android pausa o GPS quando a tela bloqueia.</>}
+            cta="Abrir ajustes"
             onClick={openSettingsClick}
-            className="w-full flex items-start gap-2 rounded-xl border border-accent/50 bg-accent/10 p-2.5 text-[11px] text-accent text-left active:scale-[0.99] transition-transform"
-          >
-            <MapPinOff size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">⚠️ GPS limitado ao app aberto</p>
-              <p className="text-accent/80">
-                Toque para habilitar <strong>"Permitir o tempo todo"</strong> nas configurações. Sem isso, o Android pausa o GPS quando a tela bloqueia.
-              </p>
-            </div>
-            <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
-          </button>
+          />
         )}
 
         {needsNotificationPermission && (
-          <button
-            type="button"
+          <AlertBanner
+            tone="info"
+            icon={<Bell size={14} />}
+            title="Notificação do turno pendente"
+            body="Ela mantém o GPS ativo durante o turno e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano."
+            cta="Permitir"
             onClick={async () => {
               const status = await requestNotificationPermissionIfNeeded();
               setBgPermissionStatus(status);
@@ -870,129 +953,116 @@ export default function ShiftMode({ onChange }: Props) {
                 if (!ok) toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Notificações → Permitir');
               }
             }}
-            className="w-full flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2.5 text-[11px] text-primary text-left active:scale-[0.99] transition-transform"
-          >
-            <Bell size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Notificação do turno pendente</p>
-              <p className="text-primary/80">
-                Ela mantém o GPS ativo enquanto o turno está rodando e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano.
-              </p>
-            </div>
-            <span className="text-[10px] underline shrink-0 mt-0.5">Permitir</span>
-          </button>
+          />
         )}
 
         {(gps === 'denied' || gps === 'unavailable') && (
-          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-            <MapPinOff size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Modo manual ativo</p>
-              <p className="text-accent/80">
-                {gps === 'denied'
-                  ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
-                  : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
-              </p>
-            </div>
-            {gps === 'denied' && (
-              <button onClick={() => requestGpsPermission()} className="text-[10px] underline shrink-0">tentar de novo</button>
-            )}
-          </div>
+          <AlertBanner
+            tone="warning"
+            icon={<MapPinOff size={14} />}
+            title="Modo manual ativo"
+            body={gps === 'denied'
+              ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
+              : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
+            cta={gps === 'denied' ? 'Tentar de novo' : undefined}
+            onClick={gps === 'denied' ? () => requestGpsPermission() : undefined}
+          />
         )}
 
-        {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
-            Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
         {longBackgroundGap && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
-          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-            <Satellite size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Tracking em segundo plano reduzido</p>
-              <p className="text-accent/80">
-                {gapSec != null && gapSec > 5
-                  ? `Sem nova posição há ${fmtGap(gapSec)}. `
-                  : ''}
-                Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
-              </p>
-            </div>
-          </div>
+          <AlertBanner
+            tone="warning"
+            icon={<Satellite size={14} />}
+            title="Tracking em segundo plano reduzido"
+            body={<>
+              {gapSec != null && gapSec > 5 ? `Sem nova posição há ${fmtGap(gapSec)}. ` : ''}
+              Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
+            </>}
+          />
         )}
 
         {smartAlerts.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="relative space-y-1.5">
             {smartAlerts.map(a => (
-              <div key={a.key} className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-                <Target size={14} className="mt-0.5 shrink-0" />
-                <p className="flex-1 font-display">{a.msg}</p>
-              </div>
+              <AlertBanner key={a.key} tone="warning" icon={<Target size={14} />} title="" body={a.msg} />
             ))}
           </div>
         )}
 
         {/* Mensagem motivadora */}
-        <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
-          {pausado ? 'Turno pausado — toque em retomar para continuar'
-            : t.corridas_total === 0 ? 'Toque em registrar corrida para começar'
-            : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
+        <p className={`relative text-[11px] text-center font-display font-medium ${pausado ? 'text-warning' : lucroOk ? 'text-profit' : 'text-loss'}`}>
+          {pausado ? 'Turno pausado — toque em retomar para continuar.'
+            : t.corridas_total === 0 ? 'Toque em registrar corrida para começar.'
+            : lucroOk ? 'Você está indo bem.' : 'Atenção — seu lucro caiu.'}
         </p>
+
 
         {/* Mapa ao vivo (opt-in) */}
         {showMap && (shift.rota?.length ?? 0) > 0 && (
-          <div className="space-y-2">
+          <div className="relative space-y-2">
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={async () => { (await exportRouteGpx(shift)) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
-                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
                 onClick={async () => { (await exportRouteKml(shift)) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
-                className="px-2 py-1.5 rounded-lg bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>
           </div>
         )}
 
-
-        {/* Actions */}
-        <div className="grid grid-cols-4 gap-2">
-          <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
-            {pausado ? <Play size={14} /> : <Pause size={14} />}
+        {/* Actions principais */}
+        <div className="relative grid grid-cols-4 gap-2">
+          <button onClick={handlePause} title={pausado ? 'Retomar' : 'Pausar'} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm flex items-center justify-center press">
+            {pausado ? <Play size={16} /> : <Pause size={16} />}
           </button>
           <button
             onClick={() => setShowMap(v => !v)}
             title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
-            className={`p-3 rounded-xl font-display font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform ${showMap ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-secondary text-foreground'}`}
+            className={`h-12 rounded-xl font-display font-semibold text-sm flex items-center justify-center press ${showMap ? 'bg-primary/15 text-primary border border-primary/40 shadow-glow-sm' : 'surface-inset border border-border/60 text-foreground'}`}
           >
-            <MapIcon size={14} />
+            <MapIcon size={16} />
           </button>
-          <button onClick={openRide} disabled={pausado} className="col-span-2 p-3 rounded-xl bg-profit-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow active:scale-[0.98] transition-transform disabled:opacity-50">
-            <Plus size={18} /> Corrida
+          <button
+            onClick={openRide}
+            disabled={pausado}
+            className="col-span-2 h-12 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold flex items-center justify-center gap-2 shadow-glow press disabled:opacity-50 disabled:shadow-none"
+          >
+            <Plus size={18} strokeWidth={2.5} /> Registrar corrida
           </button>
         </div>
 
-
         {/* Últimas corridas */}
         {shift.rides.length > 0 && (
-          <div className="space-y-1 pt-1">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Últimas corridas</p>
-            {shift.rides.slice(0, 5).map(r => (
-              <div key={r.corrida_id} className="flex items-center justify-between gap-1 bg-card border rounded px-2.5 py-1.5 text-xs">
-                <span>{r.resultado === 'boa' ? '🟢' : r.resultado === 'aceitavel' ? '🟡' : '🔴'}</span>
-                <span className="font-semibold">{fmt(r.valor)}</span>
-                <span className="text-muted-foreground flex items-center gap-1">
-                  {r.km.toFixed(1)} km
-                  {r.edicoes && r.edicoes.length > 0 && (
-                    <span title="Corrida editada" className="text-[9px] text-accent">✎</span>
-                  )}
-                </span>
-                <span className="font-display font-bold">{fmt(r.valor_por_km)}/km</span>
-                <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary" title="Editar km/valor"><Pencil size={12} /></button>
-                <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss" title="Remover"><X size={12} /></button>
-              </div>
-            ))}
+          <div className="relative space-y-1.5 pt-1">
+            <p className="text-label">Últimas corridas</p>
+            <div className="space-y-1">
+              {shift.rides.slice(0, 5).map(r => {
+                const dotCls = r.resultado === 'boa' ? 'bg-profit' : r.resultado === 'aceitavel' ? 'bg-warning' : 'bg-loss';
+                return (
+                  <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-[12px]">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
+                    <span className="font-display font-semibold font-mono-num">{fmt(r.valor)}</span>
+                    <span className="text-muted-foreground font-mono-num text-[11px]">
+                      {r.km.toFixed(1)} km
+                    </span>
+                    {r.edicoes && r.edicoes.length > 0 && (
+                      <span title="Corrida editada" className="text-[9px] text-warning">✎</span>
+                    )}
+                    <span className="font-display font-bold font-mono-num text-[11px] ml-auto">{fmt(r.valor_por_km)}/km</span>
+                    <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary press" title="Editar"><Pencil size={11} /></button>
+                    <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss press" title="Remover"><X size={11} /></button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
+
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
