@@ -891,28 +891,25 @@ export default function ShiftMode({ onChange }: Props) {
         )}
 
 
-        {/* GPS Background não verificado — instrução clara e ação direta.
-            Some automaticamente quando recebemos fix com a tela bloqueada. */}
+        {/* Alertas — estilo banner premium com stripe lateral, sem saturar */}
         {needsBackgroundPermission && (
-          <button
-            type="button"
+          <AlertBanner
+            tone="warning"
+            icon={<MapPinOff size={14} />}
+            title="GPS limitado ao app aberto"
+            body={<>Toque para habilitar <strong>"Permitir o tempo todo"</strong>. Sem isso, o Android pausa o GPS quando a tela bloqueia.</>}
+            cta="Abrir ajustes"
             onClick={openSettingsClick}
-            className="w-full flex items-start gap-2 rounded-xl border border-accent/50 bg-accent/10 p-2.5 text-[11px] text-accent text-left active:scale-[0.99] transition-transform"
-          >
-            <MapPinOff size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">⚠️ GPS limitado ao app aberto</p>
-              <p className="text-accent/80">
-                Toque para habilitar <strong>"Permitir o tempo todo"</strong> nas configurações. Sem isso, o Android pausa o GPS quando a tela bloqueia.
-              </p>
-            </div>
-            <span className="text-[10px] underline shrink-0 mt-0.5">Abrir ajustes</span>
-          </button>
+          />
         )}
 
         {needsNotificationPermission && (
-          <button
-            type="button"
+          <AlertBanner
+            tone="info"
+            icon={<Bell size={14} />}
+            title="Notificação do turno pendente"
+            body="Ela mantém o GPS ativo durante o turno e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano."
+            cta="Permitir"
             onClick={async () => {
               const status = await requestNotificationPermissionIfNeeded();
               setBgPermissionStatus(status);
@@ -921,70 +918,49 @@ export default function ShiftMode({ onChange }: Props) {
                 if (!ok) toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Notificações → Permitir');
               }
             }}
-            className="w-full flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 p-2.5 text-[11px] text-primary text-left active:scale-[0.99] transition-transform"
-          >
-            <Bell size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Notificação do turno pendente</p>
-              <p className="text-primary/80">
-                Ela mantém o GPS ativo enquanto o turno está rodando e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano.
-              </p>
-            </div>
-            <span className="text-[10px] underline shrink-0 mt-0.5">Permitir</span>
-          </button>
+          />
         )}
 
         {(gps === 'denied' || gps === 'unavailable') && (
-          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-            <MapPinOff size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Modo manual ativo</p>
-              <p className="text-accent/80">
-                {gps === 'denied'
-                  ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
-                  : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
-              </p>
-            </div>
-            {gps === 'denied' && (
-              <button onClick={() => requestGpsPermission()} className="text-[10px] underline shrink-0">tentar de novo</button>
-            )}
-          </div>
+          <AlertBanner
+            tone="warning"
+            icon={<MapPinOff size={14} />}
+            title="Modo manual ativo"
+            body={gps === 'denied'
+              ? 'GPS negado. Informe o km de cada corrida ao registrar — o cálculo continua funcionando.'
+              : 'GPS indisponível. Informe o km manualmente em cada corrida.'}
+            cta={gps === 'denied' ? 'Tentar de novo' : undefined}
+            onClick={gps === 'denied' ? () => requestGpsPermission() : undefined}
+          />
         )}
 
-        {/* Banner persistente — UX honesta sobre limitação de background do navegador/PWA.
-            Some automaticamente quando o GPS volta a registrar fixes consistentes. */}
         {longBackgroundGap && !bgVerified && gps !== 'denied' && gps !== 'unavailable' && gps !== 'paused' && (
-          <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-            <Satellite size={14} className="mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="font-display font-semibold">Tracking em segundo plano reduzido</p>
-              <p className="text-accent/80">
-                {gapSec != null && gapSec > 5
-                  ? `Sem nova posição há ${fmtGap(gapSec)}. `
-                  : ''}
-                Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
-              </p>
-            </div>
-          </div>
+          <AlertBanner
+            tone="warning"
+            icon={<Satellite size={14} />}
+            title="Tracking em segundo plano reduzido"
+            body={<>
+              {gapSec != null && gapSec > 5 ? `Sem nova posição há ${fmtGap(gapSec)}. ` : ''}
+              Navegadores pausam o GPS quando o app sai do foco. Mantenha o app aberto para precisão máxima — o tracking retoma automaticamente ao voltar.
+            </>}
+          />
         )}
 
         {smartAlerts.length > 0 && (
-          <div className="space-y-1.5">
+          <div className="relative space-y-1.5">
             {smartAlerts.map(a => (
-              <div key={a.key} className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 p-2.5 text-[11px] text-accent">
-                <Target size={14} className="mt-0.5 shrink-0" />
-                <p className="flex-1 font-display">{a.msg}</p>
-              </div>
+              <AlertBanner key={a.key} tone="warning" icon={<Target size={14} />} title="" body={a.msg} />
             ))}
           </div>
         )}
 
         {/* Mensagem motivadora */}
-        <p className={`text-xs text-center font-display ${pausado ? 'text-accent' : lucroOk ? 'text-profit' : 'text-loss'}`}>
-          {pausado ? 'Turno pausado — toque em retomar para continuar'
-            : t.corridas_total === 0 ? 'Toque em registrar corrida para começar'
-            : lucroOk ? 'Você está indo bem 👊' : 'Atenção — seu lucro caiu'}
+        <p className={`relative text-[11px] text-center font-display font-medium ${pausado ? 'text-warning' : lucroOk ? 'text-profit' : 'text-loss'}`}>
+          {pausado ? 'Turno pausado — toque em retomar para continuar.'
+            : t.corridas_total === 0 ? 'Toque em registrar corrida para começar.'
+            : lucroOk ? 'Você está indo bem.' : 'Atenção — seu lucro caiu.'}
         </p>
+
 
         {/* Mapa ao vivo (opt-in) */}
         {showMap && (shift.rota?.length ?? 0) > 0 && (
