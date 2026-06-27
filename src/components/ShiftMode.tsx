@@ -721,13 +721,14 @@ export default function ShiftMode({ onChange }: Props) {
   const previewClass = previewValid ? classifyRide(vNum, kNum, shift) : null;
 
   const gpsBadge =
-    gps === 'tracking' ? { icon: <Satellite size={11} className="animate-pulse" />, label: '🟢 Tracking ativo', cls: 'text-profit bg-profit/10' } :
-    gps === 'background' ? { icon: <Satellite size={11} />, label: '🟡 Em segundo plano', cls: 'text-accent bg-accent/10' } :
-    gps === 'requesting' ? { icon: <Satellite size={11} />, label: 'GPS…', cls: 'text-accent bg-accent/10' } :
-    gps === 'paused' ? { icon: <Pause size={11} />, label: 'GPS pausado', cls: 'text-muted-foreground bg-secondary' } :
-    gps === 'denied' ? { icon: <MapPinOff size={11} />, label: '🔴 GPS negado', cls: 'text-loss bg-loss/10' } :
-    gps === 'unavailable' ? { icon: <MapPinOff size={11} />, label: '🔴 Sem GPS', cls: 'text-muted-foreground bg-secondary' } :
-    { icon: <Satellite size={11} />, label: '...', cls: 'text-muted-foreground bg-secondary' };
+    gps === 'tracking' ? { icon: <Satellite size={10} className="animate-pulse" />, label: 'GPS ativo', cls: 'text-profit bg-profit/10 border-profit/30' } :
+    gps === 'background' ? { icon: <Satellite size={10} />, label: 'Segundo plano', cls: 'text-warning bg-warning/10 border-warning/30' } :
+    gps === 'requesting' ? { icon: <Satellite size={10} />, label: 'Conectando…', cls: 'text-info bg-info/10 border-info/30' } :
+    gps === 'paused' ? { icon: <Pause size={10} />, label: 'GPS pausado', cls: 'text-muted-foreground bg-secondary border-border/60' } :
+    gps === 'denied' ? { icon: <MapPinOff size={10} />, label: 'GPS negado', cls: 'text-loss bg-loss/10 border-loss/30' } :
+    gps === 'unavailable' ? { icon: <MapPinOff size={10} />, label: 'Sem GPS', cls: 'text-muted-foreground bg-secondary border-border/60' } :
+    { icon: <Satellite size={10} />, label: '...', cls: 'text-muted-foreground bg-secondary border-border/60' };
+
 
   // Tempo desde a última posição GPS (para UX honesta + banner de background longo)
   const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
