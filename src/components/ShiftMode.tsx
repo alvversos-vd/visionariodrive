@@ -503,44 +503,52 @@ export default function ShiftMode({ onChange }: Props) {
     );
   }
 
-  // Resumo final estilo Strava
+  // Resumo final — cockpit premium
   if (summary) {
     const t = computeTotals(summary);
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
     const m = metaProgresso(summary, t.lucro_total);
     return (
-      <div className="rounded-2xl p-5 bg-card border-2 border-primary/40 space-y-4 animate-slide-up shadow-premium">
+      <div className="rounded-2xl p-5 surface-1 border border-border/60 space-y-5 animate-fade-in-up shadow-premium">
         <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-lg flex items-center gap-2">
-            <Trophy className="text-accent" size={20} /> Resumo do turno
-          </h3>
-          <button onClick={() => setSummary(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <Trophy className="text-primary" size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno encerrado</p>
+              <h3 className="font-display font-bold text-base leading-tight">Resumo do turno</h3>
+            </div>
+          </div>
+          <button onClick={() => setSummary(null)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press"><X size={18} /></button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · ⏱ {formatTempo(Math.max(0, t.tempo_online_minutos))}
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · {formatTempo(Math.max(0, t.tempo_online_minutos))}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
         </p>
-        <div className={`rounded-2xl p-5 text-center ${positivo ? 'bg-profit-gradient' : 'bg-loss-gradient'} shadow-glow`}>
-          <p className="text-xs text-primary-foreground/80 uppercase tracking-wider">💰 Lucro do turno</p>
-          <p className="text-5xl font-display font-bold text-primary-foreground number-tabular mt-1">{fmt(t.lucro_total)}</p>
+        <div className={`relative overflow-hidden rounded-2xl p-6 text-center border ${positivo ? 'border-profit/40 bg-hero' : 'border-loss/40 bg-hero'}`}>
+          <div className={`absolute inset-x-0 -top-16 h-32 blur-3xl opacity-50 pointer-events-none ${positivo ? 'bg-profit/30' : 'bg-loss/30'}`} />
+          <p className="relative text-label">Lucro do turno</p>
+          <p className={`relative text-[44px] leading-none font-display font-bold font-mono-num mt-2 ${positivo ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
           {m.meta > 0 && (
-            <p className="text-xs text-primary-foreground/90 mt-2">
-              {m.atingida ? `🎯 Meta atingida (${m.pct.toFixed(0)}%)` : `🎯 ${m.pct.toFixed(0)}% da meta`}
+            <p className="relative text-[11px] text-muted-foreground font-display font-semibold mt-3 inline-flex items-center gap-1.5">
+              <Target size={11} className={m.atingida ? 'text-profit' : 'text-info'} />
+              {m.atingida ? `Meta atingida · ${m.pct.toFixed(0)}%` : `${m.pct.toFixed(0)}% da meta diária`}
             </p>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-secondary/40 rounded-xl p-3"><Navigation size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Km</p><p className="font-display font-bold number-tabular">{t.km_total.toFixed(1)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Clock size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Tempo</p><p className="font-display font-bold number-tabular">{formatTempo(t.tempo_online_minutos)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Wallet size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">Corridas</p><p className="font-display font-bold number-tabular">{t.corridas_total}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><Zap size={14} className="mx-auto text-muted-foreground" /><p className="text-[10px] text-muted-foreground uppercase">R$/km</p><p className="font-display font-bold number-tabular">{fmt(t.media_por_km)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><p className="text-[10px] text-muted-foreground uppercase">Ganho</p><p className="font-display font-bold number-tabular">{fmt(t.ganho_total)}</p></div>
-          <div className="bg-secondary/40 rounded-xl p-3"><p className="text-[10px] text-muted-foreground uppercase">Custos</p><p className="font-display font-bold number-tabular">{fmt(t.custo_total)}</p></div>
+        <div className="grid grid-cols-3 gap-2">
+          <KpiTile icon={<Navigation size={12} />} label="Km" value={t.km_total.toFixed(1)} />
+          <KpiTile icon={<Clock size={12} />} label="Tempo" value={formatTempo(t.tempo_online_minutos)} />
+          <KpiTile icon={<Wallet size={12} />} label="Corridas" value={String(t.corridas_total)} />
+          <KpiTile icon={<Zap size={12} />} label="R$/km" value={fmt(t.media_por_km)} />
+          <KpiTile label="Ganho" value={fmt(t.ganho_total)} />
+          <KpiTile label="Custos" value={fmt(t.custo_total)} />
         </div>
-        <p className={`text-center text-sm font-display ${positivo ? 'text-profit' : 'text-loss'}`}>
-          {positivo ? 'Bom trabalho hoje 👊' : 'Você pode melhorar amanhã'}
+        <p className={`text-center text-[12px] font-display font-semibold ${positivo ? 'text-profit' : 'text-loss'}`}>
+          {positivo ? 'Bom trabalho hoje.' : 'Você pode melhorar amanhã.'}
         </p>
       </div>
     );
