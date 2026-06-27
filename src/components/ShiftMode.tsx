@@ -571,22 +571,37 @@ export default function ShiftMode({ onChange }: Props) {
       <>
         <button
           onClick={openPicker}
-          className="w-full rounded-2xl p-5 bg-info-gradient text-info-foreground font-display font-bold text-base flex items-center justify-center gap-2.5 shadow-premium active:scale-[0.99] transition-transform"
+          className="
+            relative w-full overflow-hidden rounded-2xl p-5 surface-1 border border-border/60
+            text-foreground font-display font-bold text-base
+            flex items-center justify-center gap-3 shadow-premium press transition-all
+            hover:border-primary/40
+          "
         >
-          <Play size={20} fill="currentColor" /> Iniciar turno
+          <span className="absolute inset-x-0 -top-12 h-24 bg-primary/10 blur-3xl opacity-60 pointer-events-none" />
+          <span className="relative w-11 h-11 rounded-xl bg-brand-gradient flex items-center justify-center shadow-glow-sm">
+            <Play size={20} fill="currentColor" className="text-primary-foreground ml-0.5" />
+          </span>
+          <span className="relative flex flex-col items-start">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Pronto para rodar</span>
+            <span className="text-[15px] tracking-tight">Iniciar turno</span>
+          </span>
         </button>
 
         {pickerOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-4" onClick={() => setPickerOpen(false)}>
-            <div className="bg-card rounded-xl p-5 w-full max-w-sm space-y-3 border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPickerOpen(false)}>
+            <div className="surface-1 sm:rounded-2xl rounded-t-3xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
               {step === 'date' && (
                 <>
-                  <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Etapa 1 de 3</p>
+                    <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
+                  </div>
                   <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional.</p>
-                  <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-primary text-primary-foreground font-semibold">
+                  <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm press shadow-glow-sm">
                     Hoje · {formatOperationalDate(todayOperationalDate())}
                   </button>
-                  <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-lg bg-secondary text-foreground font-semibold">
+                  <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm press">
                     Ontem · {formatOperationalDate(yesterdayOperationalDate())}
                   </button>
                 </>
