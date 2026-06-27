@@ -810,89 +810,86 @@ export default function ShiftMode({ onChange }: Props) {
   }
 
 
-  // === HERO NORMAL ===
+  // === HERO NORMAL — Cockpit do turno ===
+  const accentColor = pausado ? 'warning' : lucroOk ? 'profit' : 'loss';
   return (
     <>
-      <div className={`relative rounded-2xl p-5 border-2 space-y-4 overflow-hidden ${pausado ? 'border-accent/40 bg-accent/5' : lucroOk ? 'border-profit/40 bg-profit/5' : 'border-loss/50 bg-loss/5'} shadow-premium`}>
-        <div className={`absolute inset-x-0 top-0 h-1 ${pausado ? 'bg-accent' : lucroOk ? 'bg-profit-gradient' : 'bg-loss-gradient'}`} />
+      <div className="relative rounded-2xl p-5 surface-1 border border-border/60 space-y-4 overflow-hidden shadow-premium">
+        {/* Faixa lateral de status */}
+        <div className={`absolute inset-y-0 left-0 w-1 ${pausado ? 'bg-warning' : lucroOk ? 'bg-brand-gradient' : 'bg-loss-gradient'}`} />
+        {/* Glow ambiente */}
+        <div className={`absolute -top-16 -right-16 w-48 h-48 blur-3xl rounded-full opacity-30 pointer-events-none ${pausado ? 'bg-warning/30' : lucroOk ? 'bg-primary/30' : 'bg-loss/30'}`} />
 
         {/* Top: status + actions */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            {/* Status row */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`relative flex h-2 w-2`}>
-                <span className={`absolute inline-flex h-full w-full rounded-full ${pausado ? 'bg-accent' : 'bg-profit'} opacity-60 animate-pulse-dot`} />
-                <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-accent' : 'bg-profit'}`} />
+              <span className="relative flex h-2 w-2">
+                <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-pulse-dot ${pausado ? 'bg-warning' : 'bg-profit'}`} />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
               </span>
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
-                {pausado ? '🟡 Turno pausado' : '🟢 Turno ativo'} · {fmtHora(shift.inicio_turno)} → agora · ⏱ {tempoLive}
+                {pausado ? 'Turno pausado' : 'Turno ativo'}
               </p>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-display font-semibold flex items-center gap-1 ${gpsBadge.cls}`}>
+              <span className="text-[10px] text-muted-foreground font-display font-mono-num">
+                {fmtHora(shift.inicio_turno)} · {tempoLive}
+              </span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
               </span>
               {gapSec != null && (gps === 'tracking' || gps === 'background') && (
-                <span className="text-[9px] text-muted-foreground font-display">
-                  · última posição há {fmtGap(gapSec)}
+                <span className="text-[9px] text-muted-foreground font-display font-mono-num">
+                  · {fmtGap(gapSec)}
                 </span>
               )}
             </div>
 
-            {/* Lucro gigante */}
-            <p className={`text-5xl font-display font-bold mt-1 number-tabular ${lucroOk ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
-            <p className="text-[11px] text-muted-foreground">💰 Lucro real agora</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-              {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} ${veh.nome_veiculo}` : 'Sem veículo'}
+            {/* Lucro hero */}
+            <div>
+              <p className="text-label">Lucro real agora</p>
+              <p className={`text-[42px] leading-none font-display font-bold font-mono-num mt-1.5 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
+                {fmt(t.lucro_total)}
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground truncate font-display">
+              {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} · ${veh.nome_veiculo}` : 'Sem veículo'}
               {shift.app_utilizado && ` · ${shift.app_utilizado}`}
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <button onClick={() => setFocus(true)} title="Modo foco" className="p-2 rounded-xl bg-secondary text-foreground hover:bg-secondary/80 transition-colors">
+            <button onClick={() => setFocus(true)} title="Modo foco" className="p-2.5 rounded-xl surface-inset border border-border/60 text-foreground hover:bg-secondary/80 press">
               <Maximize2 size={14} />
             </button>
-            <button onClick={handleEnd} className="p-2 rounded-xl bg-loss/90 hover:bg-loss text-primary-foreground transition-colors" title="Finalizar">
+            <button onClick={handleEnd} className="p-2.5 rounded-xl bg-loss/15 border border-loss/40 text-loss hover:bg-loss/25 press" title="Finalizar turno">
               <Square size={14} fill="currentColor" />
             </button>
           </div>
         </div>
 
-        {/* 4 stats ao vivo */}
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Clock size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Tempo</p>
-            <p className="font-display font-bold text-xs number-tabular">{tempoLive}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Navigation size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Km</p>
-            <p className="font-display font-bold text-xs number-tabular">{t.km_total.toFixed(1)}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Wallet size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">Corridas</p>
-            <p className="font-display font-bold text-xs number-tabular">{t.corridas_total}</p>
-          </div>
-          <div className="bg-card/70 rounded-xl p-2 border border-border/60">
-            <Zap size={12} className="mx-auto text-muted-foreground" />
-            <p className="text-[10px] text-muted-foreground">R$/km</p>
-            <p className="font-display font-bold text-xs number-tabular">{rPorKm.toFixed(2)}</p>
-          </div>
+        {/* 4 KPIs ao vivo */}
+        <div className="relative grid grid-cols-4 gap-2">
+          <KpiTile icon={<Clock size={11} />} label="Tempo" value={tempoLive} />
+          <KpiTile icon={<Navigation size={11} />} label="Km" value={t.km_total.toFixed(1)} />
+          <KpiTile icon={<Wallet size={11} />} label="Corridas" value={String(t.corridas_total)} />
+          <KpiTile icon={<Zap size={11} />} label="R$/km" value={rPorKm.toFixed(2)} />
         </div>
 
         {/* Meta */}
         {meta && meta.meta > 0 && (
-          <div>
-            <div className="flex items-center justify-between text-[11px] mb-1">
-              <span className="text-muted-foreground flex items-center gap-1"><Target size={11}/> Meta diária</span>
-              <span className="font-display font-bold">
-                {meta.pct.toFixed(0)}% {meta.atingida ? '· 🎯 atingida!' : `· faltam ${fmt(meta.faltam)}`}
+          <div className="relative">
+            <div className="flex items-center justify-between text-[11px] mb-1.5">
+              <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta diária</span>
+              <span className="font-display font-bold font-mono-num">
+                {meta.pct.toFixed(0)}% {meta.atingida ? '· atingida' : `· faltam ${fmt(meta.faltam)}`}
               </span>
             </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
+            <div className="h-1.5 surface-inset rounded-full overflow-hidden">
+              <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient shadow-glow-sm' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
             </div>
           </div>
         )}
+
 
         {/* GPS Background não verificado — instrução clara e ação direta.
             Some automaticamente quando recebemos fix com a tela bloqueada. */}
