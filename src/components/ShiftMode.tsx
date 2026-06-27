@@ -742,49 +742,62 @@ export default function ShiftMode({ onChange }: Props) {
   // === MODO FOCO ===
   if (focus) {
     return (
-      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`relative flex h-2.5 w-2.5`}>
-              <span className={`absolute inline-flex h-full w-full rounded-full ${pausado ? 'bg-accent' : 'bg-profit'} opacity-60 animate-pulse-dot`} />
-              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${pausado ? 'bg-accent' : 'bg-profit'}`} />
+      <div className="fixed inset-0 z-[60] bg-background flex flex-col p-6 animate-fade-in-up">
+        {/* Glow ambiente */}
+        <div className={`absolute inset-x-0 top-0 h-64 blur-3xl opacity-40 pointer-events-none ${pausado ? 'bg-warning/20' : lucroOk ? 'bg-primary/25' : 'bg-loss/25'}`} />
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-pulse-dot ${pausado ? 'bg-warning' : 'bg-profit'}`} />
+              <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
             </span>
-            <p className="font-display font-semibold text-sm">{pausado ? 'Pausado' : 'Modo foco'}</p>
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold leading-none">
+                {pausado ? 'Turno pausado' : 'Modo foco'}
+              </p>
+              <p className="font-display font-bold text-[13px] font-mono-num leading-tight mt-0.5">{tempoLive}</p>
+            </div>
           </div>
-          <button onClick={() => setFocus(false)} className="p-2 rounded-lg bg-secondary text-foreground">
+          <button onClick={() => setFocus(false)} aria-label="Sair do modo foco" className="p-2.5 rounded-xl surface-inset border border-border/60 text-foreground hover:bg-secondary/80 press">
             <Minimize2 size={18} />
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-center text-center gap-6">
+        <div className="relative flex-1 flex flex-col items-center justify-center text-center gap-8">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-display">Lucro real agora</p>
-            <p className={`text-7xl font-display font-bold number-tabular mt-2 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
+            <p className="text-label">Lucro real agora</p>
+            <p className={`text-[72px] leading-none font-display font-bold font-mono-num mt-3 ${lucroOk ? 'text-profit' : 'text-loss'}`}>
               {fmt(t.lucro_total)}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-6 w-full max-w-sm">
-            <div><p className="text-[10px] uppercase text-muted-foreground">Tempo</p><p className="font-display font-bold text-2xl number-tabular">{tempoLive}</p></div>
-            <div><p className="text-[10px] uppercase text-muted-foreground">Km</p><p className="font-display font-bold text-2xl number-tabular">{t.km_total.toFixed(1)}</p></div>
-            <div><p className="text-[10px] uppercase text-muted-foreground">Corridas</p><p className="font-display font-bold text-2xl number-tabular">{t.corridas_total}</p></div>
+          <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
+            <KpiTile icon={<Clock size={12} />} label="Tempo" value={tempoLive} />
+            <KpiTile icon={<Navigation size={12} />} label="Km" value={t.km_total.toFixed(1)} />
+            <KpiTile icon={<Wallet size={12} />} label="Corridas" value={String(t.corridas_total)} />
           </div>
           {meta && meta.meta > 0 && (
             <div className="w-full max-w-sm">
-              <div className="flex justify-between text-xs mb-1"><span className="text-muted-foreground">Meta</span><span className="font-display font-bold">{meta.pct.toFixed(0)}%</span></div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden"><div className={`h-full ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'} transition-all`} style={{ width: `${meta.pct}%` }} /></div>
+              <div className="flex justify-between text-[11px] mb-1.5">
+                <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta</span>
+                <span className="font-display font-bold font-mono-num">{meta.pct.toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 surface-inset rounded-full overflow-hidden">
+                <div className={`h-full transition-all duration-500 ${meta.atingida ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${meta.pct}%` }} />
+              </div>
             </div>
           )}
         </div>
 
-        <div className="space-y-2">
-          <button onClick={openRide} className="w-full rounded-2xl p-5 bg-profit-gradient text-primary-foreground font-display font-bold text-lg flex items-center justify-center gap-2 shadow-glow active:scale-[0.98]">
-            <Plus size={22} /> Registrar corrida
+        <div className="relative space-y-2">
+          <button onClick={openRide} className="w-full h-14 rounded-2xl bg-brand-gradient text-primary-foreground font-display font-bold text-[15px] tracking-tight flex items-center justify-center gap-2 shadow-glow press">
+            <Plus size={20} strokeWidth={2.5} /> Registrar corrida
           </button>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={handlePause} className="p-3 rounded-xl bg-secondary text-foreground font-display font-semibold text-sm flex items-center justify-center gap-2">
+            <button onClick={handlePause} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
               {pausado ? <><Play size={14} /> Retomar</> : <><Pause size={14} /> Pausar</>}
             </button>
-            <button onClick={handleEnd} className="p-3 rounded-xl bg-loss/90 text-primary-foreground font-display font-semibold text-sm flex items-center justify-center gap-2">
+            <button onClick={handleEnd} className="h-12 rounded-xl bg-loss/15 border border-loss/40 text-loss font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
               <Square size={14} /> Finalizar
             </button>
           </div>
@@ -794,6 +807,7 @@ export default function ShiftMode({ onChange }: Props) {
       </div>
     );
   }
+
 
   // === HERO NORMAL ===
   return (
