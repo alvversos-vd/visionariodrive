@@ -609,8 +609,10 @@ export default function ShiftMode({ onChange }: Props) {
 
               {step === 'vehicle' && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <Car size={16} className="text-primary" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                      <Car size={11} /> Etapa {new Date().getHours() < 5 ? '2' : '1'} de {new Date().getHours() < 5 ? '3' : '2'}
+                    </p>
                     <h3 className="font-display font-bold text-base">Qual veículo será usado?</h3>
                   </div>
                   <div className="space-y-2">
@@ -618,27 +620,27 @@ export default function ShiftMode({ onChange }: Props) {
                       <button
                         key={v.veiculo_id}
                         onClick={() => setPickedVehicleId(v.veiculo_id)}
-                        className={`w-full text-left p-3 rounded-lg border ${pickedVehicleId === v.veiculo_id ? 'border-primary bg-primary/10' : 'bg-secondary/40'}`}
+                        className={`w-full text-left p-3 rounded-xl border press transition-colors ${pickedVehicleId === v.veiculo_id ? 'border-primary bg-primary/10 shadow-glow-sm' : 'border-border/60 surface-inset hover:border-border'}`}
                       >
-                        <p className="font-display font-bold text-sm">{TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="font-display font-bold text-sm tracking-tight">{TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           {v.km_por_litro ? `${v.km_por_litro} km/L` : 'sem combustível'}
                           {v.custo_fixo_mensal > 0 ? ` · R$ ${v.custo_fixo_mensal.toFixed(0)}/mês` : ''}
                         </p>
                       </button>
                     ))}
-                    <button onClick={() => { setPickerOpen(false); setVehiclesOpen(true); }} className="w-full p-2 rounded-lg border-2 border-dashed text-xs text-primary font-semibold">
+                    <button onClick={() => { setPickerOpen(false); setVehiclesOpen(true); }} className="w-full p-2.5 rounded-xl border border-dashed border-border/80 text-xs text-primary font-display font-semibold hover:bg-primary/5 press">
                       + Adicionar veículo
                     </button>
                   </div>
                   <div className="flex gap-2">
                     {new Date().getHours() < 5 && (
-                      <button onClick={() => setStep('date')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                      <button onClick={() => setStep('date')} className="flex-1 p-2.5 rounded-xl surface-inset border border-border/60 text-xs font-display font-semibold press">Voltar</button>
                     )}
                     <button
                       disabled={!pickedVehicleId}
                       onClick={() => setStep('app')}
-                      className="flex-1 p-2 rounded-lg bg-primary text-primary-foreground font-display font-bold text-sm disabled:opacity-40"
+                      className="flex-1 h-11 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm disabled:opacity-40 disabled:shadow-none shadow-glow-sm press transition-all"
                     >
                       Continuar
                     </button>
@@ -648,8 +650,10 @@ export default function ShiftMode({ onChange }: Props) {
 
               {step === 'app' && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <Smartphone size={16} className="text-primary" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                      <Smartphone size={11} /> Última etapa
+                    </p>
                     <h3 className="font-display font-bold text-base">Qual app você vai usar?</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -657,26 +661,27 @@ export default function ShiftMode({ onChange }: Props) {
                       <button
                         key={a}
                         onClick={() => setPickedApp(a)}
-                        className={`p-2.5 rounded-lg text-sm font-display font-semibold border ${pickedApp === a ? 'border-primary bg-primary/10 text-primary' : 'bg-secondary/40 text-foreground'}`}
+                        className={`p-3 rounded-xl text-sm font-display font-semibold border press transition-colors ${pickedApp === a ? 'border-primary bg-primary/10 text-primary shadow-glow-sm' : 'border-border/60 surface-inset text-foreground hover:border-border'}`}
                       >
                         {a}
                       </button>
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setStep('vehicle')} className="flex-1 p-2 rounded-lg bg-secondary text-xs">Voltar</button>
+                    <button onClick={() => setStep('vehicle')} className="flex-1 p-2.5 rounded-xl surface-inset border border-border/60 text-xs font-display font-semibold press">Voltar</button>
                     <button
                       disabled={!pickedApp}
                       onClick={finalizeStart}
-                      className="flex-1 p-2.5 rounded-lg bg-profit text-primary-foreground font-display font-bold disabled:opacity-40"
+                      className="flex-1 h-11 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm disabled:opacity-40 disabled:shadow-none shadow-glow press transition-all flex items-center justify-center gap-1.5"
                     >
-                      Iniciar turno
+                      <Play size={14} fill="currentColor" /> Iniciar turno
                     </button>
                   </div>
                 </>
               )}
 
-              <button onClick={() => setPickerOpen(false)} className="w-full text-xs text-muted-foreground py-1">Cancelar</button>
+              <button onClick={() => setPickerOpen(false)} className="w-full text-[11px] text-muted-foreground hover:text-foreground py-1.5 font-display">Cancelar</button>
+
             </div>
           </div>
         )}
