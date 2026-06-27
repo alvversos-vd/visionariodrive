@@ -847,7 +847,6 @@ export default function ShiftMode({ onChange }: Props) {
 
 
   // === HERO NORMAL — Cockpit do turno ===
-  const accentColor = pausado ? 'warning' : lucroOk ? 'profit' : 'loss';
   return (
     <>
       <div className="relative rounded-2xl p-5 surface-1 border border-border/60 space-y-4 overflow-hidden shadow-premium">
