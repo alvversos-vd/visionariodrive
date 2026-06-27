@@ -68,6 +68,42 @@ function KpiTile({ icon, label, value }: { icon?: React.ReactNode; label: string
   );
 }
 
+function AlertBanner({
+  tone, icon, title, body, cta, onClick,
+}: {
+  tone: 'warning' | 'info' | 'loss';
+  icon: React.ReactNode;
+  title: string;
+  body: React.ReactNode;
+  cta?: string;
+  onClick?: () => void;
+}) {
+  const toneCls =
+    tone === 'warning' ? 'border-warning/30 bg-warning/5 text-warning' :
+    tone === 'loss' ? 'border-loss/30 bg-loss/5 text-loss' :
+    'border-info/30 bg-info/5 text-info';
+  const stripeCls =
+    tone === 'warning' ? 'bg-warning' :
+    tone === 'loss' ? 'bg-loss' :
+    'bg-info';
+  const Wrapper: React.ElementType = onClick ? 'button' : 'div';
+  return (
+    <Wrapper
+      onClick={onClick}
+      className={`relative w-full overflow-hidden flex items-start gap-2.5 rounded-xl border p-3 text-[11px] text-left ${toneCls} ${onClick ? 'press transition-transform' : ''}`}
+    >
+      <span className={`absolute inset-y-0 left-0 w-0.5 ${stripeCls}`} />
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="flex-1 min-w-0">
+        {title && <p className="font-display font-semibold leading-tight">{title}</p>}
+        <p className="opacity-80 leading-relaxed mt-0.5">{body}</p>
+      </div>
+      {cta && <span className="text-[10px] font-display font-semibold underline shrink-0 mt-0.5">{cta}</span>}
+    </Wrapper>
+  );
+}
+
+
 
 interface Props { onChange?: () => void }
 
