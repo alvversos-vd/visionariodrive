@@ -456,14 +456,14 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   <p className="text-[11px] text-muted-foreground mt-1.5">Já incluídos no custo total e no lucro do dia</p>
                 </div>
                 <div className="space-y-1.5 pt-1">
-                  {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
-                    const pct = (expensesByCat[c].total / expensesToday) * 100;
+                  {EXPENSE_CATEGORIES.filter(c => (expensesByCategory[c] ?? 0) > 0).map(c => {
+                    const pct = ((expensesByCategory[c] ?? 0) / expensesToday) * 100;
                     return (
                       <div key={c}>
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-foreground">{c}</span>
                           <span className="font-display font-semibold text-foreground">
-                            <span className="font-mono-num">{fmt(expensesByCat[c].total)}</span>
+                            <span className="font-mono-num">{fmt((expensesByCategory[c] ?? 0))}</span>
                             <span className="text-muted-foreground ml-1.5 font-mono-num">{pct.toFixed(0)}%</span>
                           </span>
                         </div>
@@ -530,7 +530,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       })()}
 
       {/* Performance highlights */}
-      {entries.length > 0 && (
+      {entriesCount > 0 && (
         <div className="space-y-2 pt-2">
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Desempenho</p>
           <div className="grid grid-cols-3 gap-2">
