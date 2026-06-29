@@ -515,6 +515,32 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         )}
       </div>
 
+      {/* Bônus & receitas extras — complemento da timeline via FinancialService */}
+      {bonusEntries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
+            Bônus recebidos
+          </p>
+          {bonusEntries.map((b: FinancialEntry) => (
+            <div key={b.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Sparkles size={14} className="text-primary shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                    {weekday(b.date)}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">{fmtDate(b.date)}</span>
+                  <span className="text-base font-display font-bold text-profit font-mono-num">+{fmt(b.value)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {b.category}{b.app && <> · {b.app}</>}{b.notes && <> · {b.notes}</>}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Saved rides */}
       {allRides.length > 0 && (
         <div className="space-y-2">
