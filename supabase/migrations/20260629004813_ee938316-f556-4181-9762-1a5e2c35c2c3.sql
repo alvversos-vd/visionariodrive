@@ -1,0 +1,1 @@
+ALTER TABLE public.user_data ADD COLUMN IF NOT EXISTS financial jsonb NOT NULL DEFAULT '{"schemaVersion":1,"entries":[]}'::jsonb;

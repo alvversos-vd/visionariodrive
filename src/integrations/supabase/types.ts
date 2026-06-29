@@ -76,6 +76,7 @@ export type Database = {
           created_at: string
           entries: Json
           expenses: Json
+          financial: Json
           goals: Json
           ride_types: Json
           rides: Json
@@ -90,6 +91,7 @@ export type Database = {
           created_at?: string
           entries?: Json
           expenses?: Json
+          financial?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json
@@ -104,6 +106,7 @@ export type Database = {
           created_at?: string
           entries?: Json
           expenses?: Json
+          financial?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json
