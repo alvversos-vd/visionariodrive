@@ -475,7 +475,21 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   })}
                 </div>
               </div>
+
+            {bonusToday > 0 && (
+              <div className="rounded-xl p-3.5 border border-primary/30 bg-primary/[0.06] flex items-center justify-between gap-3 relative overflow-hidden">
+                <span className="absolute inset-y-0 left-0 w-[2px] bg-primary" />
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Sparkles size={14} className="text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-primary font-display font-semibold">Bônus do dia</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Já somado ao lucro líquido</p>
+                  </div>
+                </div>
+                <p className="font-mono-num font-semibold text-lg text-primary">{fmt(bonusToday)}</p>
+              </div>
             )}
+
 
             {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
               <div className="rounded-xl p-4 border border-border/70 bg-card shadow-elevated">
