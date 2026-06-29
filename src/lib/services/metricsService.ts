@@ -68,6 +68,8 @@ export interface RangeMetrics {
 export interface DashboardSnapshot {
   today: DayMetrics;
   stats: PerformanceStats;
+  entriesCount: number;
+  expensesByCategory: Record<string, number>;
 }
 
 function emptyDayMetrics(date: Date): DayMetrics {
@@ -150,7 +152,19 @@ export const metricsService = {
     const entries = getEntries();
     const stats = computeStats(entries, goalDaily);
     const today = this.dayMetrics(new Date());
-    return { today, stats };
+    const dayStart = startOfDay(new Date());
+    const dayEnd = endOfDay(new Date());
+    const expensesByCategory = financialService.groupByCategory({
+      type: 'expense',
+      from: dayStart,
+      to: dayEnd,
+    });
+    return {
+      today,
+      stats,
+      entriesCount: entries.length,
+      expensesByCategory,
+    };
   },
 };
 
