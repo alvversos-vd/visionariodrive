@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getEntries, getGoals, getSettings, getRides } from '@/lib/storage';
-import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
-import { computeStats } from '@/lib/types';
+import { getGoals, getSettings, getRides } from '@/lib/storage';
+import { metricsService } from '@/lib/services/metricsService';
+import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
 import {
   daysSinceLastOpen, markOpenedToday,
@@ -31,27 +31,25 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
-  const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
-  const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
-  const todayExpenses = useMemo(() => getTodayExpenses(), [refresh]);
-  const expensesToday = sumExpenses(todayExpenses);
-  const expensesByCat = useMemo(() => groupByCategory(todayExpenses), [todayExpenses]);
 
-  const baseToday = stats.todayEntry;
-  // Adjust today's totals to include extra expenses
-  const today = baseToday
+  // ÚNICA fonte financeira do Dashboard — MetricsService já agrega corridas,
+  // despesas, bônus e receitas extras via FinancialService.
+  const snapshot = useMemo(() => metricsService.dashboardSnapshot(goals.daily), [refresh, goals.daily]);
+  const { stats, today: todayMetrics, entriesCount, expensesByCategory } = snapshot;
+
+  const expensesToday = todayMetrics.expense;
+  const bonusToday = todayMetrics.bonus;
+  // Compat shim: monta um "today" no mesmo shape do antigo DailyEntry ajustado,
+  // sem expor o storage de entries para o componente.
+  const today = todayMetrics.rawEntry
     ? {
-        ...baseToday,
-        totalCost: baseToday.totalCost + expensesToday,
-        profit: baseToday.profit - expensesToday,
-        profitPerHour: baseToday.hoursWorked > 0
-          ? (baseToday.profit - expensesToday) / baseToday.hoursWorked
-          : 0,
-        profitPerKm: baseToday.kmDriven > 0
-          ? (baseToday.profit - expensesToday) / baseToday.kmDriven
-          : 0,
+        ...todayMetrics.rawEntry,
+        totalCost: todayMetrics.totalCost,
+        profit: todayMetrics.netProfit,
+        profitPerHour: todayMetrics.profitPerHour,
+        profitPerKm: todayMetrics.profitPerKm,
       }
     : null;
 
