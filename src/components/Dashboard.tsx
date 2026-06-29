@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getEntries, getGoals, getSettings, getRides } from '@/lib/storage';
-import { getTodayExpenses, sumExpenses, groupByCategory, EXPENSE_CATEGORIES } from '@/lib/expenses';
-import { computeStats } from '@/lib/types';
+import { getGoals, getSettings, getRides } from '@/lib/storage';
+import { metricsService } from '@/lib/services/metricsService';
+import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
 import {
   daysSinceLastOpen, markOpenedToday,
@@ -31,27 +31,25 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
-  const entries = useMemo(() => getEntries(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
   const settings = useMemo(() => getSettings(), [refresh]);
-  const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
-  const todayExpenses = useMemo(() => getTodayExpenses(), [refresh]);
-  const expensesToday = sumExpenses(todayExpenses);
-  const expensesByCat = useMemo(() => groupByCategory(todayExpenses), [todayExpenses]);
 
-  const baseToday = stats.todayEntry;
-  // Adjust today's totals to include extra expenses
-  const today = baseToday
+  // ÚNICA fonte financeira do Dashboard — MetricsService já agrega corridas,
+  // despesas, bônus e receitas extras via FinancialService.
+  const snapshot = useMemo(() => metricsService.dashboardSnapshot(goals.daily), [refresh, goals.daily]);
+  const { stats, today: todayMetrics, entriesCount, expensesByCategory } = snapshot;
+
+  const expensesToday = todayMetrics.expense;
+  const bonusToday = todayMetrics.bonus;
+  // Compat shim: monta um "today" no mesmo shape do antigo DailyEntry ajustado,
+  // sem expor o storage de entries para o componente.
+  const today = todayMetrics.rawEntry
     ? {
-        ...baseToday,
-        totalCost: baseToday.totalCost + expensesToday,
-        profit: baseToday.profit - expensesToday,
-        profitPerHour: baseToday.hoursWorked > 0
-          ? (baseToday.profit - expensesToday) / baseToday.hoursWorked
-          : 0,
-        profitPerKm: baseToday.kmDriven > 0
-          ? (baseToday.profit - expensesToday) / baseToday.kmDriven
-          : 0,
+        ...todayMetrics.rawEntry,
+        totalCost: todayMetrics.totalCost,
+        profit: todayMetrics.netProfit,
+        profitPerHour: todayMetrics.profitPerHour,
+        profitPerKm: todayMetrics.profitPerKm,
       }
     : null;
 
@@ -458,14 +456,14 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   <p className="text-[11px] text-muted-foreground mt-1.5">Já incluídos no custo total e no lucro do dia</p>
                 </div>
                 <div className="space-y-1.5 pt-1">
-                  {EXPENSE_CATEGORIES.filter(c => expensesByCat[c].total > 0).map(c => {
-                    const pct = (expensesByCat[c].total / expensesToday) * 100;
+                  {EXPENSE_CATEGORIES.filter(c => (expensesByCategory[c] ?? 0) > 0).map(c => {
+                    const pct = ((expensesByCategory[c] ?? 0) / expensesToday) * 100;
                     return (
                       <div key={c}>
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-foreground">{c}</span>
                           <span className="font-display font-semibold text-foreground">
-                            <span className="font-mono-num">{fmt(expensesByCat[c].total)}</span>
+                            <span className="font-mono-num">{fmt((expensesByCategory[c] ?? 0))}</span>
                             <span className="text-muted-foreground ml-1.5 font-mono-num">{pct.toFixed(0)}%</span>
                           </span>
                         </div>
@@ -478,6 +476,23 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                 </div>
               </div>
             )}
+
+
+
+            {bonusToday > 0 && (
+              <div className="rounded-xl p-3.5 border border-primary/30 bg-primary/[0.06] flex items-center justify-between gap-3 relative overflow-hidden">
+                <span className="absolute inset-y-0 left-0 w-[2px] bg-primary" />
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Sparkles size={14} className="text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-primary font-display font-semibold">Bônus do dia</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">Já somado ao lucro líquido</p>
+                  </div>
+                </div>
+                <p className="font-mono-num font-semibold text-lg text-primary">{fmt(bonusToday)}</p>
+              </div>
+            )}
+
 
             {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
               <div className="rounded-xl p-4 border border-border/70 bg-card shadow-elevated">
@@ -532,7 +547,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       })()}
 
       {/* Performance highlights */}
-      {entries.length > 0 && (
+      {entriesCount > 0 && (
         <div className="space-y-2 pt-2">
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Desempenho</p>
           <div className="grid grid-cols-3 gap-2">

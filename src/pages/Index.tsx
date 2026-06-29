@@ -9,7 +9,7 @@ import GoalsView from '@/components/GoalsView';
 import SettingsView from '@/components/SettingsView';
 import SimulatorView from '@/components/SimulatorView';
 import ProfileView from '@/components/ProfileView';
-import ExpensesView from '@/components/ExpensesView';
+import FinancialView from '@/components/FinancialView';
 import ProRequired from '@/components/ProRequired';
 import UpgradeView from '@/components/UpgradeView';
 import PermissionOnboarding from '@/components/PermissionOnboarding';
@@ -19,7 +19,7 @@ import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIc
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
 
-type Tab = 'home' | 'input' | 'ride' | 'goals' | 'expenses' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
+type Tab = 'home' | 'input' | 'ride' | 'goals' | 'financial' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
@@ -51,7 +51,7 @@ export default function Index() {
     { key: 'home', label: 'Início', icon: Home },
     { key: 'input', label: 'Calcular', icon: Calculator },
     { key: 'ride', label: 'Corrida', icon: Navigation },
-    { key: 'expenses', label: 'Gastos', icon: Wallet },
+    { key: 'financial', label: 'Financeiro', icon: Wallet },
     { key: 'goals', label: 'Metas', icon: Target },
     { key: 'strategy', label: 'Estratégia', icon: Lightbulb, pro: true },
     { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
@@ -67,7 +67,7 @@ export default function Index() {
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
   const renderContent = () => {
-    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'expenses' && tab !== 'settings' && tab !== 'profile' && tab !== 'upgrade' && isLocked(tab)) {
+    if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'financial' && tab !== 'settings' && tab !== 'profile' && tab !== 'upgrade' && isLocked(tab)) {
       const labels: Partial<Record<Tab, string>> = {
         ride: 'a análise de corridas',
         history: 'o histórico completo',
@@ -87,8 +87,8 @@ export default function Index() {
         return <RideAnalyzer refresh={refresh} onGoToUpgrade={() => setTab('upgrade')} />;
       case 'goals':
         return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
-      case 'expenses':
-        return <ExpensesView refresh={refresh} onChanged={triggerRefresh} />;
+      case 'financial':
+        return <FinancialView refresh={refresh} onChanged={triggerRefresh} />;
       case 'strategy':
         return <SimulatorView refresh={refresh} />;
       case 'history':

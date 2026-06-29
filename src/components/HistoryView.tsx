@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
 import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
-import { getExpenses } from '@/lib/expenses';
+import { financialService } from '@/lib/services/financialService';
+import type { FinancialEntry } from '@/lib/domain/models';
 import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
@@ -73,7 +74,21 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   const rawEntries = useMemo(() => getEntries(), [refresh]);
   const allRides = useMemo(() => getRides(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
-  const expenses = useMemo(() => getExpenses(), [refresh]);
+
+  // FinancialService = ÚNICA fonte para despesas e bônus.
+  const expenseEntries = useMemo(() => financialService.list({ type: 'expense' }), [refresh]);
+  const bonusEntries  = useMemo(() => financialService.list({ type: 'bonus' }),   [refresh]);
+  // Adapter compat para o agregador read-side existente.
+  const expensesForMerge = useMemo(
+    () => expenseEntries.map(e => ({
+      id: e.id,
+      date: e.date,
+      value: e.value,
+      category: e.category as never,
+      description: e.notes,
+    })),
+    [expenseEntries],
+  );
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
@@ -81,8 +96,8 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   // Merge expenses (read-side) into the canonical list used everywhere.
   // No mutation of storage / DailyEntry / sync.
   const allEntries: AdjustedDailyEntry[] = useMemo(
-    () => mergeExpensesIntoEntries(rawEntries, expenses),
-    [rawEntries, expenses],
+    () => mergeExpensesIntoEntries(rawEntries, expensesForMerge),
+    [rawEntries, expensesForMerge],
   );
 
   // Build option lists from data actually present
@@ -499,6 +514,32 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           ))
         )}
       </div>
+
+      {/* Bônus & receitas extras — complemento da timeline via FinancialService */}
+      {bonusEntries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
+            Bônus recebidos
+          </p>
+          {bonusEntries.map((b: FinancialEntry) => (
+            <div key={b.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Sparkles size={14} className="text-primary shrink-0" />
+                  <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                    {weekday(b.date)}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">{fmtDate(b.date)}</span>
+                  <span className="text-base font-display font-bold text-profit font-mono-num">+{fmt(b.value)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {b.category}{b.app && <> · {b.app}</>}{b.notes && <> · {b.notes}</>}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Saved rides */}
       {allRides.length > 0 && (

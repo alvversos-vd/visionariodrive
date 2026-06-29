@@ -12,6 +12,9 @@ const KEY_MAP = {
   'lucro-delivery-expenses': 'expenses',
   'lucro-delivery-shifts': 'shifts',
   'lucro-delivery-vehicles-v2': 'vehicles_v2',
+  // Financeiro canônico (Fase 1): payload versionado { schemaVersion, entries }.
+  // `expenses` permanece como espelho legacy para compat com clientes antigos.
+  'vd-financial': 'financial',
 } as const;
 
 type LocalKey = keyof typeof KEY_MAP;
@@ -33,6 +36,7 @@ function readLocal(key: LocalKey): unknown {
     if (key === 'lucro-delivery-goals') return { daily: 0, weekly: 0, monthly: 0 };
     if (key === 'lucro-delivery-settings')
       return { profitMargin: 1.3, currency: 'BRL', estimatedHours: 8 };
+    if (key === 'vd-financial') return { schemaVersion: 1, entries: [] };
     return [];
   }
   try { return JSON.parse(raw); } catch { return null; }
