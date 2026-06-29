@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
 import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
-import { getExpenses } from '@/lib/expenses';
+import { financialService } from '@/lib/services/financialService';
+import type { FinancialEntry } from '@/lib/domain/models';
 import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
