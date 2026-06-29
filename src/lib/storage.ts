@@ -25,6 +25,7 @@ export const APP_STORAGE_KEYS: string[] = [
   VEHICLES_KEY,
   RIDE_TYPES_KEY,
   'lucro-delivery-expenses',
+  'vd-financial',
   'lucro-delivery-shifts',
   'lucro-delivery-vehicles-v2',
   // estado local não-sincronizado
