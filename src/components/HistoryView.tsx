@@ -74,7 +74,21 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   const rawEntries = useMemo(() => getEntries(), [refresh]);
   const allRides = useMemo(() => getRides(), [refresh]);
   const goals = useMemo(() => getGoals(), [refresh]);
-  const expenses = useMemo(() => getExpenses(), [refresh]);
+
+  // FinancialService = ÚNICA fonte para despesas e bônus.
+  const expenseEntries = useMemo(() => financialService.list({ type: 'expense' }), [refresh]);
+  const bonusEntries  = useMemo(() => financialService.list({ type: 'bonus' }),   [refresh]);
+  // Adapter compat para o agregador read-side existente.
+  const expensesForMerge = useMemo(
+    () => expenseEntries.map(e => ({
+      id: e.id,
+      date: e.date,
+      value: e.value,
+      category: e.category as never,
+      description: e.notes,
+    })),
+    [expenseEntries],
+  );
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
@@ -82,8 +96,8 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   // Merge expenses (read-side) into the canonical list used everywhere.
   // No mutation of storage / DailyEntry / sync.
   const allEntries: AdjustedDailyEntry[] = useMemo(
-    () => mergeExpensesIntoEntries(rawEntries, expenses),
-    [rawEntries, expenses],
+    () => mergeExpensesIntoEntries(rawEntries, expensesForMerge),
+    [rawEntries, expensesForMerge],
   );
 
   // Build option lists from data actually present
