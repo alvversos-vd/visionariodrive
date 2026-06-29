@@ -475,6 +475,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   })}
                 </div>
               </div>
+            )}
+
+
 
             {bonusToday > 0 && (
               <div className="rounded-xl p-3.5 border border-primary/30 bg-primary/[0.06] flex items-center justify-between gap-3 relative overflow-hidden">
