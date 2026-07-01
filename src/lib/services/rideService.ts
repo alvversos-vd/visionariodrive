@@ -14,6 +14,19 @@
 
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
 import type { RideModel, CaptureMode, RideApp } from '../domain/models';
+import type { RideEntry } from '../types';
+
+export interface SaveIndividualInput {
+  value: number;
+  km: number;
+  costPerKm: number;
+  minIdealKm: number;
+  ridePerKm: number;
+  profit: number;
+  verdict: 'good' | 'ok' | 'bad';
+  vehicle?: string;
+  rideType?: string;
+}
 
 export interface RideListFilters {
   captureMode?: CaptureMode | CaptureMode[];
@@ -59,8 +72,30 @@ export const rideService = {
   },
 
   countIndividual(): number {
-    // Corridas individuais (não `imported`) — usadas em micro-wins/onboarding.
     return rideRepository.listRides().length;
+  },
+
+  /**
+   * Persiste uma corrida analisada individualmente (FAB / RideAnalyzer).
+   * Escreve no formato legacy RideEntry — na Fase 2, esta chamada passa a
+   * criar um RideModel unificado. Consumidores não precisam mudar.
+   */
+  saveIndividual(input: SaveIndividualInput): RideEntry {
+    const ride: RideEntry = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      value: input.value,
+      km: input.km,
+      costPerKm: input.costPerKm,
+      minIdealKm: input.minIdealKm,
+      ridePerKm: input.ridePerKm,
+      profit: input.profit,
+      verdict: input.verdict,
+      vehicle: input.vehicle,
+      rideType: input.rideType,
+    };
+    rideRepository.saveRide(ride);
+    return ride;
   },
 
   // Contrato final — implementação na Fase 2
