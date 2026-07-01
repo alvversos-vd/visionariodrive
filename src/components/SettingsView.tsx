@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
+import { settingsService } from '@/lib/services/settingsService';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import { clearAllRoutes } from '@/lib/shifts';
 import { clearGpsConsent } from './GpsConsentDialog';
