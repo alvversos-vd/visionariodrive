@@ -4,6 +4,7 @@ import { goalsService } from '@/lib/services/goalsService';
 import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsService';
 import { rideRepository } from '@/lib/repositories/rideRepository';
 import type { RideEntry } from '@/lib/types';
+import type { FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
