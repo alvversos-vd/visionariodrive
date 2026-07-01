@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { addVehicle, TipoVeiculo, setLastApp, AppEntrega, hasAnyVehicle } from '@/lib/vehicles';
-import { saveGoals, getGoals } from '@/lib/storage';
+import { vehicleService } from '@/lib/services/vehicleService';
+import type { TipoVeiculo } from '@/lib/vehicles';
+import type { AppEntrega } from '@/lib/services/vehicleService';
+import { goalsService } from '@/lib/services/goalsService';
+import { profileService } from '@/lib/services/profileService';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -52,9 +54,8 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
     if (!user) return;
     setSaving(true);
     try {
-      // Vehicle
-      if (vehicle && !hasAnyVehicle()) {
-        addVehicle({
+      if (vehicle && !vehicleService.hasAny()) {
+        vehicleService.add({
           tipo_veiculo: vehicle,
           nome_veiculo: VEHICLES.find(v => v.key === vehicle)?.label || 'Meu veículo',
           km_por_litro: vehicle === 'bike' || vehicle === 'bike_eletrica' ? null : 10,
@@ -63,25 +64,18 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
           custo_fixo_mensal: 0,
         });
       }
-      // App
-      if (app) setLastApp(app);
-      // Goal
+      if (app) vehicleService.setLastApp(app);
       const finalGoal = goal ?? (customGoal ? Number(customGoal) : 0);
       if (finalGoal > 0) {
-        const g = getGoals();
-        saveGoals({ ...g, daily: finalGoal });
+        const g = goalsService.get();
+        goalsService.save({ ...g, daily: finalGoal });
       }
-      // Profile
-      await supabase
-        .from('profiles')
-        .update({
-          tipo_veiculo_principal: vehicle,
-          meta_lucro_diaria: finalGoal || null,
-          app_principal: app,
-          objetivo_principal: objective,
-          onboarding_completo: true,
-        })
-        .eq('user_id', user.id);
+      await profileService.markOnboarded(user.id, {
+        tipo_veiculo_principal: vehicle,
+        meta_lucro_diaria: finalGoal || null,
+        app_principal: app,
+        objetivo_principal: objective,
+      });
       await refreshProfile();
       onFinish();
     } catch (e: any) {
@@ -94,7 +88,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const skipAll = async () => {
     if (!user) return;
     setSaving(true);
-    await supabase.from('profiles').update({ onboarding_completo: true }).eq('user_id', user.id);
+    await profileService.update(user.id, { onboarding_completo: true });
     await refreshProfile();
     onFinish();
   };

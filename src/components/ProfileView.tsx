@@ -167,12 +167,10 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
                     type="button"
                     onClick={async () => {
                       if (!user || active) return;
-                      const { error } = await supabase
-                        .from('profiles')
-                        .update({ objetivo_principal: opt.key })
-                        .eq('user_id', user.id);
-                      if (error) {
-                        toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+                      try {
+                        await profileService.update(user.id, { objetivo_principal: opt.key });
+                      } catch (error: any) {
+                        toast({ title: 'Erro ao salvar', description: error?.message ?? 'Tente novamente', variant: 'destructive' });
                         return;
                       }
                       await refreshProfile();
