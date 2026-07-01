@@ -1,5 +1,5 @@
 import { DailyEntry } from '@/lib/types';
-import { getGoal } from '@/lib/storage';
+import { goalsService } from '@/lib/services/goalsService';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -28,7 +28,7 @@ function StatCard({ icon, label, value, highlight }: {
 
 export default function ResultsView({ entry, onBack }: Props) {
   const isProfit = entry.profit >= 0;
-  const goal = getGoal();
+  const goalDaily = goalsService.getDaily();
   const alerts: string[] = [];
 
   if (entry.hoursWorked >= 10 && entry.profitPerHour < 10) {
@@ -47,19 +47,19 @@ export default function ResultsView({ entry, onBack }: Props) {
       </div>
 
       {/* Goal progress */}
-      {goal && goal.amount > 0 && (
+      {goalDaily > 0 && (
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground mb-1">🎯 Meta diária: {fmt(goal.amount)}</p>
+          <p className="text-xs text-muted-foreground mb-1">🎯 Meta diária: {fmt(goalDaily)}</p>
           <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.min(100, (entry.profit / goal.amount) * 100)}%` }}
+              style={{ width: `${Math.min(100, (entry.profit / goalDaily) * 100)}%` }}
             />
           </div>
           <p className="text-sm font-medium mt-1.5 text-foreground">
-            {entry.profit >= goal.amount
+            {entry.profit >= goalDaily
               ? '✅ Meta batida!'
-              : `Faltam ${fmt(goal.amount - entry.profit)}`}
+              : `Faltam ${fmt(goalDaily - entry.profit)}`}
           </p>
         </div>
       )}

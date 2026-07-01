@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
-import { saveEntry, getVehicles, getRideTypes } from '@/lib/storage';
+import { settingsService } from '@/lib/services/settingsService';
+import { rideRepository } from '@/lib/repositories/rideRepository';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,8 +88,8 @@ export default function DailyInputForm({ onCalculate }: Props) {
     installment: '', maintenance: '', insurance: '', otherCosts: '',
   });
   const [touched, setTouched] = useState<Partial<Record<FormKey, boolean>>>({});
-  const vehicles = useMemo(() => getVehicles(), []);
-  const rideTypes = useMemo(() => getRideTypes(), []);
+  const vehicles = useMemo(() => settingsService.getVehicleTags(), []);
+  const rideTypes = useMemo(() => settingsService.getRideTypeTags(), []);
   const [vehicle, setVehicle] = useState<string>('');
   const [rideType, setRideType] = useState<string>('');
   const [showFixed, setShowFixed] = useState(false);
@@ -147,7 +148,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
       date: new Date().toISOString(),
     };
 
-    saveEntry(entry);
+    rideRepository.saveEntry(entry);
     onCalculate(entry);
   };
 

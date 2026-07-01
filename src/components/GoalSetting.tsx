@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getGoal, saveGoal } from '@/lib/storage';
+import { goalsService } from '@/lib/services/goalsService';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -8,14 +8,14 @@ export default function GoalSetting() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const goal = getGoal();
-    if (goal) setAmount(String(goal.amount));
+    const d = goalsService.getDaily();
+    if (d > 0) setAmount(String(d));
   }, []);
 
   const handleSave = () => {
     const val = parseFloat(amount);
     if (val > 0) {
-      saveGoal({ amount: val });
+      goalsService.saveDaily(val);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
