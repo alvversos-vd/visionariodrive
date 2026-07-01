@@ -7,8 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, Shield, MapPin, UserMinus, Loader2 } from 'lucide-react';
-import { resetAllData } from '@/lib/storage';
+import { settingsService } from '@/lib/services/settingsService';
+import { profileService } from '@/lib/services/profileService';
 import { useToast } from '@/hooks/use-toast';
+// Auth-only: reautenticação + delete-account edge function ficam em Auth,
+// não em regra de perfil. `supabase` importado apenas para auth (permitido).
 import { supabase } from '@/integrations/supabase/client';
 import { clearLocalCache } from '@/lib/cloudSync';
 import {
@@ -63,7 +66,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   };
 
   const handleReset = () => {
-    resetAllData();
+    settingsService.resetAllData();
     onReset?.();
     toast({ title: 'Dados apagados', description: 'Todos os dados locais do app foram removidos.' });
   };
@@ -77,15 +80,14 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
     if (!user) return;
     const value = nome.trim().slice(0, 30);
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nome_usuario: value || null })
-      .eq('user_id', user.id);
-    setSaving(false);
-    if (error) {
-      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    try {
+      await profileService.update(user.id, { nome_usuario: value || null });
+    } catch (error: any) {
+      setSaving(false);
+      toast({ title: 'Erro ao salvar', description: error?.message ?? 'Tente novamente', variant: 'destructive' });
       return;
     }
+    setSaving(false);
     await refreshProfile();
     setEditing(false);
     toast({ title: 'Nome atualizado' });
@@ -165,12 +167,10 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
                     type="button"
                     onClick={async () => {
                       if (!user || active) return;
-                      const { error } = await supabase
-                        .from('profiles')
-                        .update({ objetivo_principal: opt.key })
-                        .eq('user_id', user.id);
-                      if (error) {
-                        toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+                      try {
+                        await profileService.update(user.id, { objetivo_principal: opt.key });
+                      } catch (error: any) {
+                        toast({ title: 'Erro ao salvar', description: error?.message ?? 'Tente novamente', variant: 'destructive' });
                         return;
                       }
                       await refreshProfile();

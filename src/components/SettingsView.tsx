@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { getSettings, saveSettings, resetAllData, getVehicles, saveVehicles, getRideTypes, saveRideTypes } from '@/lib/storage';
+import { settingsService } from '@/lib/services/settingsService';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import { clearAllRoutes } from '@/lib/shifts';
 import { clearGpsConsent } from './GpsConsentDialog';
@@ -19,13 +19,13 @@ interface Props {
 }
 
 export default function SettingsView({ refresh, onChanged }: Props) {
-  const initial = useMemo(() => getSettings(), [refresh]);
+  const initial = useMemo(() => settingsService.get(), [refresh]);
   const [marginPct, setMarginPct] = useState(String(((initial.profitMargin - 1) * 100).toFixed(0)));
   const [estHours, setEstHours] = useState(String(initial.estimatedHours));
   const [confirmReset, setConfirmReset] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [vehicles, setVehicles] = useState<string[]>(() => getVehicles());
-  const [rideTypes, setRideTypes] = useState<string[]>(() => getRideTypes());
+  const [vehicles, setVehicles] = useState<string[]>(() => settingsService.getVehicleTags());
+  const [rideTypes, setRideTypes] = useState<string[]>(() => settingsService.getRideTypeTags());
   const initialAlerts = { ...DEFAULT_ALERT_THRESHOLDS, ...(initial.alertThresholds || {}) };
   const [alertMaxHoras, setAlertMaxHoras] = useState(String(initialAlerts.maxHorasTurno));
   const [alertMinLucroHora, setAlertMinLucroHora] = useState(String(initialAlerts.minLucroHora));
@@ -33,12 +33,12 @@ export default function SettingsView({ refresh, onChanged }: Props) {
 
   const updateVehicles = (list: string[]) => {
     setVehicles(list);
-    saveVehicles(list);
+    settingsService.saveVehicleTags(list);
     onChanged();
   };
   const updateRideTypes = (list: string[]) => {
     setRideTypes(list);
-    saveRideTypes(list);
+    settingsService.saveRideTypeTags(list);
     onChanged();
   };
 
@@ -56,14 +56,14 @@ export default function SettingsView({ refresh, onChanged }: Props) {
       estimatedHours: hrs,
       alertThresholds: { maxHorasTurno: mh, minLucroHora: ml, maxCustoPct: mc },
     };
-    saveSettings(next);
+    settingsService.save(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
     onChanged();
   };
 
   const handleReset = () => {
-    resetAllData();
+    settingsService.resetAllData();
     setConfirmReset(false);
     onChanged();
   };

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Trash2, Check, Bike, Car, Zap, Truck, X } from 'lucide-react';
-import {
-  Vehicle, TipoVeiculo, TipoCombustivel, TIPO_LABEL,
-  getVehiclesV2, addVehicle, deleteVehicle, setActiveVehicleId, getActiveVehicleId,
-} from '@/lib/vehicles';
+import { vehicleService, type Vehicle } from '@/lib/services/vehicleService';
+import type { TipoVeiculo, TipoCombustivel } from '@/lib/vehicles';
+import { TIPO_LABEL } from '@/lib/vehicles';
 
 interface Props {
   onChange?: () => void;
@@ -20,24 +19,24 @@ const TIPOS: { key: TipoVeiculo; label: string; Icon: typeof Bike }[] = [
 ];
 
 export default function VehiclesView({ onChange, onClose, forceOnboarding }: Props) {
-  const [vehicles, setVehicles] = useState<Vehicle[]>(() => getVehiclesV2());
-  const [activeId, setActive] = useState<string | null>(() => getActiveVehicleId());
+  const [vehicles, setVehicles] = useState<Vehicle[]>(() => vehicleService.list());
+  const [activeId, setActive] = useState<string | null>(() => vehicleService.getActiveId());
   const [adding, setAdding] = useState(forceOnboarding || vehicles.length === 0);
 
   const refresh = () => {
-    setVehicles(getVehiclesV2());
-    setActive(getActiveVehicleId());
+    setVehicles(vehicleService.list());
+    setActive(vehicleService.getActiveId());
     onChange?.();
   };
 
   const handleSetActive = (id: string) => {
-    setActiveVehicleId(id);
+    vehicleService.setActive(id);
     refresh();
     toast.success('Veículo ativo atualizado');
   };
 
   const handleDelete = (id: string) => {
-    deleteVehicle(id);
+    vehicleService.remove(id);
     refresh();
     toast('Veículo removido');
   };
@@ -158,7 +157,7 @@ function VehicleForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?: ()
   const handleSave = () => {
     if (!nome.trim()) { toast.error('Dê um nome ao veículo'); return; }
     if (isMotor && (!kmL || parseFloat(kmL) <= 0)) { toast.error('Informe km/L'); return; }
-    addVehicle({
+    vehicleService.add({
       tipo_veiculo: tipo,
       nome_veiculo: nome.trim(),
       marca: marca.trim() || undefined,

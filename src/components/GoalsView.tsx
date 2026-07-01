@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react';
-import { getEntries, getGoals, getSettings, saveGoals } from '@/lib/storage';
-import { computeStats, Goals } from '@/lib/types';
+import { goalsService, type Goals } from '@/lib/services/goalsService';
+import { settingsService } from '@/lib/services/settingsService';
+import { metricsService } from '@/lib/services/metricsService';
+import { rideRepository } from '@/lib/repositories/rideRepository';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -24,9 +26,9 @@ const MOTIVATIONAL = [
 ];
 
 export default function GoalsView({ refresh, onSaved }: Props) {
-  const entries = useMemo(() => getEntries(), [refresh]);
-  const settings = useMemo(() => getSettings(), [refresh]);
-  const initialGoals = useMemo(() => getGoals(), [refresh]);
+  const entries = useMemo(() => rideRepository.listEntries(), [refresh]);
+  const settings = useMemo(() => settingsService.get(), [refresh]);
+  const initialGoals = useMemo(() => goalsService.get(), [refresh]);
   const [goals, setGoals] = useState<Goals>(initialGoals);
   const [focusMode, setFocusMode] = useState(false);
   const [phrase, setPhrase] = useState(MOTIVATIONAL[0]);
@@ -41,7 +43,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
     return () => clearInterval(id);
   }, [focusMode]);
 
-  const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
+  const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
   const today = stats.todayEntry;
   const todayProfit = today?.profit ?? 0;
 
@@ -71,7 +73,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
   }[status];
 
   const handleSave = () => {
-    saveGoals(goals);
+    goalsService.save(goals);
     onSaved();
   };
 

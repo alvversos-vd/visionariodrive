@@ -1,38 +1,16 @@
 /**
- * FinancialService — fonte única de verdade para despesas, bônus e receitas extras.
+ * FinancialService — fonte única de verdade para entradas financeiras
+ * (income, bonus, expense). Não conhece corridas, GPS, lucro.
  *
- * Responsabilidades:
- *  - persistir FinancialEntry em `vd-financial` (versionado).
- *  - migrar automaticamente de `lucro-delivery-expenses` (legacy) na primeira leitura,
- *    preservando IDs, datas e valores.
- *  - espelhar entries do tipo `expense` de volta para `lucro-delivery-expenses`
- *    para compatibilidade com clientes ainda não migrados (rollback / cloud sync).
- *
- * Nunca calcula lucro. Nunca conhece corridas. Nunca conhece GPS.
+ * Consome APENAS financialRepository.
  */
 
-import { markDirty } from '../cloudSync';
+import { financialRepository } from '../repositories/financialRepository';
 import {
   FinancialEntry,
-  FinancialPayload,
   FinancialType,
-  FINANCIAL_SCHEMA_VERSION,
-  emptyFinancialPayload,
 } from '../domain/models';
 
-export const FINANCIAL_STORAGE_KEY = 'vd-financial';
-const LEGACY_EXPENSES_KEY = 'lucro-delivery-expenses';
-
-// ─── Tipo legacy preservado para migração in-place (não importar de fora) ─
-interface LegacyExpense {
-  id: string;
-  date: string;
-  value: number;
-  category: string;
-  description?: string;
-}
-
-// ─── Util ─────────────────────────────────────────────────────────────────
 function newId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -45,97 +23,12 @@ function dayKey(iso: string): string {
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
 }
-
-function isSameDay(isoA: string, isoB: string): boolean {
-  return dayKey(isoA) === dayKey(isoB);
-}
-
+function isSameDay(a: string, b: string): boolean { return dayKey(a) === dayKey(b); }
 function inRange(iso: string, from: Date, to: Date): boolean {
   const t = new Date(iso).getTime();
   return t >= from.getTime() && t <= to.getTime();
 }
 
-// ─── Migração legacy → canônico ───────────────────────────────────────────
-function migrateLegacyExpenses(): FinancialEntry[] {
-  const raw = localStorage.getItem(LEGACY_EXPENSES_KEY);
-  if (!raw) return [];
-  let legacy: LegacyExpense[] = [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) legacy = parsed;
-  } catch {
-    return [];
-  }
-  return legacy
-    .filter(e => e && typeof e.id === 'string')
-    .map<FinancialEntry>(e => ({
-      id: e.id,                                      // preserva UUID
-      date: e.date,
-      type: 'expense',
-      origin: 'manual',
-      value: Number(e.value) || 0,
-      category: e.category || 'Outros',
-      notes: e.description?.trim() || undefined,
-    }));
-}
-
-// ─── Leitura/escrita do storage versionado ────────────────────────────────
-function readPayload(): FinancialPayload {
-  const raw = localStorage.getItem(FINANCIAL_STORAGE_KEY);
-
-  if (!raw) {
-    // primeira execução: migra do legacy (NÃO apaga a chave antiga)
-    const migrated = migrateLegacyExpenses();
-    const payload: FinancialPayload = {
-      schemaVersion: FINANCIAL_SCHEMA_VERSION,
-      entries: migrated,
-    };
-    writePayload(payload, { markCloud: false });
-    return payload;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      typeof parsed.schemaVersion === 'number' &&
-      Array.isArray(parsed.entries)
-    ) {
-      // futuras migrações entre schemaVersions entram aqui
-      return parsed as FinancialPayload;
-    }
-  } catch {
-    /* fallthrough */
-  }
-  return emptyFinancialPayload();
-}
-
-function writePayload(payload: FinancialPayload, opts?: { markCloud?: boolean }): void {
-  localStorage.setItem(FINANCIAL_STORAGE_KEY, JSON.stringify(payload));
-  mirrorExpensesToLegacy(payload.entries);
-  if (opts?.markCloud !== false) markDirty({ immediate: true });
-}
-
-/**
- * Mantém `lucro-delivery-expenses` em sincronia com as entries do tipo `expense`,
- * para que clientes antigos (ainda lendo a chave antiga) continuem funcionando
- * durante a transição. Apenas espelho — nunca fonte de verdade depois da migração.
- */
-function mirrorExpensesToLegacy(entries: FinancialEntry[]): void {
-  const expenses: LegacyExpense[] = entries
-    .filter(e => e.type === 'expense')
-    .map(e => ({
-      id: e.id,
-      date: e.date,
-      value: e.value,
-      category: e.category,
-      description: e.notes,
-    }));
-  localStorage.setItem(LEGACY_EXPENSES_KEY, JSON.stringify(expenses));
-}
-
-// ─── API pública ──────────────────────────────────────────────────────────
 export interface ListFilters {
   type?: FinancialType | FinancialType[];
   from?: Date;
@@ -146,7 +39,7 @@ export interface NewEntryInput {
   type: FinancialType;
   value: number;
   category: string;
-  date?: string;          // default: agora
+  date?: string;
   origin?: 'manual' | 'system' | 'imported';
   app?: FinancialEntry['app'];
   vehicleId?: string;
@@ -156,7 +49,7 @@ export interface NewEntryInput {
 
 export const financialService = {
   list(filters: ListFilters = {}): FinancialEntry[] {
-    let entries = readPayload().entries.slice();
+    let entries = financialRepository.read().entries.slice();
     if (filters.type) {
       const types = Array.isArray(filters.type) ? filters.type : [filters.type];
       entries = entries.filter(e => types.includes(e.type));
@@ -187,31 +80,29 @@ export const financialService = {
       relatedRideId: input.relatedRideId,
       notes: input.notes?.trim() || undefined,
     };
-
-    const payload = readPayload();
-    writePayload({ ...payload, entries: [entry, ...payload.entries] });
+    const payload = financialRepository.read();
+    financialRepository.write({ ...payload, entries: [entry, ...payload.entries] });
     return entry;
   },
 
   update(id: string, patch: Partial<Omit<FinancialEntry, 'id'>>): FinancialEntry | null {
-    const payload = readPayload();
+    const payload = financialRepository.read();
     const i = payload.entries.findIndex(e => e.id === id);
     if (i < 0) return null;
     const next: FinancialEntry = { ...payload.entries[i], ...patch, id };
     if (patch.value !== undefined) next.value = Math.abs(Number(patch.value) || 0);
     payload.entries[i] = next;
-    writePayload(payload);
+    financialRepository.write(payload);
     return next;
   },
 
   remove(id: string): void {
-    const payload = readPayload();
+    const payload = financialRepository.read();
     const next = payload.entries.filter(e => e.id !== id);
     if (next.length === payload.entries.length) return;
-    writePayload({ ...payload, entries: next });
+    financialRepository.write({ ...payload, entries: next });
   },
 
-  // ─── Agregações puras (sem cálculo de lucro) ────────────────────────────
   sumByType(filters: ListFilters = {}): Record<FinancialType, number> {
     const out: Record<FinancialType, number> = { income: 0, bonus: 0, expense: 0 };
     for (const e of this.list(filters)) out[e.type] += e.value;
@@ -221,7 +112,7 @@ export const financialService = {
   sumByDay(date: Date | string): Record<FinancialType, number> {
     const iso = typeof date === 'string' ? date : date.toISOString();
     const out: Record<FinancialType, number> = { income: 0, bonus: 0, expense: 0 };
-    for (const e of readPayload().entries) {
+    for (const e of financialRepository.read().entries) {
       if (isSameDay(e.date, iso)) out[e.type] += e.value;
     }
     return out;

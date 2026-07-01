@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { getEntries, getSettings, getVehicles, getRideTypes, saveRide } from '@/lib/storage';
-import { RideEntry } from '@/lib/types';
+import { rideService } from '@/lib/services/rideService';
+import { settingsService } from '@/lib/services/settingsService';
+import { metricsService } from '@/lib/services/metricsService';
+import { rideRepository } from '@/lib/repositories/rideRepository';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -25,8 +27,8 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
   const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
-  const vehicles = useMemo(() => getVehicles(), [refresh]);
-  const rideTypes = useMemo(() => getRideTypes(), [refresh]);
+  const vehicles = useMemo(() => settingsService.getVehicleTags(), [refresh]);
+  const rideTypes = useMemo(() => settingsService.getRideTypeTags(), [refresh]);
   const [vehicle, setVehicle] = useState<string>('');
   const [rideType, setRideType] = useState<string>('');
 
@@ -44,11 +46,11 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
   };
 
   const latestEntry = useMemo(() => {
-    const entries = getEntries();
+    const entries = rideRepository.listEntries();
     return entries.length > 0 ? entries[0] : null;
   }, [refresh]);
 
-  const settings = useMemo(() => getSettings(), [refresh]);
+  const settings = useMemo(() => settingsService.get(), [refresh]);
 
   const costPerKm = latestEntry && latestEntry.kmDriven > 0
     ? latestEntry.totalCost / latestEntry.kmDriven
@@ -248,9 +250,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
               if (!verdict || !details) return;
               const val = parseFloat(rideValue);
               const km = parseFloat(rideKm);
-              const ride: RideEntry = {
-                id: crypto.randomUUID(),
-                date: new Date().toISOString(),
+              rideService.saveIndividual({
                 value: val,
                 km,
                 costPerKm: details.costPerKm,
@@ -260,8 +260,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
                 verdict,
                 vehicle: vehicle || undefined,
                 rideType: rideType || undefined,
-              };
-              saveRide(ride);
+              });
               incrementRidesAnalyzed();
               toast.success('Corrida salva no histórico');
               setRideValue('');
