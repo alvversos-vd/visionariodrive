@@ -53,24 +53,21 @@ function rideEntryToModel(r: RideEntry): RideModel {
 }
 
 function shiftRideToModel(sr: ShiftRide, shift: Shift): RideModel {
-  const captureMode: CaptureMode = sr.origem === 'automatica' ? 'gps' : 'manual';
+  const captureMode: CaptureMode = sr.km_origem === 'auto' ? 'gps' : 'manual';
+  const hasRoute = !!(shift.rota && shift.rota.length > 0);
   return {
-    id: sr.id,
-    date: sr.inicio_corrida ?? new Date().toISOString(),
+    id: sr.corrida_id,
+    date: sr.data_registro,
     captureMode,
-    value: Number(sr.ganho) || 0,
-    km: Number(sr.distancia_km) || 0,
-    durationMin: sr.duracao_min,
+    value: Number(sr.valor) || 0,
+    km: Number(sr.km) || 0,
     vehicleId: shift.veiculo_id,
-    gps: sr.polyline_pontos && sr.polyline_pontos.length > 0
-      ? { points: sr.polyline_pontos.length }
-      : undefined,
+    notes: sr.observacao,
+    gps: hasRoute ? { points: shift.rota!.length } : undefined,
   };
 }
 
 function dailyEntryToModel(e: DailyEntry): RideModel {
-  // Um DailyEntry é um agregado do dia — expõe como RideModel resumo,
-  // captureMode `imported` para diferenciar de corridas individuais.
   return {
     id: e.id,
     date: e.date,
@@ -87,7 +84,7 @@ export function readAllRideModels(): RideModel[] {
   const out: RideModel[] = [];
   for (const r of rideRepository.listRides()) out.push(rideEntryToModel(r));
   for (const s of rideRepository.listShifts()) {
-    for (const sr of s.corridas ?? []) out.push(shiftRideToModel(sr, s));
+    for (const sr of s.rides ?? []) out.push(shiftRideToModel(sr, s));
   }
   for (const e of rideRepository.listEntries()) out.push(dailyEntryToModel(e));
   out.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
