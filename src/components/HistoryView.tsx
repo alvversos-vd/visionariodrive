@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { getEntries, deleteEntry, getGoals, getRides, deleteRide } from '@/lib/storage';
-import { computeStats, DailyEntry, RideEntry } from '@/lib/types';
+import { rideService } from '@/lib/services/rideService';
+import { goalsService } from '@/lib/services/goalsService';
+import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsService';
+import { rideRepository } from '@/lib/repositories/rideRepository';
+import type { RideEntry } from '@/lib/types';
 import { financialService } from '@/lib/services/financialService';
-import type { FinancialEntry } from '@/lib/domain/models';
-import { mergeExpensesIntoEntries, AdjustedDailyEntry } from '@/lib/historyAggregation';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
@@ -71,34 +72,14 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 }
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
-  const rawEntries = useMemo(() => getEntries(), [refresh]);
-  const allRides = useMemo(() => getRides(), [refresh]);
-  const goals = useMemo(() => getGoals(), [refresh]);
-
-  // FinancialService = ÚNICA fonte para despesas e bônus.
-  const expenseEntries = useMemo(() => financialService.list({ type: 'expense' }), [refresh]);
-  const bonusEntries  = useMemo(() => financialService.list({ type: 'bonus' }),   [refresh]);
-  // Adapter compat para o agregador read-side existente.
-  const expensesForMerge = useMemo(
-    () => expenseEntries.map(e => ({
-      id: e.id,
-      date: e.date,
-      value: e.value,
-      category: e.category as never,
-      description: e.notes,
-    })),
-    [expenseEntries],
-  );
+  // Todos os DailyEntry já ajustados com despesas do dia — vem do MetricsService.
+  const allEntries: AdjustedDailyEntry[] = useMemo(() => metricsService.historyEntries(), [refresh]);
+  const allRides: RideEntry[] = useMemo(() => metricsService.recentIndividualRides(9999), [refresh]);
+  const goals = useMemo(() => goalsService.get(), [refresh]);
+  const bonusEntries = useMemo(() => financialService.list({ type: 'bonus' }), [refresh]);
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
-
-  // Merge expenses (read-side) into the canonical list used everywhere.
-  // No mutation of storage / DailyEntry / sync.
-  const allEntries: AdjustedDailyEntry[] = useMemo(
-    () => mergeExpensesIntoEntries(rawEntries, expensesForMerge),
-    [rawEntries, expensesForMerge],
-  );
 
   // Build option lists from data actually present
   const vehicleOptions = useMemo(() => {
@@ -130,7 +111,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   );
   const rides = useMemo(() => allRides.filter(matches), [allRides, vehicleFilter, rideTypeFilter]);
 
-  const stats = useMemo(() => computeStats(entries, goals.daily), [entries, goals.daily]);
+  const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
 
   // Breakdown by vehicle and ride type for the current filter scope
   const breakdown = useMemo(() => {
@@ -179,12 +160,12 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   }, [entries]);
 
   const handleDeleteEntry = (id: string) => {
-    deleteEntry(id);
+    rideRepository.deleteEntry(id);
     onRefresh();
   };
 
   const handleDeleteRide = (id: string) => {
-    deleteRide(id);
+    rideRepository.deleteRide(id);
     onRefresh();
   };
 
