@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getGoals, getSettings, getRides } from '@/lib/storage';
+import { goalsService } from '@/lib/services/goalsService';
+import { settingsService } from '@/lib/services/settingsService';
 import { metricsService } from '@/lib/services/metricsService';
+import { rideService } from '@/lib/services/rideService';
 import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
 import {
@@ -14,6 +16,7 @@ import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
 import OperationalStatusBadge from './OperationalStatusBadge';
 import ShiftMode from './ShiftMode';
+// Leitura pontual do turno ativo — Shift é raíz de tracking (não migra nesta sprint).
 import { getActiveShift, computeTotals, formatTempo } from '@/lib/shifts';
 import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
@@ -31,8 +34,8 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
-  const goals = useMemo(() => getGoals(), [refresh]);
-  const settings = useMemo(() => getSettings(), [refresh]);
+  const goals = useMemo(() => goalsService.get(), [refresh]);
+  const settings = useMemo(() => settingsService.get(), [refresh]);
 
   // ÚNICA fonte financeira do Dashboard — MetricsService já agrega corridas,
   // despesas, bônus e receitas extras via FinancialService.
@@ -144,7 +147,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       markFirstProfitCelebrated();
       toast.success('Primeiro dia no lucro 👊');
     }
-    const ridesCount = getRides().length;
+    const ridesCount = rideService.countIndividual();
     if (ridesCount >= 5 && shouldCelebrateRides5()) {
       markRides5Celebrated();
       toast.success('Você está tomando decisões melhores');
