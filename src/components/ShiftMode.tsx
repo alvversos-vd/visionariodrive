@@ -12,7 +12,7 @@ import {
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
   restoreRide, revertLastEdit,
 } from '@/lib/shifts';
-import { getSettings } from '@/lib/storage';
+import { settingsService } from '@/lib/services/settingsService';
 import { DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import {
   hasAnyVehicle, getVehiclesV2, getActiveVehicle, setActiveVehicleId, getVehicleById,
@@ -735,7 +735,7 @@ export default function ShiftMode({ onChange }: Props) {
   const kmDesde = shift.km_desde_ultima_corrida || 0;
 
   // === Smart alerts (limiares configuráveis) ===
-  const thresholds = { ...DEFAULT_ALERT_THRESHOLDS, ...(getSettings().alertThresholds || {}) };
+  const thresholds = { ...DEFAULT_ALERT_THRESHOLDS, ...(settingsService.get().alertThresholds || {}) };
   const horasOnline = t.tempo_online_minutos / 60;
   const lucroHora = horasOnline > 0 ? t.lucro_total / horasOnline : 0;
   const custoPct = t.ganho_total > 0 ? (t.custo_total / t.ganho_total) * 100 : 0;

@@ -4,7 +4,7 @@ import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, cl
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { exportTelemetry } from '@/lib/exportTelemetry';
-import { getGoals } from '@/lib/storage';
+import { goalsService } from '@/lib/services/goalsService';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
 import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2 } from 'lucide-react';
 
@@ -78,7 +78,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     () => getShifts().filter(s => s.status === 'finalizado'),
     [refresh]
   );
-  const meta = useMemo(() => getGoals().daily, [refresh]);
+  const meta = useMemo(() => goalsService.get().daily, [refresh]);
   const vehicles = useMemo(() => getVehiclesV2(), [refresh]);
 
   // Counts per period filter (respeitando filtros de veículo e app)

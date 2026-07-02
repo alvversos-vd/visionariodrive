@@ -5,6 +5,11 @@
  * React, service ou adapter deve duplicar essas definições.
  *
  * Esta camada é PURA: zero dependência de storage, cloud, React ou DOM.
+ *
+ * ─── Estabilidade ───────────────────────────────────────────────────────
+ * Sprint 1.6 congela `RideModel v1` e `FinancialEntry v1`.
+ * Novos campos DEVEM entrar como opcionais para não quebrar consumidores.
+ * Remoção de campo → nova versão de schema + migração formal.
  */
 
 // ─── Apps de corrida (não confundir com "plataforma" Android/iOS/Web) ──────
@@ -30,22 +35,64 @@ export interface RideGpsTrace {
   points?: number;
 }
 
+export interface RideLocation {
+  lat: number;
+  lng: number;
+  label?: string;
+  at?: string;                    // ISO
+}
+
+export interface RideEarningsBreakdown {
+  base?: number;
+  surge?: number;
+  tip?: number;
+  bonus?: number;
+  toll?: number;
+  other?: number;
+}
+
+/**
+ * RideModel v1 — CONGELADO na Sprint 1.6.
+ * Campos opcionais reservados para Fase 2 (Ride Unificado):
+ *   startedAt/endedAt/startLocation/endLocation/earningsBreakdown/shiftId
+ * Nenhuma tela deve consumi-los ainda.
+ */
 export interface RideModel {
-  id: string;              // UUID permanente — preservado em migrações
-  date: string;            // ISO 8601
+  id: string;                     // UUID permanente — preservado em migrações
+  date: string;                   // ISO 8601 (compat: momento canônico da corrida)
   captureMode: CaptureMode;
   value: number;
   km: number;
   durationMin?: number;
   app?: RideApp;
-  vehicleId?: string;      // NUNCA o nome do veículo
+  vehicleId?: string;             // NUNCA o nome do veículo
   notes?: string;
-  gps?: RideGpsTrace;      // só preenchido pelo PRO
+  gps?: RideGpsTrace;             // só preenchido pelo PRO
+
+  // ─── Reservados para Fase 2 (não usar ainda) ───
+  startedAt?: string;             // ISO — início real da corrida
+  endedAt?: string;               // ISO — fim real da corrida
+  startLocation?: RideLocation;
+  endLocation?: RideLocation;
+  earningsBreakdown?: RideEarningsBreakdown;
+  shiftId?: string;               // vínculo com turno de origem
 }
 
 // ─── FinancialEntry ───────────────────────────────────────────────────────
 export type FinancialType = 'income' | 'bonus' | 'expense';
-export type FinancialOrigin = 'manual' | 'system' | 'imported';
+
+/**
+ * Origem de uma entrada financeira.
+ * Ampliada na Sprint 1.6 para preparar OCR / import / IA / integrações
+ * bancárias. Escrita atual usa apenas 'manual' / 'system' / 'imported'.
+ */
+export type FinancialOrigin =
+  | 'manual'
+  | 'system'
+  | 'imported'
+  | 'ocr'
+  | 'ai'
+  | 'bank_import';
 
 export const EXPENSE_CATEGORIES = [
   'Alimentação',
@@ -86,21 +133,51 @@ export function categoriesOf(type: FinancialType): readonly string[] {
   }
 }
 
+export interface FinancialAttachment {
+  id: string;
+  kind: 'image' | 'pdf' | 'link';
+  url?: string;                   // remoto (Fase 2+)
+  localRef?: string;              // Blob/OPFS handle local
+  mime?: string;
+  size?: number;
+  createdAt: string;              // ISO
+}
+
+/**
+ * FinancialEntry v1 — CONGELADO na Sprint 1.6.
+ * Campos opcionais reservados para Fase 2:
+ *   recurrenceId (recorrência) / attachments (anexos) / sourceRef (import)
+ */
 export interface FinancialEntry {
-  id: string;              // UUID permanente
-  date: string;            // ISO 8601
+  id: string;                     // UUID permanente
+  date: string;                   // ISO 8601
   type: FinancialType;
   origin: FinancialOrigin;
-  value: number;           // sempre POSITIVO; o sinal econômico vem de `type`
+  value: number;                  // sempre POSITIVO; o sinal econômico vem de `type`
   category: string;
   app?: RideApp;
   vehicleId?: string;
-  relatedRideId?: string;  // futuro: vínculo bônus ↔ corrida
+  relatedRideId?: string;         // vínculo bônus ↔ corrida
   notes?: string;
+
+  // ─── Reservados para Fase 2 (não usar ainda) ───
+  recurrenceId?: string;          // agrupa parcelas/recorrências
+  attachments?: FinancialAttachment[];
+  sourceRef?: string;             // id externo (extrato, OCR, integração)
 }
 
 // ─── Versionamento de schema ──────────────────────────────────────────────
+/**
+ * Versão oficial de cada payload persistido. Novas versões DEVEM ter
+ * migrador em `BaseRepository.readVersioned`.
+ * Toda entidade nova nasce com `SCHEMA_VERSION = 1`.
+ */
 export const FINANCIAL_SCHEMA_VERSION = 1 as const;
+export const RIDE_SCHEMA_VERSION = 1 as const;
+export const VEHICLES_SCHEMA_VERSION = 1 as const;
+export const GOALS_SCHEMA_VERSION = 1 as const;
+export const SETTINGS_SCHEMA_VERSION = 1 as const;
+export const PROFILE_SCHEMA_VERSION = 1 as const;
 
 export interface FinancialPayload {
   schemaVersion: number;
