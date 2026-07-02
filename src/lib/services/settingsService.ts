@@ -1,16 +1,17 @@
 /**
  * SettingsService — única API para AppSettings + listas auxiliares
- * (veículos legacy string, tipos de corrida). Consome settingsRepository.
+ * (tags de veículo, tipos de corrida).
+ *
+ * Sprint 1.6:
+ *   - Removidas TODAS as importações diretas de `storage.ts`.
+ *   - Tags saíram para `tagsRepository` (Single Responsibility).
+ *   - Reset destrutivo saiu para `dataLifecycleService`.
+ *
+ * Consome APENAS: settingsRepository + tagsRepository.
  */
 
 import { settingsRepository, type AppSettings } from '../repositories/settingsRepository';
-import {
-  getVehicles as legacyGetVehicles,
-  saveVehicles as legacySaveVehicles,
-  getRideTypes as legacyGetRideTypes,
-  saveRideTypes as legacySaveRideTypes,
-  clearAllAppData as legacyClearAll,
-} from '../storage';
+import { tagsRepository } from '../repositories/tagsRepository';
 
 export const settingsService = {
   get(): AppSettings { return settingsRepository.get(); },
@@ -23,13 +24,10 @@ export const settingsService = {
   },
 
   // Listas auxiliares (tags de veículo/tipo de corrida usadas em selects)
-  getVehicleTags(): string[] { return legacyGetVehicles(); },
-  saveVehicleTags(list: string[]): void { legacySaveVehicles(list); },
-  getRideTypeTags(): string[] { return legacyGetRideTypes(); },
-  saveRideTypeTags(list: string[]): void { legacySaveRideTypes(list); },
-
-  /** Reset destrutivo total — usado apenas na tela de perfil/configurações. */
-  resetAllData(): void { legacyClearAll(); },
+  getVehicleTags(): string[] { return tagsRepository.listVehicleTags(); },
+  saveVehicleTags(list: string[]): void { tagsRepository.saveVehicleTags(list); },
+  getRideTypeTags(): string[] { return tagsRepository.listRideTypeTags(); },
+  saveRideTypeTags(list: string[]): void { tagsRepository.saveRideTypeTags(list); },
 };
 
 export type { AppSettings };

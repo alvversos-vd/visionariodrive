@@ -7,13 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, Shield, MapPin, UserMinus, Loader2 } from 'lucide-react';
-import { settingsService } from '@/lib/services/settingsService';
 import { profileService } from '@/lib/services/profileService';
+import { dataLifecycleService } from '@/lib/services/dataLifecycleService';
 import { useToast } from '@/hooks/use-toast';
 // Auth-only: reautenticação + delete-account edge function ficam em Auth,
 // não em regra de perfil. `supabase` importado apenas para auth (permitido).
 import { supabase } from '@/integrations/supabase/client';
-import { clearLocalCache } from '@/lib/cloudSync';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -54,7 +53,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
         return;
       }
       // Limpa qualquer dado local antes do logout
-      clearLocalCache();
+      dataLifecycleService.clearLocalCache();
       await supabase.auth.signOut();
       toast({ title: 'Conta excluída', description: 'Seus dados foram removidos. Até logo!' });
       // Hard reload para limpar estado de memória
@@ -66,7 +65,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   };
 
   const handleReset = () => {
-    settingsService.resetAllData();
+    dataLifecycleService.resetAll();
     onReset?.();
     toast({ title: 'Dados apagados', description: 'Todos os dados locais do app foram removidos.' });
   };

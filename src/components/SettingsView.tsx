@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { settingsService } from '@/lib/services/settingsService';
+import { dataLifecycleService } from '@/lib/services/dataLifecycleService';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import { clearAllRoutes } from '@/lib/shifts';
 import { clearGpsConsent } from './GpsConsentDialog';
@@ -63,7 +64,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
   };
 
   const handleReset = () => {
-    settingsService.resetAllData();
+    dataLifecycleService.resetAll();
     setConfirmReset(false);
     onChanged();
   };

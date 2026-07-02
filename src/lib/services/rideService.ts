@@ -77,8 +77,11 @@ export const rideService = {
 
   /**
    * Persiste uma corrida analisada individualmente (FAB / RideAnalyzer).
-   * Escreve no formato legacy RideEntry — na Fase 2, esta chamada passa a
-   * criar um RideModel unificado. Consumidores não precisam mudar.
+   *
+   * @deprecated Escreve no formato legacy `RideEntry`.
+   * Será removido na Fase 2 após migração completa para RideRepository /
+   * RideModel unificado. Consumidores atuais (RideAnalyzer, FAB) continuam
+   * funcionando sem alteração até lá.
    */
   saveIndividual(input: SaveIndividualInput): RideEntry {
     const ride: RideEntry = {
