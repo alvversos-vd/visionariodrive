@@ -15,6 +15,9 @@ const KEY_MAP = {
   // Financeiro canônico (Fase 1): payload versionado { schemaVersion, entries }.
   // `expenses` permanece como espelho legacy para compat com clientes antigos.
   'vd-financial': 'financial',
+  // Rides unificado (Fase 2.1): payload versionado { schemaVersion, rides:RideModel[] }.
+  // `rides` (legacy RideEntry) e `shifts` seguem existindo como espelho legacy.
+  'vd-rides': 'rides_v2',
 } as const;
 
 type LocalKey = keyof typeof KEY_MAP;
@@ -37,6 +40,7 @@ function readLocal(key: LocalKey): unknown {
     if (key === 'lucro-delivery-settings')
       return { profitMargin: 1.3, currency: 'BRL', estimatedHours: 8 };
     if (key === 'vd-financial') return { schemaVersion: 1, entries: [] };
+    if (key === 'vd-rides') return { schemaVersion: 1, rides: [] };
     return [];
   }
   try { return JSON.parse(raw); } catch { return null; }

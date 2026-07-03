@@ -80,6 +80,7 @@ export type Database = {
           goals: Json
           ride_types: Json
           rides: Json
+          rides_v2: Json | null
           settings: Json
           shifts: Json
           updated_at: string
@@ -95,6 +96,7 @@ export type Database = {
           goals?: Json
           ride_types?: Json
           rides?: Json
+          rides_v2?: Json | null
           settings?: Json
           shifts?: Json
           updated_at?: string
@@ -110,6 +112,7 @@ export type Database = {
           goals?: Json
           ride_types?: Json
           rides?: Json
+          rides_v2?: Json | null
           settings?: Json
           shifts?: Json
           updated_at?: string

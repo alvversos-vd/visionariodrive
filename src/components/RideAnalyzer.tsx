@@ -250,7 +250,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
               if (!verdict || !details) return;
               const val = parseFloat(rideValue);
               const km = parseFloat(rideKm);
-              rideService.saveIndividual({
+              rideService.saveManualRide({
                 value: val,
                 km,
                 costPerKm: details.costPerKm,

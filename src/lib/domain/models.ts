@@ -187,3 +187,17 @@ export interface FinancialPayload {
 export function emptyFinancialPayload(): FinancialPayload {
   return { schemaVersion: FINANCIAL_SCHEMA_VERSION, entries: [] };
 }
+
+/**
+ * Payload unificado de corridas — Fase 2.1.
+ * Persistido em `localStorage['vd-rides']` e espelhado em `user_data.rides_v2`.
+ * Substitui a fragmentação anterior (RideEntry / DailyEntry.rides / Shift.rides).
+ */
+export interface RidePayload {
+  schemaVersion: number;
+  rides: RideModel[];
+}
+
+export function emptyRidePayload(): RidePayload {
+  return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
+}
