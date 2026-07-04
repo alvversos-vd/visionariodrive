@@ -16,7 +16,8 @@
 import { rideRepository } from '../repositories/rideRepository';
 import { financialService } from './financialService';
 import { settingsService } from './settingsService';
-import type { DailyEntry, RideEntry, PerformanceStats } from '../types';
+import type { DailyEntry, PerformanceStats } from '../types';
+import type { RideModel } from '../domain/models';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers puros
