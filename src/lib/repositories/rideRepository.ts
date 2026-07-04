@@ -54,7 +54,16 @@ function rideEntryToModel(r: RideEntry): RideModel {
     value: r.value,
     km: r.km,
     vehicleId: undefined,
+    vehicleName: r.vehicle,
+    rideType: r.rideType,
     notes: r.rideType,
+    analysis: {
+      costPerKm: r.costPerKm,
+      minIdealKm: r.minIdealKm,
+      ridePerKm: r.ridePerKm,
+      profit: r.profit,
+      verdict: r.verdict,
+    },
   };
 }
 
@@ -83,6 +92,8 @@ function dailyEntryToModel(e: DailyEntry): RideModel {
     km: e.kmDriven,
     durationMin: e.hoursWorked > 0 ? Math.round(e.hoursWorked * 60) : undefined,
     vehicleId: undefined,
+    vehicleName: e.vehicle,
+    rideType: e.rideType,
     notes: e.vehicle,
   };
 }
@@ -192,11 +203,12 @@ export const rideRepository = {
   /** @deprecated Escrita legacy. */
   deleteEntry(id: string): void { legacyDeleteEntry(id); },
 
-  /** @deprecated Espelho legacy RideEntry — usar `list()` (RideModel). */
-  listRides(): RideEntry[] { return getRides(); },
-  /** @deprecated Escrita legacy RideEntry — reservado para mirror interno. */
+  // ── LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE ──
+  // Apenas o rideService escreve/remove aqui, para manter o mirror alinhado
+  // com vd-rides até que rollback deixe de ser necessário.
+  /** @deprecated LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE. */
   saveRide(ride: RideEntry): void { legacySaveRide(ride); },
-  /** @deprecated Escrita legacy. */
+  /** @deprecated LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE. */
   deleteRide(id: string): void { legacyDeleteRide(id); },
 
   /** @deprecated Shift.rides — Fase 2.2 migrará Shift para RideModel direto. */
