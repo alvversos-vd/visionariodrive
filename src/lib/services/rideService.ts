@@ -1,31 +1,29 @@
 /**
- * RideService — API canônica para corridas (Fase 2.1).
+ * RideService — API canônica para corridas (Fase 2.2).
  *
- * Todos os fluxos (manual, quick, GPS, importações futuras) convergem aqui.
- * Nenhum componente escreve corrida direto no repositório ou no storage.
+ * Toda leitura e toda escrita de corridas passa aqui. Nenhum componente
+ * escreve ou lê `RideEntry` legacy diretamente — o mirror abaixo é apenas
+ * uma rede de rollback e não deve ser consumido em nenhum lugar novo.
  *
- * Nesta fase:
- *   - saveManualRide  → RideAnalyzer (individual)
- *   - saveQuickRide   → captura rápida (valor + km) — pronto para consumo
- *   - addRide/updateRide/removeRide → API genérica
- *   - list/listByDay/getById → leitura unificada via readAllRideModels
+ * Fluxos:
+ *   - saveManualRide  → RideAnalyzer (análise completa, gera analysis snapshot)
+ *   - saveQuickRide   → captura rápida (valor + km, opcionalmente analisada)
+ *   - addRide/updateRide/deleteRide → API genérica sobre RideModel
+ *   - addGpsRide      → contrato reservado para Fase 2.3 (GPS)
  *
- * Shift/GPS ainda escreve no formato legacy (migração acontece na Fase 2.2).
- *
- * Compat: `saveIndividual` mantido como wrapper deprecated que agora
- * delega em `saveManualRide` — os consumidores existentes (RideAnalyzer)
- * podem migrar sem risco. O legacy `RideEntry` continua sendo espelhado
- * em disco para que consumidores como `metricsService.recentIndividualRides`
- * e `ShiftHistoryView` não quebrem.
+ * Shift/GPS ainda escreve no formato legacy do módulo shifts (raíz de
+ * tracking — migra na Fase 2.3 sem alterar RideService).
  */
 
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
+import { metricsService, type RideAnalysis } from './metricsService';
 import type {
   RideModel,
   CaptureMode,
   RideApp,
   RideEarningsBreakdown,
   RideLocation,
+  RideAnalysisSnapshot,
 } from '../domain/models';
 import type { RideEntry } from '../types';
 
@@ -46,7 +44,10 @@ export interface RideInput {
   durationMin?: number;
   app?: RideApp;
   vehicleId?: string;
+  vehicleName?: string;
+  rideType?: string;
   notes?: string;
+  analysis?: RideAnalysisSnapshot;
   startedAt?: string;
   endedAt?: string;
   startLocation?: RideLocation;
@@ -56,9 +57,8 @@ export interface RideInput {
 }
 
 /**
- * Input usado por RideAnalyzer (individual). Aceita metadados de análise
- * que hoje ainda são espelhados no legacy `RideEntry` para preservar o
- * histórico "corridas recentes" enquanto Fase 2.2 não migrar o consumidor.
+ * Input usado por RideAnalyzer (individual). Todos os campos de análise vivem
+ * agora dentro do RideModel via `analysis` — sem depender de RideEntry.
  */
 export interface SaveIndividualInput {
   value: number;
@@ -92,7 +92,10 @@ function buildRide(input: RideInput, captureMode: CaptureMode): RideModel {
     durationMin: input.durationMin,
     app: input.app,
     vehicleId: input.vehicleId,
+    vehicleName: input.vehicleName,
+    rideType: input.rideType,
     notes: input.notes,
+    analysis: input.analysis,
     startedAt: input.startedAt,
     endedAt: input.endedAt,
     startLocation: input.startLocation,
@@ -103,25 +106,26 @@ function buildRide(input: RideInput, captureMode: CaptureMode): RideModel {
 }
 
 /**
- * Espelha no legacy `RideEntry` (chave `lucro-delivery-rides`) para preservar
- * consumidores ainda não migrados (metricsService.recentIndividualRides,
- * ShiftHistoryView de corridas avulsas, telas de exportação legacy).
+ * LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE.
  *
- * A remoção deste mirror está na fila da Fase 2.2, junto com os consumidores.
+ * Espelha no legacy `RideEntry` (chave `lucro-delivery-rides`) apenas para
+ * suportar rollback. NENHUM componente/serviço deve LER este mirror; toda
+ * leitura passa por `rideService.list()` (RideModel).
  */
-function mirrorToLegacyRideEntry(ride: RideModel, extra?: Partial<RideEntry>): void {
+function mirrorToLegacyRideEntry(ride: RideModel): void {
+  const a = ride.analysis;
   const legacy: RideEntry = {
     id: ride.id,
     date: ride.date,
     value: ride.value,
     km: ride.km,
-    costPerKm: extra?.costPerKm ?? 0,
-    minIdealKm: extra?.minIdealKm ?? 0,
-    ridePerKm: extra?.ridePerKm ?? (ride.km > 0 ? ride.value / ride.km : 0),
-    profit: extra?.profit ?? 0,
-    verdict: extra?.verdict ?? 'ok',
-    vehicle: extra?.vehicle,
-    rideType: extra?.rideType ?? ride.notes,
+    costPerKm: a?.costPerKm ?? 0,
+    minIdealKm: a?.minIdealKm ?? 0,
+    ridePerKm: a?.ridePerKm ?? (ride.km > 0 ? ride.value / ride.km : 0),
+    profit: a?.profit ?? 0,
+    verdict: a?.verdict ?? 'ok',
+    vehicle: ride.vehicleName,
+    rideType: ride.rideType ?? ride.notes,
   };
   try { rideRepository.saveRide(legacy); } catch { /* mirror best-effort */ }
 }
@@ -156,7 +160,9 @@ export const rideService = {
   // ---- Escrita canônica ------------------------------------------------
   addRide(input: RideInput, captureMode: CaptureMode = 'manual'): RideModel {
     const ride = buildRide(input, captureMode);
-    return rideRepository.add(ride);
+    rideRepository.add(ride);
+    mirrorToLegacyRideEntry(ride);
+    return ride;
   },
 
   updateRide(id: string, patch: Partial<RideModel>): RideModel | null {
@@ -165,54 +171,59 @@ export const rideService = {
 
   deleteRide(id: string): void {
     rideRepository.remove(id);
-    // Espelho legacy: se existir no `lucro-delivery-rides`, remover também.
+    // LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE.
     try { rideRepository.deleteRide(id); } catch { /* noop */ }
   },
 
   /**
-   * Fluxo Manual — corrida individual analisada (RideAnalyzer).
-   * Escreve RideModel canônico + espelha em legacy RideEntry.
+   * Fluxo Manual — RideAnalyzer. Escreve RideModel canônico (com analysis)
+   * e espelha em legacy RideEntry apenas para rollback.
    */
   saveManualRide(input: SaveIndividualInput): RideModel {
     const ride = buildRide(
       {
         value: input.value,
         km: input.km,
-        vehicleId: undefined,
+        vehicleName: input.vehicle,
+        rideType: input.rideType,
         notes: input.rideType,
+        analysis: {
+          costPerKm: input.costPerKm,
+          minIdealKm: input.minIdealKm,
+          ridePerKm: input.ridePerKm,
+          profit: input.profit,
+          verdict: input.verdict,
+        },
       },
       'manual',
     );
-    rideRepository.add(ride);
-    mirrorToLegacyRideEntry(ride, {
-      costPerKm: input.costPerKm,
-      minIdealKm: input.minIdealKm,
-      ridePerKm: input.ridePerKm,
-      profit: input.profit,
-      verdict: input.verdict,
-      vehicle: input.vehicle,
-      rideType: input.rideType,
-    });
-    return ride;
-  },
-
-  /**
-   * Fluxo Quick — captura rápida (valor + km) sem análise pesada.
-   * Mesmo Repository, mesmo formato — apenas `captureMode='quick'`.
-   */
-  saveQuickRide(input: RideInput): RideModel {
-    const ride = buildRide(input, 'quick');
     rideRepository.add(ride);
     mirrorToLegacyRideEntry(ride);
     return ride;
   },
 
   /**
-   * @deprecated Usar `saveManualRide`. Wrapper mantido para consumidores
-   * que ainda não migraram — delega no fluxo canônico.
+   * Fluxo Quick — captura rápida (valor + km). Se `analysis` não vier no
+   * input, o service calcula on-the-fly via metricsService para garantir
+   * verdict/costPerKm consistentes com a base do dia.
    */
-  saveIndividual(input: SaveIndividualInput): RideModel {
-    return this.saveManualRide(input);
+  saveQuickRide(input: RideInput): RideModel {
+    const analysis: RideAnalysisSnapshot = input.analysis ?? (() => {
+      const a: RideAnalysis = metricsService.analyzeRide({ value: input.value, km: input.km });
+      return { ...a };
+    })();
+    const ride = buildRide({ ...input, analysis }, 'quick');
+    rideRepository.add(ride);
+    mirrorToLegacyRideEntry(ride);
+    return ride;
+  },
+
+  /**
+   * Contrato reservado para Fase 2.3 — GPS. Nenhum consumidor deve chamar
+   * ainda; o módulo Shift/GPS migrará para este método sem alterar a UX.
+   */
+  addGpsRide(_input: RideInput): RideModel {
+    throw new Error('NOT_IMPLEMENTED: addGpsRide chega na Fase 2.3');
   },
 };
 

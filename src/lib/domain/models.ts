@@ -52,10 +52,22 @@ export interface RideEarningsBreakdown {
 }
 
 /**
+ * Snapshot da análise no momento da captura (RideAnalyzer / Quick Ride).
+ * Fase 2.2: substitui a leitura do legacy RideEntry — HistoryView e insights
+ * consomem daqui. Opcional para permitir corridas sem análise (ex.: GPS puro).
+ */
+export interface RideAnalysisSnapshot {
+  costPerKm: number;
+  minIdealKm: number;
+  ridePerKm: number;
+  profit: number;
+  verdict: 'good' | 'ok' | 'bad';
+}
+
+/**
  * RideModel v1 — CONGELADO na Sprint 1.6.
- * Campos opcionais reservados para Fase 2 (Ride Unificado):
- *   startedAt/endedAt/startLocation/endLocation/earningsBreakdown/shiftId
- * Nenhuma tela deve consumi-los ainda.
+ * Fase 2.2 acrescenta campos OPCIONAIS (aditivos — schema segue v1):
+ *   analysis, vehicleName, rideType — o que antes vivia no RideEntry legacy.
  */
 export interface RideModel {
   id: string;                     // UUID permanente — preservado em migrações
@@ -76,6 +88,14 @@ export interface RideModel {
   endLocation?: RideLocation;
   earningsBreakdown?: RideEarningsBreakdown;
   shiftId?: string;               // vínculo com turno de origem
+
+  // ─── Fase 2.2 — absorção do RideEntry ───
+  /** Snapshot da análise no momento da captura (custo/km, verdict). */
+  analysis?: RideAnalysisSnapshot;
+  /** Nome do veículo (tag livre) quando ainda não há vínculo com vehicleId. */
+  vehicleName?: string;
+  /** Tipo/categoria da corrida (tag livre). */
+  rideType?: string;
 }
 
 // ─── FinancialEntry ───────────────────────────────────────────────────────

@@ -16,7 +16,8 @@
 import { rideRepository } from '../repositories/rideRepository';
 import { financialService } from './financialService';
 import { settingsService } from './settingsService';
-import type { DailyEntry, RideEntry, PerformanceStats } from '../types';
+import type { DailyEntry, PerformanceStats } from '../types';
+import type { RideModel } from '../domain/models';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Helpers puros
@@ -565,10 +566,28 @@ export const metricsService = {
   },
 
   /**
-   * Lista de RideEntry mais recentes (individuais registradas via FAB).
+   * Lista os RideModel mais recentes de captura individual (manual/quick).
+   * Fase 2.2: substitui o antigo retorno de RideEntry — HistoryView e afins
+   * consomem RideModel puro.
    */
-  recentIndividualRides(limit = 20): RideEntry[] {
-    return rideRepository.listRides().slice(0, limit);
+  recentIndividualRides(limit = 20): RideModel[] {
+    return rideRepository.list()
+      .filter(r => r.captureMode === 'manual' || r.captureMode === 'quick')
+      .slice(0, limit);
+  },
+
+  /**
+   * Base de custo/km da última DailyEntry disponível — usada pelo
+   * RideAnalyzer para exibir "mínimo ideal". Retorna null quando não há
+   * base ainda.
+   */
+  rideCostBase(): { costPerKm: number; minIdealKm: number } | null {
+    const entries = rideRepository.listEntries();
+    const latest = entries.length > 0 ? entries[0] : null;
+    if (!latest || latest.kmDriven <= 0) return null;
+    const costPerKm = latest.totalCost / latest.kmDriven;
+    const minIdealKm = costPerKm * settingsService.get().profitMargin;
+    return { costPerKm, minIdealKm };
   },
 
   /** Total de entries (usado por engagement/onboarding para gating). */

@@ -3,8 +3,7 @@ import { rideService } from '@/lib/services/rideService';
 import { goalsService } from '@/lib/services/goalsService';
 import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsService';
 import { rideRepository } from '@/lib/repositories/rideRepository';
-import type { RideEntry } from '@/lib/types';
-import type { FinancialEntry } from '@/lib/domain/models';
+import type { RideModel, FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
@@ -75,7 +74,7 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 export default function HistoryView({ refresh, onRefresh }: Props) {
   // Todos os DailyEntry já ajustados com despesas do dia — vem do MetricsService.
   const allEntries: AdjustedDailyEntry[] = useMemo(() => metricsService.historyEntries(), [refresh]);
-  const allRides: RideEntry[] = useMemo(() => metricsService.recentIndividualRides(9999), [refresh]);
+  const allRides: RideModel[] = useMemo(() => metricsService.recentIndividualRides(9999), [refresh]);
   const goals = useMemo(() => goalsService.get(), [refresh]);
   const bonusEntries = useMemo(() => financialService.list({ type: 'bonus' }), [refresh]);
 
@@ -86,7 +85,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   const vehicleOptions = useMemo(() => {
     const set = new Set<string>();
     allEntries.forEach(e => e.vehicle && set.add(e.vehicle));
-    allRides.forEach(r => r.vehicle && set.add(r.vehicle));
+    allRides.forEach(r => r.vehicleName && set.add(r.vehicleName));
     return Array.from(set).sort();
   }, [allEntries, allRides]);
 
@@ -97,9 +96,14 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     return Array.from(set).sort();
   }, [allEntries, allRides]);
 
-  const matches = (item: { vehicle?: string; rideType?: string }) => {
+  const matchesEntry = (item: { vehicle?: string; rideType?: string }) => {
     if (vehicleFilter !== ALL && item.vehicle !== vehicleFilter) return false;
     if (rideTypeFilter !== ALL && item.rideType !== rideTypeFilter) return false;
+    return true;
+  };
+  const matchesRide = (r: RideModel) => {
+    if (vehicleFilter !== ALL && r.vehicleName !== vehicleFilter) return false;
+    if (rideTypeFilter !== ALL && r.rideType !== rideTypeFilter) return false;
     return true;
   };
 
@@ -107,10 +111,10 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   // vehicle/rideType attribution) — this is intentional and surfaced via the
   // "limpar filtros" hint.
   const entries = useMemo(
-    () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matches(e))),
+    () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matchesEntry(e))),
     [allEntries, vehicleFilter, rideTypeFilter],
   );
-  const rides = useMemo(() => allRides.filter(matches), [allRides, vehicleFilter, rideTypeFilter]);
+  const rides = useMemo(() => allRides.filter(matchesRide), [allRides, vehicleFilter, rideTypeFilter]);
 
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
 
@@ -166,7 +170,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   };
 
   const handleDeleteRide = (id: string) => {
-    rideRepository.deleteRide(id);
+    rideService.deleteRide(id);
     onRefresh();
   };
 
@@ -532,11 +536,15 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           {rides.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-6">Nenhuma corrida com esse filtro.</p>
           ) : (
-            rides.map((ride: RideEntry) => {
+            rides.map((ride: RideModel) => {
+              const a = ride.analysis;
+              const ridePerKm = a?.ridePerKm ?? (ride.km > 0 ? ride.value / ride.km : 0);
+              const profit = a?.profit ?? 0;
+              const verdict = a?.verdict ?? 'ok';
               const verdictColor =
-                ride.verdict === 'good' ? 'text-profit' :
-                ride.verdict === 'ok' ? 'text-accent' : 'text-loss';
-              const verdictEmoji = ride.verdict === 'good' ? '🟢' : ride.verdict === 'ok' ? '🟡' : '🔴';
+                verdict === 'good' ? 'text-profit' :
+                verdict === 'ok' ? 'text-accent' : 'text-loss';
+              const verdictEmoji = verdict === 'good' ? '🟢' : verdict === 'ok' ? '🟡' : '🔴';
               return (
                 <div key={ride.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -551,12 +559,12 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Lucro estimado: {fmt(ride.profit)} · {fmt(ride.ridePerKm)}/km
+                      Lucro estimado: {fmt(profit)} · {fmt(ridePerKm)}/km
                     </p>
-                    {(ride.vehicle || ride.rideType) && (
+                    {(ride.vehicleName || ride.rideType) && (
                       <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                        {ride.vehicle && (
-                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {ride.vehicle}</span>
+                        {ride.vehicleName && (
+                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {ride.vehicleName}</span>
                         )}
                         {ride.rideType && (
                           <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {ride.rideType}</span>

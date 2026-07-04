@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { settingsService } from '@/lib/services/settingsService';
 import { metricsService } from '@/lib/services/metricsService';
-import { rideRepository } from '@/lib/repositories/rideRepository';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -45,18 +44,14 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
     if (raw === '' || parseFloat(raw) >= 0) setter(raw);
   };
 
-  const latestEntry = useMemo(() => {
-    const entries = rideRepository.listEntries();
-    return entries.length > 0 ? entries[0] : null;
-  }, [refresh]);
-
+  // Base de custo do dia (última DailyEntry) — vem do MetricsService,
+  // sem acessar repositório direto.
+  const costBase = useMemo(() => metricsService.rideCostBase(), [refresh]);
+  const costPerKm = costBase?.costPerKm ?? null;
+  const minIdealKm = costBase?.minIdealKm ?? null;
+  // settings ainda é usado para outras leituras (mantém referência)
   const settings = useMemo(() => settingsService.get(), [refresh]);
-
-  const costPerKm = latestEntry && latestEntry.kmDriven > 0
-    ? latestEntry.totalCost / latestEntry.kmDriven
-    : null;
-
-  const minIdealKm = costPerKm !== null ? costPerKm * settings.profitMargin : null;
+  void settings;
 
   // Realtime calculation
   useEffect(() => {
