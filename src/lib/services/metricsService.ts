@@ -8,9 +8,12 @@
  * ou insights: tudo passa por aqui.
  *
  * Consome APENAS:
- *   - rideRepository (leitura de DailyEntry, RideEntry, Shift.rides)
+ *   - rideRepository (leitura de RideModel canônico + DailyEntry legacy)
  *   - financialService (income/bonus/expense)
  *   - settingsService (profitMargin, currency, alertThresholds)
+ *
+ * Fase 2.3: NÃO lê mais `Shift.rides`. Toda corrida canônica vive em
+ * `vd-rides` (via RideRepository).
  */
 
 import { rideRepository } from '../repositories/rideRepository';
