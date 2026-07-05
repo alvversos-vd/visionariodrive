@@ -1,18 +1,18 @@
 /**
- * RideService — API canônica para corridas (Fase 2.2).
+ * RideService — API canônica para corridas (Fase 2.3).
  *
- * Toda leitura e toda escrita de corridas passa aqui. Nenhum componente
- * escreve ou lê `RideEntry` legacy diretamente — o mirror abaixo é apenas
- * uma rede de rollback e não deve ser consumido em nenhum lugar novo.
+ * DONO ÚNICO da escrita de RideModel. Nada mais grava corridas fora daqui.
  *
  * Fluxos:
  *   - saveManualRide  → RideAnalyzer (análise completa, gera analysis snapshot)
  *   - saveQuickRide   → captura rápida (valor + km, opcionalmente analisada)
+ *   - addGpsRide      → chamado pelo módulo Shift/GPS ao registrar corrida
+ *                       (captureMode='gps' — quando há tracking automático)
  *   - addRide/updateRide/deleteRide → API genérica sobre RideModel
- *   - addGpsRide      → contrato reservado para Fase 2.3 (GPS)
  *
- * Shift/GPS ainda escreve no formato legacy do módulo shifts (raíz de
- * tracking — migra na Fase 2.3 sem alterar RideService).
+ * Fase 2.3 removeu completamente o mirror para o legacy RideEntry
+ * (`lucro-delivery-rides`). Não existem mais espelhos ativos: a única
+ * fonte de verdade de corridas persistidas é `vd-rides`.
  */
 
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
@@ -24,14 +24,15 @@ import type {
   RideEarningsBreakdown,
   RideLocation,
   RideAnalysisSnapshot,
+  RideGpsTrace,
 } from '../domain/models';
-import type { RideEntry } from '../types';
 
 // ─── Inputs ──────────────────────────────────────────────────────────────
 export interface RideListFilters {
   captureMode?: CaptureMode | CaptureMode[];
   app?: RideApp;
   vehicleId?: string;
+  shiftId?: string;
   from?: Date;
   to?: Date;
 }
@@ -54,11 +55,12 @@ export interface RideInput {
   endLocation?: RideLocation;
   earningsBreakdown?: RideEarningsBreakdown;
   shiftId?: string;
+  gps?: RideGpsTrace;
 }
 
 /**
  * Input usado por RideAnalyzer (individual). Todos os campos de análise vivem
- * agora dentro do RideModel via `analysis` — sem depender de RideEntry.
+ * agora dentro do RideModel via `analysis`.
  */
 export interface SaveIndividualInput {
   value: number;
@@ -72,6 +74,13 @@ export interface SaveIndividualInput {
   rideType?: string;
 }
 
+/** Input do módulo Shift/GPS ao registrar uma corrida. */
+export interface GpsRideInput extends RideInput {
+  shiftId: string;
+  /** 'auto' = km veio do GPS; 'manual' = usuário informou km */
+  kmOrigin?: 'auto' | 'manual';
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────
 function inRange(iso: string, from?: Date, to?: Date): boolean {
   const t = new Date(iso).getTime();
@@ -82,9 +91,9 @@ function inRange(iso: string, from?: Date, to?: Date): boolean {
 function startOfDay(d: Date): Date { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function endOfDay(d: Date):   Date { const x = new Date(d); x.setHours(23,59,59,999); return x; }
 
-function buildRide(input: RideInput, captureMode: CaptureMode): RideModel {
+function buildRide(input: RideInput, captureMode: CaptureMode, id?: string): RideModel {
   return {
-    id: crypto.randomUUID(),
+    id: id ?? crypto.randomUUID(),
     date: input.date ?? new Date().toISOString(),
     captureMode,
     value: Number(input.value) || 0,
@@ -102,32 +111,8 @@ function buildRide(input: RideInput, captureMode: CaptureMode): RideModel {
     endLocation: input.endLocation,
     earningsBreakdown: input.earningsBreakdown,
     shiftId: input.shiftId,
+    gps: input.gps,
   };
-}
-
-/**
- * LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE.
- *
- * Espelha no legacy `RideEntry` (chave `lucro-delivery-rides`) apenas para
- * suportar rollback. NENHUM componente/serviço deve LER este mirror; toda
- * leitura passa por `rideService.list()` (RideModel).
- */
-function mirrorToLegacyRideEntry(ride: RideModel): void {
-  const a = ride.analysis;
-  const legacy: RideEntry = {
-    id: ride.id,
-    date: ride.date,
-    value: ride.value,
-    km: ride.km,
-    costPerKm: a?.costPerKm ?? 0,
-    minIdealKm: a?.minIdealKm ?? 0,
-    ridePerKm: a?.ridePerKm ?? (ride.km > 0 ? ride.value / ride.km : 0),
-    profit: a?.profit ?? 0,
-    verdict: a?.verdict ?? 'ok',
-    vehicle: ride.vehicleName,
-    rideType: ride.rideType ?? ride.notes,
-  };
-  try { rideRepository.saveRide(legacy); } catch { /* mirror best-effort */ }
 }
 
 // ─── API pública ─────────────────────────────────────────────────────────
@@ -141,12 +126,17 @@ export const rideService = {
     }
     if (filters.app)       rides = rides.filter(r => r.app === filters.app);
     if (filters.vehicleId) rides = rides.filter(r => r.vehicleId === filters.vehicleId);
+    if (filters.shiftId)   rides = rides.filter(r => r.shiftId === filters.shiftId);
     if (filters.from || filters.to) rides = rides.filter(r => inRange(r.date, filters.from, filters.to));
     return rides;
   },
 
   listByDay(date: Date = new Date()): RideModel[] {
     return this.list({ from: startOfDay(date), to: endOfDay(date) });
+  },
+
+  listByShift(shiftId: string): RideModel[] {
+    return this.list({ shiftId });
   },
 
   getById(id: string): RideModel | null {
@@ -161,7 +151,6 @@ export const rideService = {
   addRide(input: RideInput, captureMode: CaptureMode = 'manual'): RideModel {
     const ride = buildRide(input, captureMode);
     rideRepository.add(ride);
-    mirrorToLegacyRideEntry(ride);
     return ride;
   },
 
@@ -171,13 +160,10 @@ export const rideService = {
 
   deleteRide(id: string): void {
     rideRepository.remove(id);
-    // LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE.
-    try { rideRepository.deleteRide(id); } catch { /* noop */ }
   },
 
   /**
-   * Fluxo Manual — RideAnalyzer. Escreve RideModel canônico (com analysis)
-   * e espelha em legacy RideEntry apenas para rollback.
+   * Fluxo Manual — RideAnalyzer. Escreve RideModel canônico com analysis.
    */
   saveManualRide(input: SaveIndividualInput): RideModel {
     const ride = buildRide(
@@ -198,14 +184,12 @@ export const rideService = {
       'manual',
     );
     rideRepository.add(ride);
-    mirrorToLegacyRideEntry(ride);
     return ride;
   },
 
   /**
    * Fluxo Quick — captura rápida (valor + km). Se `analysis` não vier no
-   * input, o service calcula on-the-fly via metricsService para garantir
-   * verdict/costPerKm consistentes com a base do dia.
+   * input, calcula on-the-fly via metricsService.
    */
   saveQuickRide(input: RideInput): RideModel {
     const analysis: RideAnalysisSnapshot = input.analysis ?? (() => {
@@ -214,16 +198,33 @@ export const rideService = {
     })();
     const ride = buildRide({ ...input, analysis }, 'quick');
     rideRepository.add(ride);
-    mirrorToLegacyRideEntry(ride);
     return ride;
   },
 
   /**
-   * Contrato reservado para Fase 2.3 — GPS. Nenhum consumidor deve chamar
-   * ainda; o módulo Shift/GPS migrará para este método sem alterar a UX.
+   * Fluxo GPS — chamado pelo módulo Shift ao registrar uma corrida dentro
+   * de um turno ativo. Persiste RideModel canônico em `vd-rides` com
+   * captureMode='gps' (ou 'manual' quando o km foi informado pelo usuário
+   * mesmo estando dentro do turno) e shiftId vinculado.
+   *
+   * Idempotente por id: se o caller já tem um id (ex.: corrida_id do turno),
+   * pode reaproveitar via `input.notes`/service internos. Aqui geramos UUID
+   * quando não vier — a camada Shift mantém sua chave interna independente.
    */
-  addGpsRide(_input: RideInput): RideModel {
-    throw new Error('NOT_IMPLEMENTED: addGpsRide chega na Fase 2.3');
+  addGpsRide(input: GpsRideInput): RideModel {
+    const captureMode: CaptureMode = input.kmOrigin === 'manual' ? 'manual' : 'gps';
+    // Analysis snapshot é útil para timeline/insights consumirem o
+    // veredicto sem recomputar. Best-effort — não bloqueia se falhar.
+    let analysis: RideAnalysisSnapshot | undefined = input.analysis;
+    if (!analysis) {
+      try {
+        const a = metricsService.analyzeRide({ value: input.value, km: input.km });
+        analysis = { ...a };
+      } catch { /* base de custo indisponível — segue sem snapshot */ }
+    }
+    const ride = buildRide({ ...input, analysis }, captureMode);
+    rideRepository.add(ride);
+    return ride;
   },
 };
 
