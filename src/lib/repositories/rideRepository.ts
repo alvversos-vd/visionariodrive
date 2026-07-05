@@ -1,25 +1,20 @@
 /**
- * RideRepository — DONO oficial de RideModel (Fase 2.1).
+ * RideRepository — DONO ÚNICO oficial de RideModel (Fase 2.3).
  *
  * Fonte física primária: `localStorage['vd-rides']` — payload versionado
  *   { schemaVersion, rides: RideModel[] }
  *
- * Mantém, EXCLUSIVAMENTE POR COMPATIBILIDADE, os acessores legados sobre
- * DailyEntry / RideEntry / Shift.rides:
- *   - DailyEntry ainda é escrito pelo Calculador Diário (agregado).
- *   - RideEntry sobrevive como espelho de escrita para consumidores legados
- *     (metricsService.recentIndividualRides, ShiftHistoryView, etc.).
- *   - Shift.rides é lido do módulo Shift/GPS (ainda intocado — Fase 2.2).
+ * A partir da Fase 2.3, este é o ÚNICO owner de corridas. `Shift.rides`
+ * deixa de ser fonte de verdade — o módulo Shift chama `rideService.addGpsRide`
+ * ao registrar uma corrida, e RideRepository persiste em `vd-rides`.
  *
- * A camada de escrita canônica é `add/update/remove` (RideModel). Componentes
- * NUNCA devem instanciar RideModel diretamente: usar `rideService`.
+ * DailyEntry (calculador diário agregado) permanece como um acessor legacy
+ * — não é uma corrida individual e vive em outro modelo (`lucro-delivery-entries`).
  *
- * ─── Migração ────────────────────────────────────────────────────────────
- * Na primeira leitura sem `vd-rides`, um adapter one-shot converte:
- *   RideEntry  → RideModel(captureMode='manual')
- *   Shift.rides → RideModel(captureMode='gps'|'manual', shiftId)
- *   DailyEntry → RideModel(captureMode='imported')  (agregado)
- * e grava o resultado em `vd-rides`. Nenhum dado legacy é apagado.
+ * ─── Migração one-shot ──────────────────────────────────────────────────
+ * Na primeira leitura sem `vd-rides`, um adapter converte tudo que existe
+ * no legacy (RideEntry, Shift.rides antigos, DailyEntry) para RideModel e
+ * grava em `vd-rides`. Nenhum dado legacy é apagado — rollback seguro.
  */
 
 import {
@@ -28,8 +23,6 @@ import {
   saveEntry as legacySaveEntry,
   upsertEntry as legacyUpsertEntry,
   deleteEntry as legacyDeleteEntry,
-  saveRide as legacySaveRide,
-  deleteRide as legacyDeleteRide,
 } from '../storage';
 import { getShifts } from '../shifts';
 import { readVersioned, writeJson } from './baseRepository';
@@ -37,7 +30,6 @@ import type { DailyEntry, RideEntry } from '../types';
 import type { Shift, ShiftRide } from '../shifts';
 import {
   RIDE_SCHEMA_VERSION,
-  emptyRidePayload,
   type RidePayload,
   type RideModel,
   type CaptureMode,
@@ -45,7 +37,7 @@ import {
 
 const RIDES_KEY = 'vd-rides';
 
-// ─── Adapter legacy → RideModel ──────────────────────────────────────────
+// ─── Adapter legacy → RideModel (usado APENAS na migração one-shot) ──────
 function rideEntryToModel(r: RideEntry): RideModel {
   return {
     id: r.id,
@@ -53,7 +45,6 @@ function rideEntryToModel(r: RideEntry): RideModel {
     captureMode: 'manual',
     value: r.value,
     km: r.km,
-    vehicleId: undefined,
     vehicleName: r.vehicle,
     rideType: r.rideType,
     notes: r.rideType,
@@ -91,7 +82,6 @@ function dailyEntryToModel(e: DailyEntry): RideModel {
     value: e.totalEarnings,
     km: e.kmDriven,
     durationMin: e.hoursWorked > 0 ? Math.round(e.hoursWorked * 60) : undefined,
-    vehicleId: undefined,
     vehicleName: e.vehicle,
     rideType: e.rideType,
     notes: e.vehicle,
@@ -166,7 +156,6 @@ export const rideRepository = {
   add(ride: RideModel): RideModel {
     ensureMigratedFromLegacy();
     const payload = loadPayload();
-    // Upsert defensivo: se já existe id, atualiza em vez de duplicar
     const idx = payload.rides.findIndex(r => r.id === ride.id);
     if (idx >= 0) payload.rides[idx] = ride;
     else payload.rides.push(ride);
@@ -193,7 +182,7 @@ export const rideRepository = {
     }
   },
 
-  // ---- Legacy delegates (compat — NÃO usar em código novo) --------------
+  // ---- DailyEntry legacy delegates (Calculador Diário — não é ride individual)
   /** @deprecated DailyEntry legacy — usar `rideRepository.list()` quando possível. */
   listEntries(): DailyEntry[] { return getEntries(); },
   /** @deprecated Escrita legacy — Calculador Diário ainda depende. */
@@ -202,40 +191,25 @@ export const rideRepository = {
   upsertEntry(entry: DailyEntry): void { legacyUpsertEntry(entry); },
   /** @deprecated Escrita legacy. */
   deleteEntry(id: string): void { legacyDeleteEntry(id); },
-
-  // ── LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE ──
-  // Apenas o rideService escreve/remove aqui, para manter o mirror alinhado
-  // com vd-rides até que rollback deixe de ser necessário.
-  /** @deprecated LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE. */
-  saveRide(ride: RideEntry): void { legacySaveRide(ride); },
-  /** @deprecated LEGACY MIRROR — REMOVE AFTER PHASE 3 STABLE. */
-  deleteRide(id: string): void { legacyDeleteRide(id); },
-
-  /** @deprecated Shift.rides — Fase 2.2 migrará Shift para RideModel direto. */
-  listShifts(): Shift[] { return getShifts(); },
 };
 
-// ─── Read unificado (mantido para compat com metricsService) ─────────────
+// ─── Read unificado ──────────────────────────────────────────────────────
 /**
- * Retorna TODOS os RideModel visíveis ao usuário. Fase 2.1: consolida
- * `vd-rides` (fonte canônica) + Shift.rides (ainda não migrado) + DailyEntry
- * agregado (imported). Dedup por id — `vd-rides` sempre vence.
+ * Retorna TODOS os RideModel visíveis ao usuário.
+ *
+ * Fase 2.3: `vd-rides` é a ÚNICA fonte de verdade para corridas individuais.
+ * `Shift.rides` NÃO participa mais desta leitura — toda corrida registrada
+ * dentro de um turno passa por `rideService.addGpsRide()`, que já persiste
+ * em `vd-rides` com `shiftId` correto.
+ *
+ * DailyEntry agregado (calculador diário) continua entrando como
+ * `captureMode='imported'` para preservar a timeline histórica.
  */
 export function readAllRideModels(): RideModel[] {
   ensureMigratedFromLegacy();
   const canonical = loadPayload().rides;
   const byId = new Map<string, RideModel>();
   for (const r of canonical) byId.set(r.id, r);
-
-  // Shift.rides são a raiz do tracking e ainda não escrevem em vd-rides.
-  try {
-    for (const s of getShifts()) {
-      for (const sr of s.rides ?? []) {
-        const m = shiftRideToModel(sr, s);
-        if (!byId.has(m.id)) byId.set(m.id, m);
-      }
-    }
-  } catch { /* noop */ }
 
   // DailyEntry agregado — imported. Só entra se ainda não migrado.
   try {

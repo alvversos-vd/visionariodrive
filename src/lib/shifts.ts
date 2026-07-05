@@ -434,6 +434,14 @@ export function classifyRide(valor: number, km: number, shift?: Shift | null): {
   return { valor_por_km, resultado };
 }
 
+/**
+ * Registra corrida em `vd-rides` (fonte canônica) via rideService e mantém
+ * uma cópia enxuta em `Shift.rides` — usada exclusivamente pela UI de
+ * Modo Turno (ShiftMode/ShiftHistoryView/exportShifts) como cache da
+ * sessão de tracking. `computeTotals` continua lendo daí para preservar
+ * comportamento 1:1 do turno finalizado. A camada de negócio (metrics,
+ * history, insights) NÃO lê mais `Shift.rides`.
+ */
 export function addRide(
   turno_id: string,
   valor: number,
@@ -460,6 +468,24 @@ export function addRide(
   s.km_desde_ultima_corrida = 0;
   s.ultima_corrida_iso = ride.data_registro;
   saveShifts(list);
+
+  // Fase 2.3 — persiste em vd-rides via rideService (dono canônico).
+  // Import dinâmico para evitar ciclo shifts ↔ rideService/metricsService.
+  void import('./services/rideService').then(({ rideService }) => {
+    try {
+      rideService.addGpsRide({
+        shiftId: turno_id,
+        value: valor,
+        km,
+        date: ride.data_registro,
+        vehicleId: s.veiculo_id,
+        notes: ride.observacao,
+        kmOrigin: extras?.km_origem,
+        gps: s.rota && s.rota.length > 0 ? { points: s.rota.length } : undefined,
+      });
+    } catch { /* não bloqueia o fluxo de turno */ }
+  }).catch(() => { /* noop */ });
+
   return ride;
 }
 
@@ -488,6 +514,11 @@ export function deleteRide(turno_id: string, corrida_id: string) {
   if (!s) return;
   s.rides = s.rides.filter(r => r.corrida_id !== corrida_id);
   saveShifts(list);
+
+  // Fase 2.3 — reflete no dono canônico.
+  void import('./services/rideService').then(({ rideService }) => {
+    try { rideService.deleteRide(corrida_id); } catch { /* noop */ }
+  }).catch(() => { /* noop */ });
 }
 
 /**
@@ -503,6 +534,22 @@ export function restoreRide(turno_id: string, ride: ShiftRide): boolean {
   // ordena desc por data_registro (mantém invariante usado na UI)
   s.rides.sort((a, b) => b.data_registro.localeCompare(a.data_registro));
   saveShifts(list);
+
+  // Fase 2.3 — restaura também no dono canônico (vd-rides).
+  void import('./services/rideService').then(({ rideService }) => {
+    try {
+      rideService.addGpsRide({
+        shiftId: turno_id,
+        value: ride.valor,
+        km: ride.km,
+        date: ride.data_registro,
+        vehicleId: s.veiculo_id,
+        notes: ride.observacao,
+        kmOrigin: ride.km_origem,
+      });
+    } catch { /* noop */ }
+  }).catch(() => { /* noop */ });
+
   return true;
 }
 
@@ -548,6 +595,13 @@ export function updateRide(
   if (_editTimers[key]) clearTimeout(_editTimers[key]);
   _editTimers[key] = setTimeout(() => { delete _editTimers[key]; saveShifts(getShifts()); }, EDIT_DEBOUNCE_MS);
   saveShifts(list);
+
+  // Fase 2.3 — reflete edição no dono canônico (vd-rides).
+  const canonicalPatch = { value: r.valor, km: r.km };
+  void import('./services/rideService').then(({ rideService }) => {
+    try { rideService.updateRide(corrida_id, canonicalPatch); } catch { /* noop */ }
+  }).catch(() => { /* noop */ });
+
   return r;
 }
 
