@@ -581,8 +581,9 @@ export function updateRide(
   saveShifts(list);
 
   // Fase 2.3 — reflete edição no dono canônico (vd-rides).
+  const canonicalPatch = { value: r.valor, km: r.km };
   void import('./services/rideService').then(({ rideService }) => {
-    try { rideService.updateRide(corrida_id, { value: r.value, km: r.km }); } catch { /* noop */ }
+    try { rideService.updateRide(corrida_id, canonicalPatch); } catch { /* noop */ }
   }).catch(() => { /* noop */ });
 
   return r;
