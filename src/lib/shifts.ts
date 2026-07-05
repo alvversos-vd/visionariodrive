@@ -579,6 +579,12 @@ export function updateRide(
   if (_editTimers[key]) clearTimeout(_editTimers[key]);
   _editTimers[key] = setTimeout(() => { delete _editTimers[key]; saveShifts(getShifts()); }, EDIT_DEBOUNCE_MS);
   saveShifts(list);
+
+  // Fase 2.3 — reflete edição no dono canônico (vd-rides).
+  void import('./services/rideService').then(({ rideService }) => {
+    try { rideService.updateRide(corrida_id, { value: r.value, km: r.km }); } catch { /* noop */ }
+  }).catch(() => { /* noop */ });
+
   return r;
 }
 
