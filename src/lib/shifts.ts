@@ -534,6 +534,22 @@ export function restoreRide(turno_id: string, ride: ShiftRide): boolean {
   // ordena desc por data_registro (mantém invariante usado na UI)
   s.rides.sort((a, b) => b.data_registro.localeCompare(a.data_registro));
   saveShifts(list);
+
+  // Fase 2.3 — restaura também no dono canônico (vd-rides).
+  void import('./services/rideService').then(({ rideService }) => {
+    try {
+      rideService.addGpsRide({
+        shiftId: turno_id,
+        value: ride.valor,
+        km: ride.km,
+        date: ride.data_registro,
+        vehicleId: s.veiculo_id,
+        notes: ride.observacao,
+        kmOrigin: ride.km_origem,
+      });
+    } catch { /* noop */ }
+  }).catch(() => { /* noop */ });
+
   return true;
 }
 
