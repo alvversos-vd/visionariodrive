@@ -167,6 +167,47 @@ das APIs listadas acima.
 
 ---
 
+## 9. ShiftService — `src/lib/services/shiftService.ts` (Sprint 3, ADR-007)
+
+**Fachada oficial** para tudo relacionado a `Shift`. **Sem regra de
+negócio própria** — delega a `shifts.ts` (infra) e `rideService`
+(corridas canônicas).
+
+### PUBLIC
+
+- `getActive()` → `Shift | null`
+- `list()` → `Shift[]`
+- `start(opts)` / `end(id)` / `endAtomic(id)` / `pause(id)` / `resume(id)` / `remove(id)`
+- `getTotals(shift)` → `ShiftTotals` (orquestra `rideService.listByShift`
+  + `computeTotals` puro)
+- `metaProgresso(shift, lucro)` / `classifyRide(valor, km, shift?)`
+- `formatTempo` / `formatOperationalDate` / `todayOperationalDate` /
+  `yesterdayOperationalDate`
+- Tracking primitives: `appendRoutePoint`, `addGpsDistance`,
+  `flushBuffers`, `setGpsStatus`, `clearRoute`, `clearAllRoutes`
+- `subscribe(cb)` → `unsubscribe` (barra `shift:changed`)
+- `getVersion()` → `number`
+
+Componentes **NÃO** importam `@/lib/shifts` — apenas `shiftService`.
+
+---
+
+## 10. Hooks Layer — `src/hooks/*` (Sprint 3)
+
+Camada oficial entre Components e Services. Baseada em
+`useSyncExternalStore` + `eventBus`. **Zero polling.**
+
+- `useDashboard(refresh?)` → `{ goals, settings, snapshot, activeShift, shiftTotals, insights }`
+- `useRides(filters?)` / `useRidesByShift(id)` / `useRidesByDay(date?)`
+- `useFinancialEntries(filters?)`
+- `useDayMetrics(date?)` / `useDashboardSnapshot(goal)` / `useInsights(goal)`
+- `useActiveShift()` / `useShifts()` / `useShiftTotals(shift)`
+
+Componentes de UI **devem** preferir hooks a chamadas diretas ao Service
+sempre que a leitura for reativa.
+
+---
+
 ## Regras de congelamento
 
 1. **Adição** de método público requer ADR.
@@ -175,3 +216,4 @@ das APIs listadas acima.
 3. **Mudança de assinatura** (params/retorno) é *breaking* — proibida sem
    ADR + bump de `schemaVersion` quando toca persistência.
 4. Componentes **nunca** importam nada fora desta lista.
+
