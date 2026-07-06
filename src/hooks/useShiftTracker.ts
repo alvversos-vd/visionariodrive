@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { addGpsDistance, appendRoutePoint, flushShiftBuffers, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 

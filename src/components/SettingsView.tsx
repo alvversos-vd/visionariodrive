@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { settingsService } from '@/lib/services/settingsService';
 import { dataLifecycleService } from '@/lib/services/dataLifecycleService';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
-import { clearAllRoutes } from '@/lib/shifts';
+import { shiftService } from '@/lib/services/shiftService';
 import { clearGpsConsent } from './GpsConsentDialog';
 import { isForcedManual, setForcedManual, resetOnboarding } from '@/lib/permissionDiagnostic';
 import { Input } from '@/components/ui/input';

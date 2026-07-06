@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Shift } from '@/lib/shifts';
+import type { Shift } from '@/lib/services/shiftService';
 
 interface Props {
   shift: Shift;
