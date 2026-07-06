@@ -6,12 +6,13 @@ import {
   Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
 import {
-  Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
+  Shift, getActiveShift, startShift, endShiftAtomic,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
-  formatOperationalDate, deleteRide, classifyRide, updateRide,
+  formatOperationalDate, classifyRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
-  restoreRide, revertLastEdit,
 } from '@/lib/shifts';
+import { rideService } from '@/lib/services/rideService';
+import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
 import { settingsService } from '@/lib/services/settingsService';
 import { DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import {
