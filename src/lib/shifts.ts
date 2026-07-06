@@ -147,6 +147,7 @@ export function getShifts(): Shift[] {
 function saveShifts(list: Shift[]) {
   localStorage.setItem(SHIFTS_KEY, JSON.stringify(list));
   markDirty();
+  eventBus.emit('shift:changed');
 }
 
 export function getActiveShift(): Shift | null {
