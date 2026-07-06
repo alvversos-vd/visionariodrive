@@ -561,7 +561,7 @@ export default function ShiftMode({ onChange }: Props) {
 
   // Resumo final — cockpit premium
   if (summary) {
-    const t = shiftService.getTotals(summary));
+    const t = shiftService.getTotals(summary);
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
     const m = shiftService.metaProgresso(summary, t.lucro_total);
