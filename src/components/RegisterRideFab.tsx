@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { getActiveShift, addRideAuto, classifyRide } from '@/lib/shifts';
+import { getActiveShift, classifyRide } from '@/lib/shifts';
+import { rideService } from '@/lib/services/rideService';
+import { verdictToResultado } from '@/lib/adapters/rideAdapters';
 import { getVehicleById } from '@/lib/vehicles';
 
 interface Props { onChange?: () => void }
@@ -66,18 +68,20 @@ export default function RegisterRideFab({ onChange }: Props) {
       toast.error(smartMode ? 'Informe o valor recebido' : 'Preencha valor e km');
       return;
     }
-    const r = addRideAuto(
-      shift.turno_id,
-      v,
-      smartMode ? undefined : kUsed,
-      obs.trim() || undefined
-    );
-    if (!r) { toast.error('Não foi possível salvar a corrida'); return; }
+    const ride = rideService.registerShiftRide({
+      shiftId: shift.turno_id,
+      value: v,
+      km: kUsed,
+      kmOrigin: smartMode ? 'auto' : 'manual',
+      observacao: obs.trim() || undefined,
+    });
+    if (!ride) { toast.error('Não foi possível salvar a corrida'); return; }
     reset();
     setOpen(false);
     onChange?.();
-    if (r.resultado === 'boa') toast.success('🟢 Boa corrida 👊');
-    else if (r.resultado === 'aceitavel') toast('🟡 Lucro baixo nessa corrida');
+    const resultado = verdictToResultado(ride.analysis?.verdict);
+    if (resultado === 'boa') toast.success('🟢 Boa corrida 👊');
+    else if (resultado === 'aceitavel') toast('🟡 Lucro baixo nessa corrida');
     else toast.error('🔴 Essa corrida reduziu seu lucro');
   };
 

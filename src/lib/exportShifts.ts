@@ -1,9 +1,12 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Shift, computeTotals, formatTempo, formatOperationalDate, getShifts } from './shifts';
+import { rideService } from './services/rideService';
+import { rideModelToShiftRide, type ShiftRide } from './adapters/rideAdapters';
 import { exportTelemetry } from './exportTelemetry';
 import { saveBlob } from './saveBlob';
 import { getVehicleById, TIPO_LABEL } from './vehicles';
+import type { RideModel } from './domain/models';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
