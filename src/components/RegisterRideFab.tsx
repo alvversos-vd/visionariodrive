@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { getActiveShift, classifyRide } from '@/lib/shifts';
+import { shiftService } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { verdictToResultado } from '@/lib/adapters/rideAdapters';
 import { getVehicleById } from '@/lib/vehicles';
