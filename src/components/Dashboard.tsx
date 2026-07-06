@@ -196,7 +196,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* HERO PREMIUM — Lucro real + Status turno + Meta diária */}
       {(() => {
         const activeShift = getActiveShift();
-        const shiftTotals = activeShift ? computeTotals(activeShift) : null;
+        const shiftTotals = activeShift ? computeTotals(activeShift, rideService.listByShift(activeShift.turno_id)) : null;
         const startedMin = activeShift
           ? Math.max(0, Math.round((Date.now() - new Date(activeShift.inicio_turno).getTime()) / 60000))
           : 0;
