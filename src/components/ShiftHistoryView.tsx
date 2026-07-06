@@ -348,7 +348,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         return (
           <div className="space-y-5">
             {order.filter(k => groups[k].length > 0).map(label => {
-              const groupLucro = groups[label].reduce((a, s) => a + computeTotals(s).lucro_total, 0);
+              const groupLucro = groups[label].reduce((a, s) => a + computeTotals(s, ridesByShift.get(s.turno_id) ?? []).lucro_total, 0);
               return (
                 <div key={label} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
@@ -356,7 +356,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     <p className={`text-[11px] font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
                   {groups[label].map(s => {
-                    const t = computeTotals(s);
+                    const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
                     const result = classifyDay(t.lucro_total, meta);
                     const style = RESULT_STYLE[result];
                     const open = openId === s.turno_id;
