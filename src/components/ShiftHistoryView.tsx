@@ -110,7 +110,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const totals = useMemo(() => {
     const acc = { lucro: 0, ganho: 0, km: 0, corridas: 0, minutos: 0, custo: 0 };
     filtered.forEach(s => {
-      const t = shiftService.getTotals(s) ?? []);
+      const t = shiftService.getTotals(s);
       acc.lucro += t.lucro_total;
       acc.ganho += t.ganho_total;
       acc.km += t.km_total;
@@ -132,7 +132,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     const byApp: Record<string, { lucro: number; turnos: number }> = {};
     const byVeh: Record<string, { lucro: number; km: number; turnos: number; nome: string }> = {};
     periodShifts.forEach(s => {
-      const t = shiftService.getTotals(s) ?? []);
+      const t = shiftService.getTotals(s);
       if (s.app_utilizado) {
         byApp[s.app_utilizado] = byApp[s.app_utilizado] || { lucro: 0, turnos: 0 };
         byApp[s.app_utilizado].lucro += t.lucro_total;
@@ -348,7 +348,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         return (
           <div className="space-y-5">
             {order.filter(k => groups[k].length > 0).map(label => {
-              const groupLucro = groups[label].reduce((a, s) => a + shiftService.getTotals(s) ?? []).lucro_total, 0);
+              const groupLucro = groups[label].reduce((a, s) => a + shiftService.getTotals(s).lucro_total, 0);
               return (
                 <div key={label} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
@@ -356,7 +356,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     <p className={`text-[11px] font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
                   {groups[label].map(s => {
-                    const t = shiftService.getTotals(s) ?? []);
+                    const t = shiftService.getTotals(s);
                     const result = classifyDay(t.lucro_total, meta);
                     const style = RESULT_STYLE[result];
                     const open = openId === s.turno_id;
