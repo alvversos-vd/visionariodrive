@@ -215,7 +215,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                     <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                   </span>
-                  Turno ativo · {formatTempo(startedMin)}
+                  Turno ativo · {shiftService.formatTempo(startedMin)}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-secondary/60 border border-border text-[11px] font-display font-semibold text-muted-foreground">
