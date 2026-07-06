@@ -475,17 +475,24 @@ export default function ShiftMode({ onChange }: Props) {
       toast.error('Informe o valor da corrida');
       return;
     }
-    const kmEfetivo = k && k > 0 ? k : (shift.km_desde_ultima_corrida || 0);
+    const usedManual = !!(k && k > 0);
+    const kmEfetivo = usedManual ? (k as number) : (shift.km_desde_ultima_corrida || 0);
     if (!kmEfetivo || kmEfetivo <= 0) {
       toast.error('Informe o km da corrida manualmente');
       return;
     }
-    const r = addRideAuto(shift.turno_id, v, k);
-    if (!r) return;
+    const ride = rideService.registerShiftRide({
+      shiftId: shift.turno_id,
+      value: v,
+      km: kmEfetivo,
+      kmOrigin: usedManual ? 'manual' : 'auto',
+    });
+    if (!ride) return;
     setRideOpen(false);
     refresh();
-    if (r.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
-    else if (r.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
+    const view = rideModelToShiftRide(ride);
+    if (view.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
+    else if (view.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
     else toast.error('🔴 Corrida abaixo do custo ideal');
   };
 
@@ -505,9 +512,8 @@ export default function ShiftMode({ onChange }: Props) {
     if (km !== editing.km) patch.km = km;
     if (valor !== editing.valor) patch.valor = valor;
     if (!patch.km && !patch.valor) { setEditing(null); return; }
-    const turnoId = shift.turno_id;
     const corridaId = editing.corrida_id;
-    const r = updateRide(turnoId, corridaId, patch);
+    const r = rideService.updateShiftRide(corridaId, patch);
     if (r) {
       setEditing(null);
       refresh();
@@ -516,9 +522,8 @@ export default function ShiftMode({ onChange }: Props) {
         action: {
           label: 'Desfazer',
           onClick: () => {
-            // Reverte uma edição por campo alterado
-            if (patch.valor !== undefined) revertLastEdit(turnoId, corridaId);
-            if (patch.km !== undefined) revertLastEdit(turnoId, corridaId);
+            if (patch.valor !== undefined) rideService.revertLastShiftRideEdit(corridaId);
+            if (patch.km !== undefined) rideService.revertLastShiftRideEdit(corridaId);
             refresh();
             toast('Edição revertida');
           },
@@ -530,15 +535,14 @@ export default function ShiftMode({ onChange }: Props) {
   const handleDeleteRide = (r: ShiftRide) => {
     if (!shift) return;
     const snapshot: ShiftRide = JSON.parse(JSON.stringify(r));
-    const turnoId = shift.turno_id;
-    deleteRide(turnoId, r.corrida_id);
+    rideService.deleteShiftRide(r.corrida_id);
     refresh();
     toast('Corrida removida', {
       duration: 6000,
       action: {
         label: 'Desfazer',
         onClick: () => {
-          if (restoreRide(turnoId, snapshot)) {
+          if (rideService.restoreShiftRide(snapshot)) {
             refresh();
             toast.success('Corrida restaurada');
           }
@@ -562,7 +566,7 @@ export default function ShiftMode({ onChange }: Props) {
 
   // Resumo final — cockpit premium
   if (summary) {
-    const t = computeTotals(summary);
+    const t = computeTotals(summary, rideService.listByShift(summary.turno_id));
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
     const m = metaProgresso(summary, t.lucro_total);
