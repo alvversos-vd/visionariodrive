@@ -1,9 +1,12 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Shift, computeTotals, formatTempo, formatOperationalDate, getShifts } from './shifts';
+import { rideService } from './services/rideService';
+import { rideModelToShiftRide, type ShiftRide } from './adapters/rideAdapters';
 import { exportTelemetry } from './exportTelemetry';
 import { saveBlob } from './saveBlob';
 import { getVehicleById, TIPO_LABEL } from './vehicles';
+import type { RideModel } from './domain/models';
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -44,18 +47,22 @@ export async function exportShiftsCsv(from: string, to: string): Promise<number>
       'ganho_turno', 'km_turno', 'corridas_turno', 'custo_turno', 'lucro_turno',
     ]);
 
+    const ridesByShift = rideService.groupByShift();
+
     for (const s of shifts) {
-      const t = computeTotals(s);
+      const shiftRides: RideModel[] = ridesByShift.get(s.turno_id) ?? [];
+      const t = computeTotals(s, shiftRides);
       const v = getVehicleById(s.veiculo_id);
       const vname = v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : '';
-      if (s.rides.length === 0) {
+      if (shiftRides.length === 0) {
         rows.push([
           s.data_operacional, fmtHora(s.inicio_turno), fmtHora(s.fim_turno), formatTempo(t.tempo_online_minutos),
           vname, s.app_utilizado || '', '', '', '', '', '', '',
           t.ganho_total.toFixed(2), t.km_total.toFixed(2), t.corridas_total, t.custo_total.toFixed(2), t.lucro_total.toFixed(2),
         ]);
       } else {
-        s.rides.slice().reverse().forEach((r, idx) => {
+        const displayRides: ShiftRide[] = shiftRides.slice().reverse().map(rideModelToShiftRide);
+        displayRides.forEach((r, idx) => {
           rows.push([
             s.data_operacional, fmtHora(s.inicio_turno), fmtHora(s.fim_turno), formatTempo(t.tempo_online_minutos),
             vname, s.app_utilizado || '',
@@ -103,8 +110,9 @@ export async function exportShiftsPdf(from: string, to: string): Promise<number>
     doc.setFontSize(10);
     doc.text(`Período: ${formatOperationalDate(from)} → ${formatOperationalDate(to)}`, 14, 23);
 
+    const ridesByShiftPdf = rideService.groupByShift();
     const agg = shifts.reduce((acc, s) => {
-      const t = computeTotals(s);
+      const t = computeTotals(s, ridesByShiftPdf.get(s.turno_id) ?? []);
       acc.ganho += t.ganho_total; acc.lucro += t.lucro_total; acc.km += t.km_total;
       acc.corridas += t.corridas_total; acc.minutos += t.tempo_online_minutos; acc.custo += t.custo_total;
       return acc;
@@ -123,7 +131,7 @@ export async function exportShiftsPdf(from: string, to: string): Promise<number>
       startY: 42,
       head: [['Data', 'Início', 'Fim', 'Tempo', 'Veículo / App', 'Corr.', 'Km', 'Ganho', 'Custo', 'Lucro']],
       body: shifts.map(s => {
-        const t = computeTotals(s);
+        const t = computeTotals(s, ridesByShiftPdf.get(s.turno_id) ?? []);
         const v = getVehicleById(s.veiculo_id);
         const vname = v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : '—';
         return [

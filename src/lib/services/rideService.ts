@@ -1,22 +1,30 @@
 /**
- * RideService — API canônica para corridas (Fase 2.3).
+ * RideService — API canônica para corridas (Fase 2.4).
  *
  * DONO ÚNICO da escrita de RideModel. Nada mais grava corridas fora daqui.
  *
- * Fluxos:
+ * Orquestração de corridas dentro de turnos (Shift):
+ *   - registerShiftRide        → substitui shifts.addRide/addRideAuto
+ *   - updateShiftRide          → substitui shifts.updateRide
+ *   - deleteShiftRide          → substitui shifts.deleteRide
+ *   - restoreShiftRide         → substitui shifts.restoreRide
+ *   - revertLastShiftRideEdit  → substitui shifts.revertLastEdit
+ *
+ * Fluxos manuais/GPS/quick:
  *   - saveManualRide  → RideAnalyzer (análise completa, gera analysis snapshot)
  *   - saveQuickRide   → captura rápida (valor + km, opcionalmente analisada)
- *   - addGpsRide      → chamado pelo módulo Shift/GPS ao registrar corrida
- *                       (captureMode='gps' — quando há tracking automático)
+ *   - addGpsRide      → GPS puro (sem turno) — reservado
  *   - addRide/updateRide/deleteRide → API genérica sobre RideModel
  *
- * Fase 2.3 removeu completamente o mirror para o legacy RideEntry
- * (`lucro-delivery-rides`). Não existem mais espelhos ativos: a única
- * fonte de verdade de corridas persistidas é `vd-rides`.
+ * Fase 2.4 removeu completamente a escrita em `Shift.rides`. A única fonte
+ * de verdade de corridas persistidas é `vd-rides`. `shifts.markRideRegistered`
+ * é usado apenas para atualizar estado de SESSÃO do turno ativo
+ * (`km_desde_ultima_corrida`, `ultima_corrida_iso`).
  */
 
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
 import { metricsService, type RideAnalysis } from './metricsService';
+import { classifyRide, getShifts, markRideRegistered, type Shift } from '../shifts';
 import type {
   RideModel,
   CaptureMode,
@@ -25,7 +33,13 @@ import type {
   RideLocation,
   RideAnalysisSnapshot,
   RideGpsTrace,
+  RideEdit,
 } from '../domain/models';
+import {
+  rideModelToShiftRide,
+  resultadoToVerdict,
+  type ShiftRide,
+} from '../adapters/rideAdapters';
 
 // ─── Inputs ──────────────────────────────────────────────────────────────
 export interface RideListFilters {
@@ -37,11 +51,10 @@ export interface RideListFilters {
   to?: Date;
 }
 
-/** Input canônico de criação de corrida (usado por todos os fluxos). */
 export interface RideInput {
   value: number;
   km: number;
-  date?: string;                       // ISO — default: agora
+  date?: string;
   durationMin?: number;
   app?: RideApp;
   vehicleId?: string;
@@ -56,12 +69,10 @@ export interface RideInput {
   earningsBreakdown?: RideEarningsBreakdown;
   shiftId?: string;
   gps?: RideGpsTrace;
+  operationalDate?: string;
+  kmOrigin?: 'auto' | 'manual';
 }
 
-/**
- * Input usado por RideAnalyzer (individual). Todos os campos de análise vivem
- * agora dentro do RideModel via `analysis`.
- */
 export interface SaveIndividualInput {
   value: number;
   km: number;
@@ -74,11 +85,18 @@ export interface SaveIndividualInput {
   rideType?: string;
 }
 
-/** Input do módulo Shift/GPS ao registrar uma corrida. */
 export interface GpsRideInput extends RideInput {
   shiftId: string;
-  /** 'auto' = km veio do GPS; 'manual' = usuário informou km */
   kmOrigin?: 'auto' | 'manual';
+}
+
+/** Input canônico para registrar uma corrida dentro de um turno ativo. */
+export interface RegisterShiftRideInput {
+  shiftId: string;
+  value: number;
+  km: number;
+  kmOrigin?: 'auto' | 'manual';
+  observacao?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -90,6 +108,10 @@ function inRange(iso: string, from?: Date, to?: Date): boolean {
 }
 function startOfDay(d: Date): Date { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function endOfDay(d: Date):   Date { const x = new Date(d); x.setHours(23,59,59,999); return x; }
+
+function findShift(shiftId: string): Shift | null {
+  return getShifts().find(s => s.turno_id === shiftId) ?? null;
+}
 
 function buildRide(input: RideInput, captureMode: CaptureMode, id?: string): RideModel {
   return {
@@ -112,7 +134,30 @@ function buildRide(input: RideInput, captureMode: CaptureMode, id?: string): Rid
     earningsBreakdown: input.earningsBreakdown,
     shiftId: input.shiftId,
     gps: input.gps,
+    operationalDate: input.operationalDate,
+    kmOrigin: input.kmOrigin,
   };
+}
+
+function reclassify(shift: Shift | null, value: number, km: number): RideAnalysisSnapshot {
+  if (shift) {
+    const cls = classifyRide(value, km, shift);
+    // Reaproveita cost/min do metrics para consistência
+    let cpk = 0; let min = 0;
+    try {
+      const a = metricsService.analyzeRide({ value, km });
+      cpk = a.costPerKm; min = a.minIdealKm;
+    } catch { /* noop */ }
+    return {
+      costPerKm: cpk,
+      minIdealKm: min,
+      ridePerKm: cls.valor_por_km,
+      profit: value - cpk * km,
+      verdict: resultadoToVerdict(cls.resultado),
+    };
+  }
+  const a = metricsService.analyzeRide({ value, km });
+  return { ...a };
 }
 
 // ─── API pública ─────────────────────────────────────────────────────────
@@ -136,7 +181,11 @@ export const rideService = {
   },
 
   listByShift(shiftId: string): RideModel[] {
-    return this.list({ shiftId });
+    return rideRepository.listByShift(shiftId);
+  },
+
+  groupByShift(): Map<string, RideModel[]> {
+    return rideRepository.groupByShift();
   },
 
   getById(id: string): RideModel | null {
@@ -147,7 +196,7 @@ export const rideService = {
     return this.list({ captureMode: ['manual', 'quick'] }).length;
   },
 
-  // ---- Escrita canônica ------------------------------------------------
+  // ---- Escrita canônica genérica --------------------------------------
   addRide(input: RideInput, captureMode: CaptureMode = 'manual'): RideModel {
     const ride = buildRide(input, captureMode);
     rideRepository.add(ride);
@@ -162,6 +211,7 @@ export const rideService = {
     rideRepository.remove(id);
   },
 
+  // ---- Fluxos específicos ---------------------------------------------
   /**
    * Fluxo Manual — RideAnalyzer. Escreve RideModel canônico com analysis.
    */
@@ -187,10 +237,7 @@ export const rideService = {
     return ride;
   },
 
-  /**
-   * Fluxo Quick — captura rápida (valor + km). Se `analysis` não vier no
-   * input, calcula on-the-fly via metricsService.
-   */
+  /** Fluxo Quick — captura rápida (valor + km). */
   saveQuickRide(input: RideInput): RideModel {
     const analysis: RideAnalysisSnapshot = input.analysis ?? (() => {
       const a: RideAnalysis = metricsService.analyzeRide({ value: input.value, km: input.km });
@@ -201,30 +248,143 @@ export const rideService = {
     return ride;
   },
 
-  /**
-   * Fluxo GPS — chamado pelo módulo Shift ao registrar uma corrida dentro
-   * de um turno ativo. Persiste RideModel canônico em `vd-rides` com
-   * captureMode='gps' (ou 'manual' quando o km foi informado pelo usuário
-   * mesmo estando dentro do turno) e shiftId vinculado.
-   *
-   * Idempotente por id: se o caller já tem um id (ex.: corrida_id do turno),
-   * pode reaproveitar via `input.notes`/service internos. Aqui geramos UUID
-   * quando não vier — a camada Shift mantém sua chave interna independente.
-   */
+  /** Fluxo GPS puro (sem shift, reservado). */
   addGpsRide(input: GpsRideInput): RideModel {
     const captureMode: CaptureMode = input.kmOrigin === 'manual' ? 'manual' : 'gps';
-    // Analysis snapshot é útil para timeline/insights consumirem o
-    // veredicto sem recomputar. Best-effort — não bloqueia se falhar.
     let analysis: RideAnalysisSnapshot | undefined = input.analysis;
     if (!analysis) {
       try {
         const a = metricsService.analyzeRide({ value: input.value, km: input.km });
         analysis = { ...a };
-      } catch { /* base de custo indisponível — segue sem snapshot */ }
+      } catch { /* noop */ }
     }
     const ride = buildRide({ ...input, analysis }, captureMode);
     rideRepository.add(ride);
     return ride;
+  },
+
+  // ─── Orquestração ShiftRide (Fase 2.4) ────────────────────────────────
+  /**
+   * Registra uma corrida dentro de um turno ativo.
+   * Escreve exclusivamente em `vd-rides` (canônico) e atualiza estado de
+   * SESSÃO do turno via `markRideRegistered` (sem tocar em Shift.rides).
+   */
+  registerShiftRide(input: RegisterShiftRideInput): RideModel | null {
+    const shift = findShift(input.shiftId);
+    if (!shift || shift.status !== 'ativo') return null;
+    const value = Number(input.value) || 0;
+    const km = Number(input.km) || 0;
+    if (value <= 0 || km <= 0) return null;
+    const dateIso = new Date().toISOString();
+    const analysis = reclassify(shift, value, km);
+    const ride: RideModel = buildRide(
+      {
+        value,
+        km,
+        date: dateIso,
+        vehicleId: shift.veiculo_id,
+        notes: input.observacao?.trim() || undefined,
+        shiftId: shift.turno_id,
+        operationalDate: shift.data_operacional,
+        kmOrigin: input.kmOrigin,
+        gps: shift.rota && shift.rota.length > 0 ? { points: shift.rota.length } : undefined,
+        analysis,
+      },
+      input.kmOrigin === 'auto' ? 'gps' : 'manual',
+    );
+    rideRepository.add(ride);
+    markRideRegistered(shift.turno_id, dateIso);
+    return ride;
+  },
+
+  /**
+   * Edita valor/km de uma corrida do turno, mantendo edit history no RideModel.
+   */
+  updateShiftRide(rideId: string, patch: { km?: number; valor?: number }): RideModel | null {
+    const current = rideRepository.getById(rideId);
+    if (!current) return null;
+    const edits: RideEdit[] = current.edits ? [...current.edits] : [];
+    const nowIso = new Date().toISOString();
+    let originalKm = current.originalKm;
+    let originalValue = current.originalValue;
+    let km = current.km;
+    let value = current.value;
+
+    if (typeof patch.km === 'number' && Number.isFinite(patch.km) && patch.km > 0 && patch.km !== current.km) {
+      if (originalKm === undefined) originalKm = current.km;
+      edits.push({ field: 'km', from: current.km, to: patch.km, at: nowIso });
+      km = patch.km;
+    }
+    if (typeof patch.valor === 'number' && Number.isFinite(patch.valor) && patch.valor > 0 && patch.valor !== current.value) {
+      if (originalValue === undefined) originalValue = current.value;
+      edits.push({ field: 'value', from: current.value, to: patch.valor, at: nowIso });
+      value = patch.valor;
+    }
+    if (edits.length === (current.edits?.length ?? 0)) return current;
+
+    const shift = current.shiftId ? findShift(current.shiftId) : null;
+    const analysis = reclassify(shift, value, km);
+
+    return rideRepository.update(rideId, {
+      km, value, edits, originalKm, originalValue, analysis,
+    });
+  },
+
+  /** Remove uma corrida do turno da fonte canônica. */
+  deleteShiftRide(rideId: string): void {
+    rideRepository.remove(rideId);
+  },
+
+  /**
+   * Restaura uma corrida previamente deletada (usada pelo "Desfazer").
+   * Recebe o snapshot no formato ShiftRide (UI) e o reinsere como RideModel.
+   */
+  restoreShiftRide(snapshot: ShiftRide): RideModel | null {
+    if (!snapshot?.corrida_id) return null;
+    const shift = snapshot.turno_id ? findShift(snapshot.turno_id) : null;
+    const analysis = reclassify(shift, snapshot.valor, snapshot.km);
+    const ride: RideModel = {
+      id: snapshot.corrida_id,
+      date: snapshot.data_registro,
+      captureMode: snapshot.km_origem === 'auto' ? 'gps' : 'manual',
+      value: snapshot.valor,
+      km: snapshot.km,
+      vehicleId: shift?.veiculo_id,
+      notes: snapshot.observacao,
+      shiftId: snapshot.turno_id || undefined,
+      operationalDate: snapshot.data_operacional,
+      kmOrigin: snapshot.km_origem,
+      originalKm: snapshot.km_original,
+      originalValue: snapshot.valor_original,
+      analysis,
+    };
+    rideRepository.add(ride);
+    return ride;
+  },
+
+  /**
+   * Reverte a última edição registrada em uma corrida (km ou valor).
+   * Não remove o edit history — anexa uma edição inversa.
+   */
+  revertLastShiftRideEdit(rideId: string): RideModel | null {
+    const current = rideRepository.getById(rideId);
+    if (!current || !current.edits || current.edits.length === 0) return null;
+    const last = current.edits[current.edits.length - 1];
+    const nowIso = new Date().toISOString();
+    const edits: RideEdit[] = [...current.edits];
+    let km = current.km;
+    let value = current.value;
+
+    if (last.field === 'km') {
+      edits.push({ field: 'km', from: current.km, to: last.from, at: nowIso });
+      km = last.from;
+    } else {
+      edits.push({ field: 'value', from: current.value, to: last.from, at: nowIso });
+      value = last.from;
+    }
+    const shift = current.shiftId ? findShift(current.shiftId) : null;
+    const analysis = reclassify(shift, value, km);
+    return rideRepository.update(rideId, { km, value, edits, analysis });
   },
 };
 

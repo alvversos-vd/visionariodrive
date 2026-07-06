@@ -6,12 +6,13 @@ import {
   Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
 import {
-  Shift, ShiftRide, getActiveShift, startShift, endShiftAtomic, addRideAuto,
+  Shift, getActiveShift, startShift, endShiftAtomic,
   computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
-  formatOperationalDate, deleteRide, classifyRide, updateRide,
+  formatOperationalDate, classifyRide,
   pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
-  restoreRide, revertLastEdit,
 } from '@/lib/shifts';
+import { rideService } from '@/lib/services/rideService';
+import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
 import { settingsService } from '@/lib/services/settingsService';
 import { DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
 import {
@@ -204,9 +205,11 @@ export default function ShiftMode({ onChange }: Props) {
   };
 
 
+  const [ridesVersion, setRidesVersion] = useState(0);
   const refresh = () => {
     const a = getActiveShift();
     setShift(a);
+    setRidesVersion(v => v + 1);
     onChange?.();
   };
 
@@ -216,7 +219,14 @@ export default function ShiftMode({ onChange }: Props) {
     if (a) setShift({ ...a });
   }});
 
-  const totals = useMemo(() => shift ? computeTotals(shift) : null, [shift]);
+  const activeRides = useMemo(
+    () => (shift ? rideService.listByShift(shift.turno_id) : []),
+    [shift, ridesVersion],
+  );
+  const totals = useMemo(
+    () => (shift ? computeTotals(shift, activeRides) : null),
+    [shift, activeRides],
+  );
   const meta = useMemo(() => shift && totals ? metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
 
   // Sai do foco se turno terminar
@@ -465,17 +475,24 @@ export default function ShiftMode({ onChange }: Props) {
       toast.error('Informe o valor da corrida');
       return;
     }
-    const kmEfetivo = k && k > 0 ? k : (shift.km_desde_ultima_corrida || 0);
+    const usedManual = !!(k && k > 0);
+    const kmEfetivo = usedManual ? (k as number) : (shift.km_desde_ultima_corrida || 0);
     if (!kmEfetivo || kmEfetivo <= 0) {
       toast.error('Informe o km da corrida manualmente');
       return;
     }
-    const r = addRideAuto(shift.turno_id, v, k);
-    if (!r) return;
+    const ride = rideService.registerShiftRide({
+      shiftId: shift.turno_id,
+      value: v,
+      km: kmEfetivo,
+      kmOrigin: usedManual ? 'manual' : 'auto',
+    });
+    if (!ride) return;
     setRideOpen(false);
     refresh();
-    if (r.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
-    else if (r.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
+    const view = rideModelToShiftRide(ride);
+    if (view.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
+    else if (view.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
     else toast.error('🔴 Corrida abaixo do custo ideal');
   };
 
@@ -495,9 +512,8 @@ export default function ShiftMode({ onChange }: Props) {
     if (km !== editing.km) patch.km = km;
     if (valor !== editing.valor) patch.valor = valor;
     if (!patch.km && !patch.valor) { setEditing(null); return; }
-    const turnoId = shift.turno_id;
     const corridaId = editing.corrida_id;
-    const r = updateRide(turnoId, corridaId, patch);
+    const r = rideService.updateShiftRide(corridaId, patch);
     if (r) {
       setEditing(null);
       refresh();
@@ -506,9 +522,8 @@ export default function ShiftMode({ onChange }: Props) {
         action: {
           label: 'Desfazer',
           onClick: () => {
-            // Reverte uma edição por campo alterado
-            if (patch.valor !== undefined) revertLastEdit(turnoId, corridaId);
-            if (patch.km !== undefined) revertLastEdit(turnoId, corridaId);
+            if (patch.valor !== undefined) rideService.revertLastShiftRideEdit(corridaId);
+            if (patch.km !== undefined) rideService.revertLastShiftRideEdit(corridaId);
             refresh();
             toast('Edição revertida');
           },
@@ -520,15 +535,14 @@ export default function ShiftMode({ onChange }: Props) {
   const handleDeleteRide = (r: ShiftRide) => {
     if (!shift) return;
     const snapshot: ShiftRide = JSON.parse(JSON.stringify(r));
-    const turnoId = shift.turno_id;
-    deleteRide(turnoId, r.corrida_id);
+    rideService.deleteShiftRide(r.corrida_id);
     refresh();
     toast('Corrida removida', {
       duration: 6000,
       action: {
         label: 'Desfazer',
         onClick: () => {
-          if (restoreRide(turnoId, snapshot)) {
+          if (rideService.restoreShiftRide(snapshot)) {
             refresh();
             toast.success('Corrida restaurada');
           }
@@ -552,7 +566,7 @@ export default function ShiftMode({ onChange }: Props) {
 
   // Resumo final — cockpit premium
   if (summary) {
-    const t = computeTotals(summary);
+    const t = computeTotals(summary, rideService.listByShift(summary.turno_id));
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
     const m = metaProgresso(summary, t.lucro_total);
@@ -1036,11 +1050,11 @@ export default function ShiftMode({ onChange }: Props) {
         </div>
 
         {/* Últimas corridas */}
-        {shift.rides.length > 0 && (
+        {activeRides.length > 0 && (
           <div className="relative space-y-1.5 pt-1">
             <p className="text-label">Últimas corridas</p>
             <div className="space-y-1">
-              {shift.rides.slice(0, 5).map(r => {
+              {activeRides.slice(0, 5).map(rideModelToShiftRide).map(r => {
                 const dotCls = r.resultado === 'boa' ? 'bg-profit' : r.resultado === 'aceitavel' ? 'bg-warning' : 'bg-loss';
                 return (
                   <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-[12px]">

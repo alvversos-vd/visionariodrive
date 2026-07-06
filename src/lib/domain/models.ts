@@ -65,9 +65,22 @@ export interface RideAnalysisSnapshot {
 }
 
 /**
+ * Registro atômico de edição posterior a uma corrida (km ou valor).
+ * Preserva rastreabilidade sem quebrar imutabilidade do snapshot canônico.
+ */
+export interface RideEdit {
+  field: 'km' | 'value';
+  from: number;
+  to: number;
+  at: string;                     // ISO
+}
+
+/**
  * RideModel v1 — CONGELADO na Sprint 1.6.
  * Fase 2.2 acrescenta campos OPCIONAIS (aditivos — schema segue v1):
  *   analysis, vehicleName, rideType — o que antes vivia no RideEntry legacy.
+ * Fase 2.4 acrescenta campos OPCIONAIS para absorver ShiftRide:
+ *   operationalDate, kmOrigin, originalValue/originalKm, edits.
  */
 export interface RideModel {
   id: string;                     // UUID permanente — preservado em migrações
@@ -96,6 +109,18 @@ export interface RideModel {
   vehicleName?: string;
   /** Tipo/categoria da corrida (tag livre). */
   rideType?: string;
+
+  // ─── Fase 2.4 — absorção do ShiftRide ───
+  /** Data operacional (YYYY-MM-DD) do turno de origem. */
+  operationalDate?: string;
+  /** Origem do km: 'auto' = GPS, 'manual' = usuário informou. */
+  kmOrigin?: 'auto' | 'manual';
+  /** Km original antes da primeira edição (rastreabilidade). */
+  originalKm?: number;
+  /** Valor original antes da primeira edição (rastreabilidade). */
+  originalValue?: number;
+  /** Histórico de edições (append-only) — usado por undo/reverter. */
+  edits?: RideEdit[];
 }
 
 // ─── FinancialEntry ───────────────────────────────────────────────────────

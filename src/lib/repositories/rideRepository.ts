@@ -1,12 +1,12 @@
 /**
- * RideRepository — DONO ÚNICO oficial de RideModel (Fase 2.3).
+ * RideRepository — DONO ÚNICO oficial de RideModel (Fase 2.4).
  *
  * Fonte física primária: `localStorage['vd-rides']` — payload versionado
  *   { schemaVersion, rides: RideModel[] }
  *
- * A partir da Fase 2.3, este é o ÚNICO owner de corridas. `Shift.rides`
- * deixa de ser fonte de verdade — o módulo Shift chama `rideService.addGpsRide`
- * ao registrar uma corrida, e RideRepository persiste em `vd-rides`.
+ * A partir da Fase 2.3, este é o ÚNICO owner de corridas persistidas.
+ * A Fase 2.4 elimina a dupla-escrita restante: Shift.rides NÃO é mais
+ * escrito por nenhuma orquestração — apenas lido na migração one-shot.
  *
  * DailyEntry (calculador diário agregado) permanece como um acessor legacy
  * — não é uma corrida individual e vive em outro modelo (`lucro-delivery-entries`).
@@ -26,67 +26,20 @@ import {
 } from '../storage';
 import { getShifts } from '../shifts';
 import { readVersioned, writeJson } from './baseRepository';
-import type { DailyEntry, RideEntry } from '../types';
-import type { Shift, ShiftRide } from '../shifts';
+import type { DailyEntry } from '../types';
 import {
   RIDE_SCHEMA_VERSION,
   type RidePayload,
   type RideModel,
-  type CaptureMode,
 } from '../domain/models';
+import {
+  rideEntryToRideModel,
+  shiftRideToRideModel,
+  dailyEntryToRideModel,
+  type ShiftRide,
+} from '../adapters/rideAdapters';
 
 const RIDES_KEY = 'vd-rides';
-
-// ─── Adapter legacy → RideModel (usado APENAS na migração one-shot) ──────
-function rideEntryToModel(r: RideEntry): RideModel {
-  return {
-    id: r.id,
-    date: r.date,
-    captureMode: 'manual',
-    value: r.value,
-    km: r.km,
-    vehicleName: r.vehicle,
-    rideType: r.rideType,
-    notes: r.rideType,
-    analysis: {
-      costPerKm: r.costPerKm,
-      minIdealKm: r.minIdealKm,
-      ridePerKm: r.ridePerKm,
-      profit: r.profit,
-      verdict: r.verdict,
-    },
-  };
-}
-
-function shiftRideToModel(sr: ShiftRide, shift: Shift): RideModel {
-  const captureMode: CaptureMode = sr.km_origem === 'auto' ? 'gps' : 'manual';
-  const hasRoute = !!(shift.rota && shift.rota.length > 0);
-  return {
-    id: sr.corrida_id,
-    date: sr.data_registro,
-    captureMode,
-    value: Number(sr.valor) || 0,
-    km: Number(sr.km) || 0,
-    vehicleId: shift.veiculo_id,
-    notes: sr.observacao,
-    shiftId: shift.turno_id,
-    gps: hasRoute ? { points: shift.rota!.length } : undefined,
-  };
-}
-
-function dailyEntryToModel(e: DailyEntry): RideModel {
-  return {
-    id: e.id,
-    date: e.date,
-    captureMode: 'imported',
-    value: e.totalEarnings,
-    km: e.kmDriven,
-    durationMin: e.hoursWorked > 0 ? Math.round(e.hoursWorked * 60) : undefined,
-    vehicleName: e.vehicle,
-    rideType: e.rideType,
-    notes: e.vehicle,
-  };
-}
 
 // ─── Persistência versionada ─────────────────────────────────────────────
 function migrateRidesPayload(raw: unknown): RideModel[] {
@@ -127,13 +80,22 @@ function ensureMigratedFromLegacy(): void {
     seeded.push(m);
   };
 
-  try { for (const r of getRides())   push(rideEntryToModel(r)); } catch { /* noop */ }
+  try { for (const r of getRides())   push(rideEntryToRideModel(r)); } catch { /* noop */ }
   try {
     for (const s of getShifts()) {
-      for (const sr of s.rides ?? []) push(shiftRideToModel(sr, s));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const legacyRides: ShiftRide[] = (s as any).rides ?? [];
+      for (const sr of legacyRides) {
+        push(shiftRideToRideModel(sr, {
+          turno_id: s.turno_id,
+          veiculo_id: s.veiculo_id,
+          data_operacional: s.data_operacional,
+          rota: s.rota,
+        }));
+      }
     }
   } catch { /* noop */ }
-  try { for (const e of getEntries()) push(dailyEntryToModel(e)); } catch { /* noop */ }
+  try { for (const e of getEntries()) push(dailyEntryToRideModel(e)); } catch { /* noop */ }
 
   persist({ schemaVersion: RIDE_SCHEMA_VERSION, rides: seeded });
 }
@@ -146,6 +108,30 @@ export const rideRepository = {
     return loadPayload().rides
       .slice()
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  listByShift(shiftId: string): RideModel[] {
+    if (!shiftId) return [];
+    ensureMigratedFromLegacy();
+    return loadPayload().rides
+      .filter(r => r.shiftId === shiftId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  /** Agrupa todas as corridas por shiftId — util para relatórios/exports. */
+  groupByShift(): Map<string, RideModel[]> {
+    ensureMigratedFromLegacy();
+    const map = new Map<string, RideModel[]>();
+    for (const r of loadPayload().rides) {
+      if (!r.shiftId) continue;
+      const arr = map.get(r.shiftId) ?? [];
+      arr.push(r);
+      map.set(r.shiftId, arr);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    return map;
   },
 
   getById(id: string): RideModel | null {
@@ -197,11 +183,7 @@ export const rideRepository = {
 /**
  * Retorna TODOS os RideModel visíveis ao usuário.
  *
- * Fase 2.3: `vd-rides` é a ÚNICA fonte de verdade para corridas individuais.
- * `Shift.rides` NÃO participa mais desta leitura — toda corrida registrada
- * dentro de um turno passa por `rideService.addGpsRide()`, que já persiste
- * em `vd-rides` com `shiftId` correto.
- *
+ * Fase 2.4: `vd-rides` é a ÚNICA fonte de verdade para corridas individuais.
  * DailyEntry agregado (calculador diário) continua entrando como
  * `captureMode='imported'` para preservar a timeline histórica.
  */
@@ -214,7 +196,7 @@ export function readAllRideModels(): RideModel[] {
   // DailyEntry agregado — imported. Só entra se ainda não migrado.
   try {
     for (const e of getEntries()) {
-      const m = dailyEntryToModel(e);
+      const m = dailyEntryToRideModel(e);
       if (!byId.has(m.id)) byId.set(m.id, m);
     }
   } catch { /* noop */ }

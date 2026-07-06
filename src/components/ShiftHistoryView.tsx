@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
+import { rideService } from '@/lib/services/rideService';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { exportTelemetry } from '@/lib/exportTelemetry';
@@ -104,10 +105,12 @@ export default function ShiftHistoryView({ refresh }: Props) {
     [shifts, filter, vehicleFilter, appFilter]
   );
 
+  const ridesByShift = useMemo(() => rideService.groupByShift(), [refresh]);
+
   const totals = useMemo(() => {
     const acc = { lucro: 0, ganho: 0, km: 0, corridas: 0, minutos: 0, custo: 0 };
     filtered.forEach(s => {
-      const t = computeTotals(s);
+      const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
       acc.lucro += t.lucro_total;
       acc.ganho += t.ganho_total;
       acc.km += t.km_total;
@@ -121,7 +124,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
       lucroPorKm: acc.km > 0 ? acc.lucro / acc.km : 0,
       lucroPorTurno: filtered.length > 0 ? acc.lucro / filtered.length : 0,
     };
-  }, [filtered]);
+  }, [filtered, ridesByShift]);
 
   // Melhor app & melhor veículo (no filtro atual de período)
   const insights = useMemo(() => {
@@ -129,7 +132,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     const byApp: Record<string, { lucro: number; turnos: number }> = {};
     const byVeh: Record<string, { lucro: number; km: number; turnos: number; nome: string }> = {};
     periodShifts.forEach(s => {
-      const t = computeTotals(s);
+      const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
       if (s.app_utilizado) {
         byApp[s.app_utilizado] = byApp[s.app_utilizado] || { lucro: 0, turnos: 0 };
         byApp[s.app_utilizado].lucro += t.lucro_total;
@@ -155,7 +158,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
       if (!bestVeh || lpk > bestVeh.lucroPorKm) bestVeh = { nome: v.nome, lucroPorKm: lpk };
     });
     return { bestApp, bestVeh };
-  }, [shifts, filter]);
+  }, [shifts, filter, ridesByShift]);
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'hoje', label: 'Hoje' },
@@ -345,7 +348,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         return (
           <div className="space-y-5">
             {order.filter(k => groups[k].length > 0).map(label => {
-              const groupLucro = groups[label].reduce((a, s) => a + computeTotals(s).lucro_total, 0);
+              const groupLucro = groups[label].reduce((a, s) => a + computeTotals(s, ridesByShift.get(s.turno_id) ?? []).lucro_total, 0);
               return (
                 <div key={label} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
@@ -353,7 +356,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     <p className={`text-[11px] font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
                   {groups[label].map(s => {
-                    const t = computeTotals(s);
+                    const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
                     const result = classifyDay(t.lucro_total, meta);
                     const style = RESULT_STYLE[result];
                     const open = openId === s.turno_id;
