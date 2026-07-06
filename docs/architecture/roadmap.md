@@ -1,13 +1,15 @@
-# Technical Roadmap — Pós Sprint 2.5
+# Technical Roadmap — Pós Sprint 3
 
-## Sprint 3 — Ativação da Fundação
+## Sprint 3 — Ativação da Fundação ✅ CONCLUÍDA
 
-| Item | Objetivo | Dependências | Risco | Prioridade |
-|------|----------|--------------|-------|------------|
-| useRides / useMetrics hooks | Encapsular Services em hooks memoizados | — | Baixo | Alta |
-| Migrar Shift/GPS para Services | Encerrar exceção arquitetural (DBT-L1) | ADR-004 | Médio | Alta |
-| Telemetria de migração one-shot | Contar devices migrados | Analytics | Baixo | Alta |
-| Insights v1 (`metricsService.insights`) | Consumir insights no Dashboard | MetricsService | Baixo | Média |
+| Item | Status |
+|------|--------|
+| Hooks `useRides` / `useMetrics` / `useFinancial` / `useShift` / `useDashboard` | ✅ |
+| Migrar Shift/GPS para Services (`shiftService`, encerra DBT-L1) | ✅ ADR-007 |
+| Telemetria one-shot (`telemetry.recordMigration`) | ✅ |
+| Insights v1 (`metricsService.insights`, máx. 3) + `InsightsCard` | ✅ |
+| `eventBus` reativo (`rides:changed`, `financial:changed`, `shift:changed`) | ✅ |
+
 
 ## Sprint 4 — Expansão
 
