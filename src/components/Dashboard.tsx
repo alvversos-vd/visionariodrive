@@ -280,6 +280,11 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
       <ShiftMode />
 
+      {/* Insights (máx. 3) — Sprint 3 */}
+      {entriesCount >= 3 && <InsightsCard insights={insights} />}
+
+
+
       {focus ? (
         <div className="space-y-3 animate-fade-in-up">
           <div className="relative rounded-2xl p-6 bg-card border border-primary/30 shadow-glow-sm text-center overflow-hidden">
