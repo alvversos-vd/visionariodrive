@@ -178,7 +178,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
             variant="outline"
             className="w-full"
             onClick={() => {
-              const n = clearAllRoutes();
+              const n = shiftService.clearAllRoutes();
               toast.success(n > 0 ? `Rotas apagadas em ${n} turno${n === 1 ? '' : 's'}` : 'Nenhuma rota para apagar');
             }}
           >
