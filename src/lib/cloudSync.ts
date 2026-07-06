@@ -50,32 +50,47 @@ function readLocal(key: LocalKey): unknown {
  * Aplica regras de merge defensivo na hidratação/realtime:
  *  - Filtra tombstones (entries/shifts apagados localmente nunca renascem).
  *  - Nunca rebaixa um shift que já está finalizado localmente para ativo/pausado.
+ *  - Fase 2.4: strip completo do campo legacy `rides` em qualquer shift
+ *    vindo do cloud — Shift.rides não é mais fonte de verdade.
  */
+function stripLegacyRides<T extends { rides?: unknown }>(s: T): T {
+  if (s && typeof s === 'object' && 'rides' in s) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { rides: _drop, ...rest } = s as any;
+    return rest as T;
+  }
+  return s;
+}
+
 function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
   const tomb = getTombstones();
 
   if (key === 'lucro-delivery-shifts' && Array.isArray(incoming)) {
     const localRaw = localStorage.getItem(key);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const local: any[] = localRaw ? (JSON.parse(localRaw) || []) : [];
-    const localById = new Map(local.map((s: any) => [s.turno_id, s]));
-    const merged = (incoming as any[])
+    const localById = new Map(local.map((s: { turno_id: string }) => [s.turno_id, s]));
+    const merged = (incoming as Array<{ turno_id: string; status: string }>)
       .filter(s => !tomb.shifts.includes(s.turno_id))
       .map(s => {
         const l = localById.get(s.turno_id);
         // proteção crítica: não rebaixa um turno já finalizado localmente
-        if (l && l.status === 'finalizado' && s.status !== 'finalizado') return l;
-        return s;
+        if (l && l.status === 'finalizado' && s.status !== 'finalizado') return stripLegacyRides(l);
+        return stripLegacyRides(s);
       });
     // mantém turnos locais que ainda não chegaram do cloud (push em voo)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     local.forEach((l: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!merged.find((m: any) => m.turno_id === l.turno_id) && !tomb.shifts.includes(l.turno_id)) {
-        merged.unshift(l);
+        merged.unshift(stripLegacyRides(l));
       }
     });
     return merged;
   }
 
   if (key === 'lucro-delivery-entries' && Array.isArray(incoming)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (incoming as any[]).filter(
       e => !tomb.entries.includes(e.id) && !(e.shiftId && tomb.shifts.includes(e.shiftId))
     );

@@ -3,6 +3,11 @@ import { getEntries, getSettings, upsertEntry } from './storage';
 import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
 import { DailyEntry } from './types';
 import { tombstoneShift, tombstoneEntry } from './tombstones';
+import type { RideModel } from './domain/models';
+import { rideRepository } from './repositories/rideRepository';
+// Re-export ShiftRide (tipo de display) para retrocompat de imports antigos.
+export type { ShiftRide, ShiftRideEdit as RideEdit } from './adapters/rideAdapters';
+import type { ShiftRide } from './adapters/rideAdapters';
 
 const SHIFTS_KEY = 'lucro-delivery-shifts';
 
@@ -12,30 +17,6 @@ export type RideResult = 'boa' | 'aceitavel' | 'ruim';
 export interface ShiftPause {
   inicio: string;
   fim?: string;
-}
-
-export interface RideEdit {
-  campo: 'km' | 'valor';
-  valor_antigo: number;
-  valor_novo: number;
-  data_edicao: string;
-}
-
-export interface ShiftRide {
-  corrida_id: string;
-  turno_id: string;
-  valor: number;
-  km: number;
-  km_original?: number;
-  valor_original?: number;
-  valor_por_km: number;
-  resultado: RideResult;
-  data_registro: string;
-  data_operacional: string;
-  edicoes?: RideEdit[];
-  observacao?: string;
-  /** 'auto' = km veio do GPS (modo inteligente); 'manual' = usuário informou. */
-  km_origem?: 'auto' | 'manual';
 }
 
 export interface Shift {
@@ -48,7 +29,22 @@ export interface Shift {
   veiculo_id?: string;
   tipo_veiculo?: string;
   app_utilizado?: string;
-  rides: ShiftRide[];
+  /**
+   * @deprecated
+   *
+   * Campo LEGADO.
+   *
+   * NÃO utilizar em nenhum código novo.
+   *
+   * Mantido apenas para:
+   *   • migração one-shot (rideRepository.ensureMigratedFromLegacy)
+   *   • rollback / auditoria
+   *   • compatibilidade com payloads antigos do cloud
+   *
+   * Fonte oficial de corridas:
+   *   RideRepository (`vd-rides`) → RideService.listByShift(shiftId)
+   */
+  rides?: ShiftRide[];
   km_gps?: number;
   km_desde_ultima_corrida?: number;
   ultima_corrida_iso?: string;
@@ -58,8 +54,7 @@ export interface Shift {
   tz_offset_fim_minutos?: number;
   /** Status do GPS no turno — preservado no histórico para auditoria. */
   gps_status?: 'ok' | 'denied' | 'unavailable' | 'pending';
-  /** Pontos brutos da rota capturados pelo GPS, para desenhar no mapa ao vivo
-   *  e auditoria. Limitado a ~5000 pontos por turno (downsample antes disso). */
+  /** Pontos brutos da rota capturados pelo GPS. Limitado a ~5000 pontos. */
   rota?: Array<{ lat: number; lng: number; t: number; spd?: number; hdg?: number }>;
 }
 
@@ -91,19 +86,16 @@ function flushRouteBuffer(): void {
   if (touched) saveShifts(list);
 }
 
-/** Acrescenta um ponto à rota do turno (batched — flush a cada 1.5s). */
 export function appendRoutePoint(turno_id: string, pt: RoutePt): void {
   (_routeBuffer[turno_id] = _routeBuffer[turno_id] || []).push(pt);
   if (!_routeFlushTimer) _routeFlushTimer = setTimeout(flushRouteBuffer, ROUTE_FLUSH_MS);
 }
 
-/** Força flush imediato dos buffers (rota + distância) — usado ao pausar/encerrar. */
 export function flushShiftBuffers(): void {
   if (_routeFlushTimer) { clearTimeout(_routeFlushTimer); flushRouteBuffer(); }
   if (_gpsFlushTimer) { clearTimeout(_gpsFlushTimer); flushGpsBuffer(); }
 }
 
-/** Apaga a rota (pontos GPS) de um turno específico, mantendo km/corridas. */
 export function clearShiftRoute(turno_id: string): boolean {
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
@@ -113,7 +105,6 @@ export function clearShiftRoute(turno_id: string): boolean {
   return true;
 }
 
-/** Apaga a rota de TODOS os turnos (mantém histórico de corridas e km). */
 export function clearAllRoutes(): number {
   const list = getShifts();
   let cleared = 0;
@@ -124,15 +115,11 @@ export function clearAllRoutes(): number {
   return cleared;
 }
 
-
-
 export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['gps_status']>): void {
   const list = getShifts();
   const s = list.find(x => x.turno_id === turno_id);
   if (!s) return;
-  // Não rebaixa 'ok' já consolidado de volta para 'denied' (mantém histórico do melhor estado)
   if (s.gps_status === 'ok' && status !== 'ok') return;
-  // Debounce: se o status já é o atual, evita write desnecessário (bateria/perf).
   if (s.gps_status === status) return;
   s.gps_status = status;
   saveShifts(list);
@@ -141,13 +128,11 @@ export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['g
 function getDeviceTz(): { tz: string; offset: number } {
   let tz = 'UTC';
   try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch {}
-  // offset em minutos no padrão "minutos ao leste de UTC" (oposto de Date.getTimezoneOffset)
   const offset = -new Date().getTimezoneOffset();
   return { tz, offset };
 }
 
 function operationalDateFromDate(d: Date): string {
-  // Se for madrugada (00:00–04:59), a data operacional é o dia anterior.
   const ref = new Date(d);
   if (ref.getHours() < 5) ref.setDate(ref.getDate() - 1);
   return `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}-${String(ref.getDate()).padStart(2, '0')}`;
@@ -166,8 +151,6 @@ function saveShifts(list: Shift[]) {
 export function getActiveShift(): Shift | null {
   return getShifts().find(s => s.status === 'ativo' || s.status === 'pausado') ?? null;
 }
-
-// (Buffer de distância — declarado abaixo logo após o bloco de pausa/retomada de turno)
 
 export function pauseShift(turno_id: string): Shift | null {
   flushShiftBuffers();
@@ -223,6 +206,22 @@ export function addGpsDistance(turno_id: string, meters: number): void {
   if (!_gpsFlushTimer) _gpsFlushTimer = setTimeout(flushGpsBuffer, GPS_FLUSH_MS);
 }
 
+/**
+ * Marca uma corrida como registrada no turno — atualiza APENAS estado
+ * de sessão (km_desde_ultima_corrida, ultima_corrida_iso). NÃO grava
+ * corrida em Shift.rides — a fonte canônica é `vd-rides` via RideRepository.
+ *
+ * Chamado exclusivamente por `rideService.registerShiftRide`.
+ */
+export function markRideRegistered(turno_id: string, iso: string): void {
+  const list = getShifts();
+  const s = list.find(x => x.turno_id === turno_id);
+  if (!s) return;
+  s.km_desde_ultima_corrida = 0;
+  s.ultima_corrida_iso = iso;
+  saveShifts(list);
+}
+
 export interface StartShiftOptions {
   data_operacional: string;
   veiculo_id: string;
@@ -252,7 +251,6 @@ export function startShift(opts: StartShiftOptions): Shift {
     veiculo_id: opts.veiculo_id,
     tipo_veiculo: v?.tipo_veiculo,
     app_utilizado: opts.app_utilizado,
-    rides: [],
     km_gps: 0,
     km_desde_ultima_corrida: 0,
     pausas: [],
@@ -283,37 +281,27 @@ export function endShift(turno_id: string): Shift | null {
   s.data_operacional_fim = operationalDateFromDate(now);
   saveShifts(list);
 
-  try { upsertEntryFromShift(s); } catch { /* não bloqueia finalização */ }
+  // Deriva DailyEntry a partir das corridas canônicas do turno.
+  try {
+    const rides = rideRepository.listByShift(s.turno_id);
+    const totals = computeTotals(s, rides);
+    upsertEntryFromShift(s, totals);
+  } catch { /* não bloqueia finalização */ }
 
-  // Push imediato — protege contra "turno renasce ativo" ao minimizar
-  // o app no mobile/PWA antes do debounce de 600ms disparar.
   markDirty({ immediate: true });
   return s;
 }
 
-/**
- * Variante awaitable de endShift — finaliza e retorna apenas após o push
- * pro cloud concluir. Use no UI ("Encerrar turno") para garantir que se
- * o usuário minimizar/fechar o app logo em seguida, o status finalizado
- * já está persistido — bloqueia o bug de "turno renasce ativo" no reload
- * em mobile/PWA (principal causa raiz no iOS standalone).
- */
 export async function endShiftAtomic(turno_id: string): Promise<Shift | null> {
   const finished = endShift(turno_id);
   if (!finished) return null;
   try {
     const { flushNow } = await import('./cloudSync');
     await flushNow();
-  } catch { /* listeners de lifecycle tentam de novo no próximo ciclo */ }
+  } catch { /* listeners cuidam no próximo ciclo */ }
   return finished;
 }
 
-/**
- * Apaga um turno (cascade): remove da lista, registra tombstone para evitar
- * ressurreição via cloud, apaga a entry derivada e re-upserta o eventual
- * "novo primeiro turno" do mesmo (dia, veículo) — porque o custo fixo
- * diário muda de dono (ver shouldApplyDailyFixedCost).
- */
 export function deleteShift(turno_id: string): boolean {
   const list = getShifts();
   const target = list.find(s => s.turno_id === turno_id);
@@ -322,7 +310,6 @@ export function deleteShift(turno_id: string): boolean {
   saveShifts(remaining);
   tombstoneShift(turno_id);
 
-  // Remove a entry derivada do histórico/dashboard
   try {
     const entries = getEntries();
     const derivedId = `shift_${turno_id}`;
@@ -333,7 +320,6 @@ export function deleteShift(turno_id: string): boolean {
     }
   } catch { /* não-bloqueante */ }
 
-  // Re-upsert do novo primeiro turno do dia/veículo (custo fixo migra para ele)
   if (target.veiculo_id) {
     const newFirst = remaining
       .filter(s =>
@@ -343,7 +329,11 @@ export function deleteShift(turno_id: string): boolean {
       )
       .sort((a, b) => a.inicio_turno.localeCompare(b.inicio_turno))[0];
     if (newFirst) {
-      try { upsertEntryFromShift(newFirst); } catch { /* não-bloqueante */ }
+      try {
+        const rides = rideRepository.listByShift(newFirst.turno_id);
+        const totals = computeTotals(newFirst, rides);
+        upsertEntryFromShift(newFirst, totals);
+      } catch { /* não-bloqueante */ }
     }
   }
 
@@ -352,20 +342,18 @@ export function deleteShift(turno_id: string): boolean {
 }
 
 /**
- * Deriva um DailyEntry a partir do turno finalizado e faz upsert idempotente
- * por shiftId. Mantém compatibilidade total com entries manuais.
+ * Deriva DailyEntry a partir do turno finalizado e faz upsert idempotente
+ * por shiftId. Recebe `totals` pré-computado (função pura) — não consulta
+ * nenhum Service internamente.
  */
-export function upsertEntryFromShift(shift: Shift): DailyEntry {
-  const t = computeTotals(shift);
+export function upsertEntryFromShift(shift: Shift, t: ShiftTotals): DailyEntry {
   const v = shift.veiculo_id ? getVehicleById(shift.veiculo_id) : null;
 
   const fuelPrice = v?.valor_combustivel_litro || 0;
   const vehicleConsumption = v?.km_por_litro || 0;
   const monthlyFixedCosts = v?.custo_fixo_mensal || 0;
   const litersConsumed = vehicleConsumption > 0 ? t.km_total / vehicleConsumption : 0;
-  const dailyFixedCost = monthlyFixedCosts / 30;
 
-  // Usa data operacional ao meio-dia local para evitar deslocamento de fuso
   const [y, m, d] = shift.data_operacional.split('-').map(Number);
   const dateIso = new Date(y, (m || 1) - 1, d || 1, 12, 0, 0).toISOString();
 
@@ -434,205 +422,6 @@ export function classifyRide(valor: number, km: number, shift?: Shift | null): {
   return { valor_por_km, resultado };
 }
 
-/**
- * Registra corrida em `vd-rides` (fonte canônica) via rideService e mantém
- * uma cópia enxuta em `Shift.rides` — usada exclusivamente pela UI de
- * Modo Turno (ShiftMode/ShiftHistoryView/exportShifts) como cache da
- * sessão de tracking. `computeTotals` continua lendo daí para preservar
- * comportamento 1:1 do turno finalizado. A camada de negócio (metrics,
- * history, insights) NÃO lê mais `Shift.rides`.
- */
-export function addRide(
-  turno_id: string,
-  valor: number,
-  km: number,
-  extras?: { observacao?: string; km_origem?: 'auto' | 'manual' }
-): ShiftRide | null {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s || s.status !== 'ativo') return null;
-  const { valor_por_km, resultado } = classifyRide(valor, km, s);
-  const ride: ShiftRide = {
-    corrida_id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    turno_id,
-    valor,
-    km,
-    valor_por_km,
-    resultado,
-    data_registro: new Date().toISOString(),
-    data_operacional: s.data_operacional,
-    observacao: extras?.observacao?.trim() || undefined,
-    km_origem: extras?.km_origem,
-  };
-  s.rides.unshift(ride);
-  s.km_desde_ultima_corrida = 0;
-  s.ultima_corrida_iso = ride.data_registro;
-  saveShifts(list);
-
-  // Fase 2.3 — persiste em vd-rides via rideService (dono canônico).
-  // Import dinâmico para evitar ciclo shifts ↔ rideService/metricsService.
-  void import('./services/rideService').then(({ rideService }) => {
-    try {
-      rideService.addGpsRide({
-        shiftId: turno_id,
-        value: valor,
-        km,
-        date: ride.data_registro,
-        vehicleId: s.veiculo_id,
-        notes: ride.observacao,
-        kmOrigin: extras?.km_origem,
-        gps: s.rota && s.rota.length > 0 ? { points: s.rota.length } : undefined,
-      });
-    } catch { /* não bloqueia o fluxo de turno */ }
-  }).catch(() => { /* noop */ });
-
-  return ride;
-}
-
-/** Registra corrida usando km do GPS auto-acumulado se km não informado. */
-export function addRideAuto(
-  turno_id: string,
-  valor: number,
-  kmManual?: number,
-  observacao?: string
-): ShiftRide | null {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s) return null;
-  const usedManual = !!(kmManual && kmManual > 0);
-  const km = usedManual ? (kmManual as number) : (s.km_desde_ultima_corrida || 0);
-  if (km <= 0) return null;
-  return addRide(turno_id, valor, km, {
-    observacao,
-    km_origem: usedManual ? 'manual' : 'auto',
-  });
-}
-
-export function deleteRide(turno_id: string, corrida_id: string) {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s) return;
-  s.rides = s.rides.filter(r => r.corrida_id !== corrida_id);
-  saveShifts(list);
-
-  // Fase 2.3 — reflete no dono canônico.
-  void import('./services/rideService').then(({ rideService }) => {
-    try { rideService.deleteRide(corrida_id); } catch { /* noop */ }
-  }).catch(() => { /* noop */ });
-}
-
-/**
- * Restaura uma corrida previamente deletada, mantendo a ordem cronológica
- * com base em data_registro. Útil para o "Desfazer" após delete.
- */
-export function restoreRide(turno_id: string, ride: ShiftRide): boolean {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s) return false;
-  if (s.rides.some(r => r.corrida_id === ride.corrida_id)) return false;
-  s.rides.push({ ...ride });
-  // ordena desc por data_registro (mantém invariante usado na UI)
-  s.rides.sort((a, b) => b.data_registro.localeCompare(a.data_registro));
-  saveShifts(list);
-
-  // Fase 2.3 — restaura também no dono canônico (vd-rides).
-  void import('./services/rideService').then(({ rideService }) => {
-    try {
-      rideService.addGpsRide({
-        shiftId: turno_id,
-        value: ride.valor,
-        km: ride.km,
-        date: ride.data_registro,
-        vehicleId: s.veiculo_id,
-        notes: ride.observacao,
-        kmOrigin: ride.km_origem,
-      });
-    } catch { /* noop */ }
-  }).catch(() => { /* noop */ });
-
-  return true;
-}
-
-// Debounce de edições rápidas (evita race / flicker em totais)
-const _editTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-const EDIT_DEBOUNCE_MS = 250;
-
-/**
- * Edita km e/ou valor de uma corrida já registrada, preservando histórico de edições
- * e os timestamps originais. Recalcula valor_por_km e resultado. Não altera ordem nem tempo.
- */
-export function updateRide(
-  turno_id: string,
-  corrida_id: string,
-  patch: { km?: number; valor?: number }
-): ShiftRide | null {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s) return null;
-  const r = s.rides.find(x => x.corrida_id === corrida_id);
-  if (!r) return null;
-
-  const nowIso = new Date().toISOString();
-  r.edicoes = r.edicoes || [];
-
-  if (typeof patch.km === 'number' && Number.isFinite(patch.km) && patch.km > 0 && patch.km !== r.km) {
-    if (r.km_original === undefined) r.km_original = r.km;
-    r.edicoes.push({ campo: 'km', valor_antigo: r.km, valor_novo: patch.km, data_edicao: nowIso });
-    r.km = patch.km;
-  }
-  if (typeof patch.valor === 'number' && Number.isFinite(patch.valor) && patch.valor > 0 && patch.valor !== r.valor) {
-    if (r.valor_original === undefined) r.valor_original = r.valor;
-    r.edicoes.push({ campo: 'valor', valor_antigo: r.valor, valor_novo: patch.valor, data_edicao: nowIso });
-    r.valor = patch.valor;
-  }
-
-  const cls = classifyRide(r.valor, r.km, s);
-  r.valor_por_km = cls.valor_por_km;
-  r.resultado = cls.resultado;
-
-  // Coalesce writes para múltiplas edições rápidas na mesma corrida
-  const key = `${turno_id}:${corrida_id}`;
-  if (_editTimers[key]) clearTimeout(_editTimers[key]);
-  _editTimers[key] = setTimeout(() => { delete _editTimers[key]; saveShifts(getShifts()); }, EDIT_DEBOUNCE_MS);
-  saveShifts(list);
-
-  // Fase 2.3 — reflete edição no dono canônico (vd-rides).
-  const canonicalPatch = { value: r.valor, km: r.km };
-  void import('./services/rideService').then(({ rideService }) => {
-    try { rideService.updateRide(corrida_id, canonicalPatch); } catch { /* noop */ }
-  }).catch(() => { /* noop */ });
-
-  return r;
-}
-
-/**
- * Reverte a última edição registrada em uma corrida (km ou valor) usando o
- * histórico em `edicoes`. Não remove o registro do histórico para manter rastreabilidade
- * — adiciona uma nova entrada inversa.
- */
-export function revertLastEdit(turno_id: string, corrida_id: string): ShiftRide | null {
-  const list = getShifts();
-  const s = list.find(x => x.turno_id === turno_id);
-  if (!s) return null;
-  const r = s.rides.find(x => x.corrida_id === corrida_id);
-  if (!r || !r.edicoes || r.edicoes.length === 0) return null;
-  const last = r.edicoes[r.edicoes.length - 1];
-  const nowIso = new Date().toISOString();
-  if (last.campo === 'km') {
-    r.edicoes.push({ campo: 'km', valor_antigo: r.km, valor_novo: last.valor_antigo, data_edicao: nowIso });
-    r.km = last.valor_antigo;
-  } else {
-    r.edicoes.push({ campo: 'valor', valor_antigo: r.valor, valor_novo: last.valor_antigo, data_edicao: nowIso });
-    r.valor = last.valor_antigo;
-  }
-  const cls = classifyRide(r.valor, r.km, s);
-  r.valor_por_km = cls.valor_por_km;
-  r.resultado = cls.resultado;
-  saveShifts(list);
-  return r;
-}
-
-
 export interface ShiftTotals {
   ganho_total: number;
   km_total: number;
@@ -651,16 +440,8 @@ function safeNum(n: number): number {
 }
 
 /**
- * REGRA DE PRODUTO (MVP): o custo fixo diário do veículo é aplicado
- * UMA ÚNICA vez por (veículo, data_operacional), no PRIMEIRO turno do dia
- * (ordenado por `inicio_turno`). Turnos subsequentes do mesmo veículo no
- * mesmo dia operacional NÃO reaplicam o custo.
- *
- * Determinístico: depende apenas de inicio_turno (estável após criação)
- * e do veiculo_id. Não há rateio — mantém percepção "o dia começa com
- * custo operacional fixo".
- *
- * Se o turno não tem veículo, aplica (compatibilidade com fluxo antigo).
+ * REGRA DE PRODUTO (MVP): custo fixo diário do veículo aplica UMA vez por
+ * (veículo, data_operacional), no PRIMEIRO turno do dia. Determinístico.
  */
 export function shouldApplyDailyFixedCost(shift: Shift): boolean {
   if (!shift.veiculo_id) return true;
@@ -673,11 +454,20 @@ export function shouldApplyDailyFixedCost(shift: Shift): boolean {
   return siblings[0]?.turno_id === shift.turno_id;
 }
 
-export function computeTotals(shift: Shift): ShiftTotals {
-  const ganho_total = safeNum(shift.rides.reduce((s, r) => s + (r.valor > 0 ? r.valor : 0), 0));
-  const km_corridas = safeNum(shift.rides.reduce((s, r) => s + (r.km > 0 ? r.km : 0), 0));
+/**
+ * computeTotals — PURA.
+ *
+ * Recebe as corridas canônicas (RideModel[]) do turno já resolvidas pelo
+ * caller — não consulta Services, não consulta storage de corridas, não
+ * importa RideService. Somente lê metadados imutáveis do próprio Shift
+ * (km_gps, pausas, inicio/fim, veiculo_id) e do Vehicle vinculado.
+ */
+export function computeTotals(shift: Shift, rides: RideModel[]): ShiftTotals {
+  const list = Array.isArray(rides) ? rides : [];
+  const ganho_total = safeNum(list.reduce((s, r) => s + (r.value > 0 ? r.value : 0), 0));
+  const km_corridas = safeNum(list.reduce((s, r) => s + (r.km > 0 ? r.km : 0), 0));
   const km_total = Math.max(km_corridas, safeNum(shift.km_gps || 0));
-  const corridas_total = shift.rides.length;
+  const corridas_total = list.length;
 
   let v: Vehicle | null = null;
   if (shift.veiculo_id) v = getVehicleById(shift.veiculo_id);
@@ -688,7 +478,6 @@ export function computeTotals(shift: Shift): ShiftTotals {
     if (v.km_por_litro && v.km_por_litro > 0) {
       custo_combustivel = (km_total / v.km_por_litro) * (v.valor_combustivel_litro || 0);
     }
-    // Fase B: só o 1º turno do dia/veículo paga o custo fixo diário.
     custo_fixo_rateado = shouldApplyDailyFixedCost(shift)
       ? (v.custo_fixo_mensal || 0) / 30
       : 0;
