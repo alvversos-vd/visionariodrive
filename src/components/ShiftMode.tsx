@@ -205,9 +205,11 @@ export default function ShiftMode({ onChange }: Props) {
   };
 
 
+  const [ridesVersion, setRidesVersion] = useState(0);
   const refresh = () => {
     const a = getActiveShift();
     setShift(a);
+    setRidesVersion(v => v + 1);
     onChange?.();
   };
 
@@ -217,7 +219,14 @@ export default function ShiftMode({ onChange }: Props) {
     if (a) setShift({ ...a });
   }});
 
-  const totals = useMemo(() => shift ? computeTotals(shift) : null, [shift]);
+  const activeRides = useMemo(
+    () => (shift ? rideService.listByShift(shift.turno_id) : []),
+    [shift, ridesVersion],
+  );
+  const totals = useMemo(
+    () => (shift ? computeTotals(shift, activeRides) : null),
+    [shift, activeRides],
+  );
   const meta = useMemo(() => shift && totals ? metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
 
   // Sai do foco se turno terminar
