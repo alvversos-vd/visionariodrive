@@ -23,7 +23,7 @@ function fmtSince(iso?: string): string {
 }
 
 export default function RegisterRideFab({ onChange }: Props) {
-  const [shift, setShift] = useState(() => getActiveShift());
+  const [shift, setShift] = useState(() => shiftService.getActive());
   const [open, setOpen] = useState(false);
   const [valor, setValor] = useState('');
   const [km, setKm] = useState('');
@@ -31,14 +31,14 @@ export default function RegisterRideFab({ onChange }: Props) {
   const [forceManual, setForceManual] = useState(false);
 
   useEffect(() => {
-    const i = setInterval(() => setShift(getActiveShift()), 3000);
+    const i = setInterval(() => setShift(shiftService.getActive()), 3000);
     return () => clearInterval(i);
   }, []);
 
   // Refresh interno enquanto modal aberto — para km_auto e tempo "desde última" ficarem vivos
   useEffect(() => {
     if (!open) return;
-    const i = setInterval(() => setShift(getActiveShift()), 1000);
+    const i = setInterval(() => setShift(shiftService.getActive()), 1000);
     return () => clearInterval(i);
   }, [open]);
 
@@ -59,7 +59,7 @@ export default function RegisterRideFab({ onChange }: Props) {
   const kManual = km ? parseFloat(km.replace(',', '.')) : NaN;
   const kUsed = smartMode ? kmAuto : (Number.isFinite(kManual) && kManual > 0 ? kManual : 0);
   const valid = v > 0 && kUsed > 0;
-  const preview = valid ? classifyRide(v, kUsed, shift) : null;
+  const preview = valid ? shiftService.classifyRide(v, kUsed, shift) : null;
 
   const reset = () => { setValor(''); setKm(''); setObs(''); setForceManual(false); };
 
