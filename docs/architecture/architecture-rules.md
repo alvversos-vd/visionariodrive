@@ -1,7 +1,7 @@
 # Architecture Rules — Visionário Drive (FROZEN)
 
-> Sprint 2.5. Toda violação é bug arquitetural. Pull requests que
-> quebrem estas regras devem ser rejeitados na revisão.
+> Sprint 3 (Ativação da Fundação). Toda violação é bug arquitetural.
+> Pull requests que quebrem estas regras devem ser rejeitados.
 
 ## Camadas
 
@@ -31,6 +31,7 @@ Storage (localStorage)     Cloud Sync (Supabase)
   - `src/lib/repositories/*`
   - `src/lib/storage.ts`
   - `src/lib/cloudSync.ts`
+  - `src/lib/shifts.ts` (**usar `shiftService`** — ADR-007)
   - `src/lib/expenses*` (legacy)
   - `src/lib/expenseAnalytics`, `src/lib/historyAggregation` (removidos)
   - Supabase client fora de Auth
@@ -44,7 +45,7 @@ Storage (localStorage)     Cloud Sync (Supabase)
 ### Repositories
 
 - **PODEM** importar `storage.ts`, `cloudSync.ts`, `baseRepository`,
-  `adapters/*`.
+  `adapters/*`, `eventBus`, `telemetry`.
 - **NUNCA** importam Services ou Components.
 
 ### Storage / Cloud
@@ -62,7 +63,7 @@ Storage (localStorage)     Cloud Sync (Supabase)
 | `Settings` | `SettingsRepository` | `vd-settings` |
 | `Profile` | `ProfileRepository` | `vd-profile` |
 | `Tags` | `TagsRepository` | `vd-tags` |
-| `Shift` (sessão) | `shifts.ts` (raiz tracking) | `lucro-delivery-shifts` |
+| `Shift` (sessão) | `shifts.ts` (infra, encapsulado por `shiftService`) | `lucro-delivery-shifts` |
 
 ## Calculadora única
 
@@ -72,7 +73,7 @@ Storage (localStorage)     Cloud Sync (Supabase)
 - R$/km
 - R$/hora
 - streak
-- insights
+- insights (Sprint 3 — máx. 3, determinístico)
 - comparativos entre períodos
 - verdict (`good`/`ok`/`bad`)
 
@@ -82,16 +83,15 @@ Storage (localStorage)     Cloud Sync (Supabase)
 (`resetAll`, `clearLocalCache`). Componentes nunca chamam
 `clearAllAppData` ou `cloudSync.clearLocalCache` diretamente.
 
-## Exceção documentada — Shift/GPS
+## Tracking (Shift) — ADR-007
 
-Enquanto durar a Fase 2, os seguintes componentes podem importar
-`src/lib/shifts.ts` diretamente por serem a **raiz do tracking**:
+A exceção histórica está encerrada. `src/lib/shifts.ts` é
+infraestrutura e só pode ser importado por:
 
-- `ShiftMode`
-- `ShiftLiveMap`
-- `ShiftHistoryView`
-- `RegisterRideFab`
-- `useShiftTracker`
-- badge de turno no `Dashboard`
+- `src/lib/services/shiftService.ts` (fachada pública oficial)
+- `src/lib/services/rideService.ts` (orquestração `registerShiftRide`)
+- `src/lib/repositories/rideRepository.ts` (migração one-shot legacy)
+- `src/lib/cloudSync.ts` / `src/lib/exportShifts.ts` (infra pura)
 
-Migração completa está prevista na Fase 3.
+Componentes e hooks importam **exclusivamente** `shiftService`.
+

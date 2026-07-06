@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { settingsService } from '@/lib/services/settingsService';
 import { dataLifecycleService } from '@/lib/services/dataLifecycleService';
 import { AppSettings, DEFAULT_ALERT_THRESHOLDS } from '@/lib/types';
-import { clearAllRoutes } from '@/lib/shifts';
+import { shiftService } from '@/lib/services/shiftService';
 import { clearGpsConsent } from './GpsConsentDialog';
 import { isForcedManual, setForcedManual, resetOnboarding } from '@/lib/permissionDiagnostic';
 import { Input } from '@/components/ui/input';
@@ -178,7 +178,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
             variant="outline"
             className="w-full"
             onClick={() => {
-              const n = clearAllRoutes();
+              const n = shiftService.clearAllRoutes();
               toast.success(n > 0 ? `Rotas apagadas em ${n} turno${n === 1 ? '' : 's'}` : 'Nenhuma rota para apagar');
             }}
           >

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Shift, getShifts, computeTotals, formatTempo, formatOperationalDate, clearShiftRoute } from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
@@ -76,7 +76,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
   };
 
   const shifts = useMemo<Shift[]>(
-    () => getShifts().filter(s => s.status === 'finalizado'),
+    () => shiftService.list().filter(s => s.status === 'finalizado'),
     [refresh]
   );
   const meta = useMemo(() => goalsService.get().daily, [refresh]);
@@ -110,7 +110,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const totals = useMemo(() => {
     const acc = { lucro: 0, ganho: 0, km: 0, corridas: 0, minutos: 0, custo: 0 };
     filtered.forEach(s => {
-      const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
+      const t = shiftService.getTotals(s);
       acc.lucro += t.lucro_total;
       acc.ganho += t.ganho_total;
       acc.km += t.km_total;
@@ -132,7 +132,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     const byApp: Record<string, { lucro: number; turnos: number }> = {};
     const byVeh: Record<string, { lucro: number; km: number; turnos: number; nome: string }> = {};
     periodShifts.forEach(s => {
-      const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
+      const t = shiftService.getTotals(s);
       if (s.app_utilizado) {
         byApp[s.app_utilizado] = byApp[s.app_utilizado] || { lucro: 0, turnos: 0 };
         byApp[s.app_utilizado].lucro += t.lucro_total;
@@ -348,7 +348,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         return (
           <div className="space-y-5">
             {order.filter(k => groups[k].length > 0).map(label => {
-              const groupLucro = groups[label].reduce((a, s) => a + computeTotals(s, ridesByShift.get(s.turno_id) ?? []).lucro_total, 0);
+              const groupLucro = groups[label].reduce((a, s) => a + shiftService.getTotals(s).lucro_total, 0);
               return (
                 <div key={label} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
@@ -356,7 +356,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     <p className={`text-[11px] font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
                   {groups[label].map(s => {
-                    const t = computeTotals(s, ridesByShift.get(s.turno_id) ?? []);
+                    const t = shiftService.getTotals(s);
                     const result = classifyDay(t.lucro_total, meta);
                     const style = RESULT_STYLE[result];
                     const open = openId === s.turno_id;
@@ -368,7 +368,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                           <div className={`w-1 self-stretch rounded-full ${style.bg}`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="font-display font-bold text-sm">{formatOperationalDate(s.data_operacional)}</p>
+                              <p className="font-display font-bold text-sm">{shiftService.formatOperationalDate(s.data_operacional)}</p>
                               <span className={`text-[10px] font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
                             </div>
                             <p className="text-[11px] text-muted-foreground truncate">
@@ -377,7 +377,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                             </p>
                             <div className="flex items-center justify-between gap-2 mt-0.5">
                               <p className={`font-display font-bold number-tabular ${t.lucro_total >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
-                              <p className="text-xs text-muted-foreground number-tabular">{t.corridas_total} corr · {formatTempo(t.tempo_online_minutos)} · {t.km_total.toFixed(0)} km</p>
+                              <p className="text-xs text-muted-foreground number-tabular">{t.corridas_total} corr · {shiftService.formatTempo(t.tempo_online_minutos)} · {t.km_total.toFixed(0)} km</p>
                             </div>
                           </div>
                           {open ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
@@ -406,7 +406,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                               <div className="bg-card rounded-lg p-2 border border-border/40"><p className="text-muted-foreground">Combustível</p><p className="font-semibold number-tabular">{fmt(t.custo_combustivel)}</p></div>
                               <div className="bg-card rounded-lg p-2 border border-border/40"><p className="text-muted-foreground">Custo fixo</p><p className="font-semibold number-tabular">{fmt(t.custo_fixo_rateado)}</p></div>
                               <div className="bg-card rounded-lg p-2 border border-border/40"><p className="text-muted-foreground flex items-center gap-1"><Navigation size={10}/> Km</p><p className="font-semibold number-tabular">{t.km_total.toFixed(1)}</p></div>
-                              <div className="bg-card rounded-lg p-2 border border-border/40"><p className="text-muted-foreground">Online</p><p className="font-semibold">{formatTempo(t.tempo_online_minutos)}</p></div>
+                              <div className="bg-card rounded-lg p-2 border border-border/40"><p className="text-muted-foreground">Online</p><p className="font-semibold">{shiftService.formatTempo(t.tempo_online_minutos)}</p></div>
                             </div>
                             {meta > 0 && result === 'excelente' && (
                               <p className="text-xs text-profit flex items-center gap-1 font-display font-semibold"><Trophy size={12}/> Bateu a meta de {fmt(meta)}</p>
@@ -427,7 +427,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                   ><Download size={11}/> KML</button>
                                   <button
                                     onClick={() => {
-                                      if (clearShiftRoute(s.turno_id)) {
+                                      if (shiftService.clearRoute(s.turno_id)) {
                                         toast.success('Rota apagada');
                                         setOpenId(null);
                                       }

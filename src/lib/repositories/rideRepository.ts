@@ -26,6 +26,8 @@ import {
 } from '../storage';
 import { getShifts } from '../shifts';
 import { readVersioned, writeJson } from './baseRepository';
+import { eventBus } from '../eventBus';
+import { telemetry } from '../telemetry';
 import type { DailyEntry } from '../types';
 import {
   RIDE_SCHEMA_VERSION,
@@ -60,8 +62,9 @@ function loadPayload(): RidePayload {
   return { schemaVersion: v.schemaVersion, rides: v.data };
 }
 
-function persist(payload: RidePayload): void {
+function persist(payload: RidePayload, opts: { silent?: boolean } = {}): void {
   writeJson(RIDES_KEY, payload);
+  if (!opts.silent) eventBus.emit('rides:changed');
 }
 
 // ─── Migração one-shot dos dados legacy ──────────────────────────────────
@@ -72,6 +75,7 @@ function ensureMigratedFromLegacy(): void {
   if (typeof localStorage === 'undefined') return;
   if (localStorage.getItem(RIDES_KEY)) return; // já existe payload canônico
 
+  const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const seeded: RideModel[] = [];
   const seen = new Set<string>();
   const push = (m: RideModel) => {
@@ -97,7 +101,17 @@ function ensureMigratedFromLegacy(): void {
   } catch { /* noop */ }
   try { for (const e of getEntries()) push(dailyEntryToRideModel(e)); } catch { /* noop */ }
 
-  persist({ schemaVersion: RIDE_SCHEMA_VERSION, rides: seeded });
+  // Migração one-shot — silent para não emitir rides:changed em bootstrap
+  // (nenhum hook está subscrito ainda; evita render extra).
+  persist({ schemaVersion: RIDE_SCHEMA_VERSION, rides: seeded }, { silent: true });
+
+  try {
+    const endedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    telemetry.recordMigration({
+      duration: endedAt - startedAt,
+      ridesMigrated: seeded.length,
+    });
+  } catch { /* telemetria nunca bloqueia app */ }
 }
 
 // ─── API canônica (RideModel) ─────────────────────────────────────────────

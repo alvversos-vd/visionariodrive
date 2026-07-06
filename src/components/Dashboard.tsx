@@ -1,7 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { goalsService } from '@/lib/services/goalsService';
-import { settingsService } from '@/lib/services/settingsService';
-import { metricsService } from '@/lib/services/metricsService';
 import { rideService } from '@/lib/services/rideService';
 import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
 import { useAuth, getDisplayName } from '@/contexts/AuthContext';
@@ -16,8 +13,10 @@ import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
 import OperationalStatusBadge from './OperationalStatusBadge';
 import ShiftMode from './ShiftMode';
-// Leitura pontual do turno ativo — Shift é raíz de tracking (não migra nesta sprint).
-import { getActiveShift, computeTotals, formatTempo } from '@/lib/shifts';
+import InsightsCard from './InsightsCard';
+// Sprint 3: única leitura autorizada — encapsula goals/settings/snapshot/turno/insights.
+import { useDashboard } from '@/hooks/useDashboard';
+import { shiftService } from '@/lib/services/shiftService';
 import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 interface Props {
@@ -34,12 +33,10 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
-  const goals = useMemo(() => goalsService.get(), [refresh]);
-  const settings = useMemo(() => settingsService.get(), [refresh]);
 
-  // ÚNICA fonte financeira do Dashboard — MetricsService já agrega corridas,
-  // despesas, bônus e receitas extras via FinancialService.
-  const snapshot = useMemo(() => metricsService.dashboardSnapshot(goals.daily), [refresh, goals.daily]);
+  // ÚNICA fonte financeira do Dashboard — hook encapsula Services e reage
+  // a rides:changed / financial:changed / shift:changed via eventBus.
+  const { goals, settings, snapshot, activeShift, shiftTotals, insights } = useDashboard(refresh);
   const { stats, today: todayMetrics, entriesCount, expensesByCategory } = snapshot;
 
   const expensesToday = todayMetrics.expense;
@@ -195,8 +192,6 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
       {/* HERO PREMIUM — Lucro real + Status turno + Meta diária */}
       {(() => {
-        const activeShift = getActiveShift();
-        const shiftTotals = activeShift ? computeTotals(activeShift, rideService.listByShift(activeShift.turno_id)) : null;
         const startedMin = activeShift
           ? Math.max(0, Math.round((Date.now() - new Date(activeShift.inicio_turno).getTime()) / 60000))
           : 0;
@@ -220,7 +215,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                     <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                   </span>
-                  Turno ativo · {formatTempo(startedMin)}
+                  Turno ativo · {shiftService.formatTempo(startedMin)}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-secondary/60 border border-border text-[11px] font-display font-semibold text-muted-foreground">
@@ -284,6 +279,11 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       <OperationalStatusBadge />
 
       <ShiftMode />
+
+      {/* Insights (máx. 3) — Sprint 3 */}
+      {entriesCount >= 3 && <InsightsCard insights={insights} />}
+
+
 
       {focus ? (
         <div className="space-y-3 animate-fade-in-up">

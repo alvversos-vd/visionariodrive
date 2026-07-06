@@ -5,12 +5,7 @@ import {
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
   Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
-import {
-  Shift, getActiveShift, startShift, endShiftAtomic,
-  computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
-  formatOperationalDate, classifyRide,
-  pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
-} from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
 import { settingsService } from '@/lib/services/settingsService';
@@ -109,10 +104,10 @@ function AlertBanner({
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
-  const [shift, setShift] = useState<Shift | null>(() => getActiveShift());
+  const [shift, setShift] = useState<Shift | null>(() => shiftService.getActive());
   const [pickerOpen, setPickerOpen] = useState(false);
   const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('vehicle');
-  const [pickedDate, setPickedDate] = useState<string>(todayOperationalDate());
+  const [pickedDate, setPickedDate] = useState<string>(shiftService.todayOperationalDate());
   const [pickedVehicleId, setPickedVehicleId] = useState<string | null>(null);
   const [pickedApp, setPickedApp] = useState<AppEntrega | null>(null);
   const [rideOpen, setRideOpen] = useState(false);
@@ -207,7 +202,7 @@ export default function ShiftMode({ onChange }: Props) {
 
   const [ridesVersion, setRidesVersion] = useState(0);
   const refresh = () => {
-    const a = getActiveShift();
+    const a = shiftService.getActive();
     setShift(a);
     setRidesVersion(v => v + 1);
     onChange?.();
@@ -215,7 +210,7 @@ export default function ShiftMode({ onChange }: Props) {
 
   const { gps, lastFixAt } = useShiftTracker(shift, { restartSignal: trackerRestartSignal, mode: trackingMode, onTick: () => {
     // re-pega snapshot do shift do storage para refletir km_gps acumulado
-    const a = getActiveShift();
+    const a = shiftService.getActive();
     if (a) setShift({ ...a });
   }});
 
@@ -224,10 +219,10 @@ export default function ShiftMode({ onChange }: Props) {
     [shift, ridesVersion],
   );
   const totals = useMemo(
-    () => (shift ? computeTotals(shift, activeRides) : null),
+    () => (shift ? shiftService.getTotals(shift) : null),
     [shift, activeRides],
   );
-  const meta = useMemo(() => shift && totals ? metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
+  const meta = useMemo(() => shift && totals ? shiftService.metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
 
   // Sai do foco se turno terminar
   useEffect(() => { if (!shift) setFocus(false); }, [shift]);
@@ -261,10 +256,10 @@ export default function ShiftMode({ onChange }: Props) {
     setPickedApp(getLastApp());
     const hour = new Date().getHours();
     if (hour < 5) {
-      setPickedDate(todayOperationalDate());
+      setPickedDate(shiftService.todayOperationalDate());
       setStep('date');
     } else {
-      setPickedDate(todayOperationalDate());
+      setPickedDate(shiftService.todayOperationalDate());
       setStep('vehicle');
     }
     setPickerOpen(true);
@@ -279,7 +274,7 @@ export default function ShiftMode({ onChange }: Props) {
   const requestGpsPermission = async (turnoId?: string) => {
     const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      if (id) setShiftGpsStatus(id, 'unavailable');
+      if (id) shiftService.setGpsStatus(id, 'unavailable');
       toast('GPS indisponível neste dispositivo — modo manual ativo');
       refresh();
       return;
@@ -312,7 +307,7 @@ export default function ShiftMode({ onChange }: Props) {
     const isNative = !!cap?.isNativePlatform?.();
 
     const handleGranted = async () => {
-      if (id) setShiftGpsStatus(id, 'ok');
+      if (id) shiftService.setGpsStatus(id, 'ok');
       saveGpsConsent();
       toast.success('GPS ativo — km serão calculados automaticamente');
       refresh();
@@ -329,7 +324,7 @@ export default function ShiftMode({ onChange }: Props) {
     };
 
     const handleDenied = () => {
-      if (id) setShiftGpsStatus(id, 'denied');
+      if (id) shiftService.setGpsStatus(id, 'denied');
       toast.error('Permissão de GPS negada', {
         description: isIOS
           ? 'Ajustes › Privacidade › Localização › Visionário Drive › Ao Usar. Modo manual ativado.'
@@ -340,7 +335,7 @@ export default function ShiftMode({ onChange }: Props) {
     };
 
     const handleUnavailable = () => {
-      if (id) setShiftGpsStatus(id, 'unavailable');
+      if (id) shiftService.setGpsStatus(id, 'unavailable');
       toast('GPS indisponível agora — modo manual ativo');
       refresh();
     };
@@ -388,7 +383,7 @@ export default function ShiftMode({ onChange }: Props) {
     if (!pickedVehicleId || !pickedApp) return;
     setActiveVehicleId(pickedVehicleId);
     setLastApp(pickedApp);
-    const s = startShift({
+    const s = shiftService.start({
       data_operacional: pickedDate,
       veiculo_id: pickedVehicleId,
       app_utilizado: pickedApp,
@@ -416,7 +411,7 @@ export default function ShiftMode({ onChange }: Props) {
       // Atômico: só limpa a UI após o cloud confirmar a finalização.
       // Protege contra o usuário minimizar o app no meio do push e o turno
       // "renascer" como ativo no próximo reload (especialmente iOS standalone).
-      const finished = await endShiftAtomic(shift.turno_id);
+      const finished = await shiftService.endAtomic(shift.turno_id);
       setShift(null);
       setSummary(finished);
       setFocus(false);
@@ -452,10 +447,10 @@ export default function ShiftMode({ onChange }: Props) {
   const handlePause = () => {
     if (!shift) return;
     if (shift.status === 'pausado') {
-      const r = resumeShift(shift.turno_id);
+      const r = shiftService.resume(shift.turno_id);
       if (r) { setShift({ ...r }); toast.success('Turno retomado'); }
     } else {
-      const r = pauseShift(shift.turno_id);
+      const r = shiftService.pause(shift.turno_id);
       if (r) { setShift({ ...r }); toast('Turno pausado'); }
     }
     onChange?.();
@@ -566,10 +561,10 @@ export default function ShiftMode({ onChange }: Props) {
 
   // Resumo final — cockpit premium
   if (summary) {
-    const t = computeTotals(summary, rideService.listByShift(summary.turno_id));
+    const t = shiftService.getTotals(summary);
     const positivo = t.lucro_total > 0;
     const v = getVehicleById(summary.veiculo_id);
-    const m = metaProgresso(summary, t.lucro_total);
+    const m = shiftService.metaProgresso(summary, t.lucro_total);
     return (
       <div className="rounded-2xl p-5 surface-1 border border-border/60 space-y-5 animate-fade-in-up shadow-premium">
         <div className="flex items-center justify-between">
@@ -585,7 +580,7 @@ export default function ShiftMode({ onChange }: Props) {
           <button onClick={() => setSummary(null)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press"><X size={18} /></button>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          {formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · {formatTempo(Math.max(0, t.tempo_online_minutos))}
+          {shiftService.formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · {shiftService.formatTempo(Math.max(0, t.tempo_online_minutos))}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
         </p>
@@ -602,7 +597,7 @@ export default function ShiftMode({ onChange }: Props) {
         </div>
         <div className="grid grid-cols-3 gap-2">
           <KpiTile icon={<Navigation size={12} />} label="Km" value={t.km_total.toFixed(1)} />
-          <KpiTile icon={<Clock size={12} />} label="Tempo" value={formatTempo(t.tempo_online_minutos)} />
+          <KpiTile icon={<Clock size={12} />} label="Tempo" value={shiftService.formatTempo(t.tempo_online_minutos)} />
           <KpiTile icon={<Wallet size={12} />} label="Corridas" value={String(t.corridas_total)} />
           <KpiTile icon={<Zap size={12} />} label="R$/km" value={fmt(t.media_por_km)} />
           <KpiTile label="Ganho" value={fmt(t.ganho_total)} />
@@ -648,11 +643,11 @@ export default function ShiftMode({ onChange }: Props) {
                     <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional.</p>
-                  <button onClick={() => { setPickedDate(todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm press shadow-glow-sm">
-                    Hoje · {formatOperationalDate(todayOperationalDate())}
+                  <button onClick={() => { setPickedDate(shiftService.todayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl bg-brand-gradient text-primary-foreground font-display font-bold text-sm press shadow-glow-sm">
+                    Hoje · {shiftService.formatOperationalDate(shiftService.todayOperationalDate())}
                   </button>
-                  <button onClick={() => { setPickedDate(yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm press">
-                    Ontem · {formatOperationalDate(yesterdayOperationalDate())}
+                  <button onClick={() => { setPickedDate(shiftService.yesterdayOperationalDate()); setStep('vehicle'); }} className="w-full p-3 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm press">
+                    Ontem · {shiftService.formatOperationalDate(shiftService.yesterdayOperationalDate())}
                   </button>
                 </>
               )}
@@ -768,7 +763,7 @@ export default function ShiftMode({ onChange }: Props) {
   const vNum = parseFloat(rideValor.replace(',', '.'));
   const kNum = rideKm ? parseFloat(rideKm.replace(',', '.')) : kmDesde;
   const previewValid = vNum > 0 && kNum > 0;
-  const previewClass = previewValid ? classifyRide(vNum, kNum, shift) : null;
+  const previewClass = previewValid ? shiftService.classifyRide(vNum, kNum, shift) : null;
 
   const gpsBadge =
     gps === 'tracking' ? { icon: <Satellite size={10} className="animate-pulse" />, label: 'GPS ativo', cls: 'text-profit bg-profit/10 border-profit/30' } :
@@ -1089,7 +1084,7 @@ export default function ShiftMode({ onChange }: Props) {
         }}
         onDecline={() => {
           setConsentOpen(false);
-          if (consentTurnoId) setShiftGpsStatus(consentTurnoId, 'denied');
+          if (consentTurnoId) shiftService.setGpsStatus(consentTurnoId, 'denied');
           toast('Modo manual ativado — informe o km de cada corrida');
           refresh();
         }}
@@ -1272,7 +1267,7 @@ export default function ShiftMode({ onChange }: Props) {
     const kmNum = parseFloat(editKm.replace(',', '.'));
     const valorNum = parseFloat(editValor.replace(',', '.'));
     const previewValid = Number.isFinite(kmNum) && kmNum > 0 && Number.isFinite(valorNum) && valorNum > 0;
-    const previewCls = previewValid ? classifyRide(valorNum, kmNum, shift!) : null;
+    const previewCls = previewValid ? shiftService.classifyRide(valorNum, kmNum, shift!) : null;
     return (
       <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setEditing(null)}>
         <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>

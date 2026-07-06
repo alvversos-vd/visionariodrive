@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { addGpsDistance, appendRoutePoint, flushShiftBuffers, getActiveShift, Shift, setShiftGpsStatus } from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 
@@ -85,7 +85,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     const onHidden = () => {
       hiddenAtRef.current = Date.now();
       try { gpsTelemetry.event('visibility_change', { hidden: true }); } catch { /* noop */ }
-      flushShiftBuffers(); // não perde pontos se o navegador suspender
+      shiftService.flushBuffers(); // não perde pontos se o navegador suspender
       setGps(prev => (prev === 'tracking' || prev === 'requesting' ? 'background' : prev));
     };
 
@@ -119,9 +119,9 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     };
 
     const onVis = () => (document.hidden ? onHidden() : onVisible());
-    const onPageHide = () => { flushShiftBuffers(); };
+    const onPageHide = () => { shiftService.flushBuffers(); };
     const onPageShow = () => onVisible();
-    const onBlur = () => { /* alguns devices só sobem blur — flush por segurança */ flushShiftBuffers(); };
+    const onBlur = () => { /* alguns devices só sobem blur — flush por segurança */ shiftService.flushBuffers(); };
 
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', onPageHide);
@@ -182,7 +182,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
     if (shift.status !== 'ativo') return;
     if (!gpsService.isAvailable()) {
       setGps('unavailable');
-      setShiftGpsStatus(shift.turno_id, 'unavailable');
+      shiftService.setGpsStatus(shift.turno_id, 'unavailable');
       return;
     }
 
@@ -199,7 +199,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
         const next: GpsState = isBg ? 'background' : 'tracking';
         return prev === next ? prev : next;
       });
-      setShiftGpsStatus(turnoId, 'ok');
+      shiftService.setGpsStatus(turnoId, 'ok');
 
       if (fix.accuracy > 100) {
         try { gpsTelemetry.event('fix_dropped', { reason: 'low_accuracy', accuracy: fix.accuracy }); } catch { /* noop */ }
@@ -213,7 +213,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       const prev = lastPoint.current;
       if (!prev) {
         lastPoint.current = cur;
-        appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+        shiftService.appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
         try { gpsTelemetry.event('fix_accepted', { reason: 'first_or_reanchor' }); } catch { /* noop */ }
         onTickRef.current?.();
         return;
@@ -231,8 +231,8 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
         try { gpsTelemetry.event('fix_dropped', { reason: 'impossible_jump', meters, speed_kmh: speedKmh }); } catch { /* noop */ }
         return;
       }
-      addGpsDistance(turnoId, meters);
-      appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+      shiftService.addGpsDistance(turnoId, meters);
+      shiftService.appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
       lastPoint.current = cur;
       try { gpsTelemetry.event('fix_accepted', { meters, speed_kmh: speedKmh }); } catch { /* noop */ }
       onTickRef.current?.();
@@ -243,7 +243,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       onError: (kind) => {
         if (kind === 'denied') {
           setGps('denied');
-          setShiftGpsStatus(turnoId, 'denied');
+          shiftService.setGpsStatus(turnoId, 'denied');
         }
         try { gpsTelemetry.event('error', { kind }); } catch { /* noop */ }
       },
@@ -261,7 +261,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
 
       if (since > WATCHDOG_FAIL_MS) {
         setGps(prev => (prev === 'tracking' || prev === 'requesting' || prev === 'background' ? 'unavailable' : prev));
-        setShiftGpsStatus(turnoId, 'unavailable');
+        shiftService.setGpsStatus(turnoId, 'unavailable');
         try { gpsTelemetry.event('watchdog_unavailable', { since_ms: since, isBg }); } catch { /* noop */ }
         return;
       }
@@ -309,4 +309,3 @@ export function tempoOnlineMs(shift: Shift): number {
   return Math.max(0, fim - ini - pausado);
 }
 
-export { getActiveShift };

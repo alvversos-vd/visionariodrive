@@ -1,4 +1,5 @@
 import { markDirty } from './cloudSync';
+import { eventBus } from './eventBus';
 import { getEntries, getSettings, upsertEntry } from './storage';
 import { getVehicleById, vehicleCostPerKm, AppEntrega, Vehicle } from './vehicles';
 import { DailyEntry } from './types';
@@ -146,6 +147,7 @@ export function getShifts(): Shift[] {
 function saveShifts(list: Shift[]) {
   localStorage.setItem(SHIFTS_KEY, JSON.stringify(list));
   markDirty();
+  eventBus.emit('shift:changed');
 }
 
 export function getActiveShift(): Shift | null {
