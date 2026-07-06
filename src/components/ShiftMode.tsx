@@ -5,12 +5,7 @@ import {
   Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
   Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
 } from 'lucide-react';
-import {
-  Shift, getActiveShift, startShift, endShiftAtomic,
-  computeTotals, formatTempo, todayOperationalDate, yesterdayOperationalDate,
-  formatOperationalDate, classifyRide,
-  pauseShift, resumeShift, metaProgresso, setShiftGpsStatus,
-} from '@/lib/shifts';
+import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
 import { settingsService } from '@/lib/services/settingsService';
