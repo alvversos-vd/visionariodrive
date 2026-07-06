@@ -1,7 +1,7 @@
 # Architecture Rules — Visionário Drive (FROZEN)
 
-> Sprint 2.5. Toda violação é bug arquitetural. Pull requests que
-> quebrem estas regras devem ser rejeitados na revisão.
+> Sprint 3 (Ativação da Fundação). Toda violação é bug arquitetural.
+> Pull requests que quebrem estas regras devem ser rejeitados.
 
 ## Camadas
 
