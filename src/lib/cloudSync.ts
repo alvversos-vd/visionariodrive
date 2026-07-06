@@ -53,8 +53,8 @@ function readLocal(key: LocalKey): unknown {
  *  - Fase 2.4: strip completo do campo legacy `rides` em qualquer shift
  *    vindo do cloud — Shift.rides não é mais fonte de verdade.
  */
-function stripLegacyRides<T extends { rides?: unknown }>(s: T): T {
-  if (s && typeof s === 'object' && 'rides' in s) {
+function stripLegacyRides<T>(s: T): T {
+  if (s && typeof s === 'object' && 'rides' in (s as object)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { rides: _drop, ...rest } = s as any;
     return rest as T;
@@ -69,8 +69,10 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
     const localRaw = localStorage.getItem(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const local: any[] = localRaw ? (JSON.parse(localRaw) || []) : [];
-    const localById = new Map(local.map((s: { turno_id: string }) => [s.turno_id, s]));
-    const merged = (incoming as Array<{ turno_id: string; status: string }>)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const localById = new Map<string, any>(local.map((s: any) => [s.turno_id, s]));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const merged = (incoming as any[])
       .filter(s => !tomb.shifts.includes(s.turno_id))
       .map(s => {
         const l = localById.get(s.turno_id);
