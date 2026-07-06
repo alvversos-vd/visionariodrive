@@ -158,7 +158,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
       if (!bestVeh || lpk > bestVeh.lucroPorKm) bestVeh = { nome: v.nome, lucroPorKm: lpk };
     });
     return { bestApp, bestVeh };
-  }, [shifts, filter]);
+  }, [shifts, filter, ridesByShift]);
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'hoje', label: 'Hoje' },
