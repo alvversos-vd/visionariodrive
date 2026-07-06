@@ -595,6 +595,130 @@ export const metricsService = {
 
   /** Total de entries (usado por engagement/onboarding para gating). */
   entriesCount(): number { return rideRepository.listEntries().length; },
+
+  /**
+   * insights — Sprint 3.
+   *
+   * Regras:
+   *   - determinístico, puro, sem I/O extra além do que já rodou.
+   *   - MÁXIMO 3 itens, escolhidos por prioridade (warning > positive > opportunity).
+   *   - retorna [] quando não há base mínima (< 3 dias de entries).
+   *   - jamais inventa: cada insight é ancorado em um número real.
+   *   - NUNCA usa IA/LLM. Cru, direto, honesto.
+   */
+  insights(goalDaily: number = 0): Insight[] {
+    const entries = rideRepository.listEntries();
+    if (entries.length < 3) return [];
+
+    const now = new Date();
+    const today = this.dayMetrics(now);
+    const stats = computeStatsInternal(entries, goalDaily);
+
+    const pool: Insight[] = [];
+
+    // ── WARNINGS (alta prioridade) ───────────────────────────────────────
+    if (goalDaily > 0 && today.rawEntry && today.netProfit < goalDaily) {
+      const gap = goalDaily - today.netProfit;
+      if (gap > 0) {
+        pool.push({
+          id: 'goal-gap-today',
+          severity: 'warning',
+          icon: 'target',
+          title: 'Abaixo da meta',
+          message: `Hoje você está ${fmtBRL(gap)} abaixo da meta diária.`,
+        });
+      }
+    }
+    if (stats.weekChangePct !== null && stats.weekChangePct <= -10) {
+      pool.push({
+        id: 'week-drop',
+        severity: 'warning',
+        icon: 'trend-down',
+        title: 'Semana em queda',
+        message: `Seu lucro caiu ${Math.abs(stats.weekChangePct).toFixed(0)}% em relação à semana passada.`,
+      });
+    }
+    if (stats.costChangePct !== null && stats.costChangePct >= 15) {
+      pool.push({
+        id: 'cost-rising',
+        severity: 'warning',
+        icon: 'trend-up',
+        title: 'Custos subindo',
+        message: `Custo semanal ${stats.costChangePct.toFixed(0)}% maior que a semana passada.`,
+      });
+    }
+
+    // ── POSITIVOS ───────────────────────────────────────────────────────
+    if (goalDaily > 0 && stats.streak >= 3) {
+      pool.push({
+        id: 'streak',
+        severity: 'positive',
+        icon: 'sparkle',
+        title: `${stats.streak} dias no lucro`,
+        message: `Você bateu a meta ${stats.streak} dias seguidos. Consistência é lucro.`,
+      });
+    }
+    if (stats.weekChangePct !== null && stats.weekChangePct >= 10) {
+      pool.push({
+        id: 'week-up',
+        severity: 'positive',
+        icon: 'trend-up',
+        title: 'Semana em alta',
+        message: `Lucro ${stats.weekChangePct.toFixed(0)}% maior que a semana passada.`,
+      });
+    }
+    if (goalDaily > 0 && today.rawEntry && today.netProfit >= goalDaily) {
+      pool.push({
+        id: 'goal-hit',
+        severity: 'positive',
+        icon: 'target',
+        title: 'Meta batida hoje',
+        message: `Lucro de ${fmtBRL(today.netProfit)} · ${fmtBRL(today.netProfit - goalDaily)} acima da meta.`,
+      });
+    }
+
+    // ── OPORTUNIDADES (neutro) ──────────────────────────────────────────
+    if (stats.bestDayOfWeek && stats.bestDayOfWeek.avg > 0 && entries.length >= 7) {
+      pool.push({
+        id: 'best-weekday',
+        severity: 'opportunity',
+        icon: 'clock',
+        title: `${stats.bestDayOfWeek.day} rende mais`,
+        message: `Seu melhor dia da semana: lucro médio de ${fmtBRL(stats.bestDayOfWeek.avg)}.`,
+      });
+    }
+    if (today.rawEntry && today.costPerKm > 0 && today.minIdealKm > 0) {
+      const avgPerKm = today.km > 0 ? today.grossEarnings / today.km : 0;
+      if (avgPerKm > 0 && avgPerKm < today.minIdealKm) {
+        pool.push({
+          id: 'accept-above-min',
+          severity: 'opportunity',
+          icon: 'target',
+          title: 'Cuide do seu preço',
+          message: `Aceite corridas acima de ${fmtBRL(today.minIdealKm)}/km para manter o lucro.`,
+        });
+      }
+    }
+
+    // Ordenar por prioridade e cortar em 3.
+    const rank: Record<InsightSeverity, number> = { warning: 0, positive: 1, opportunity: 2 };
+    pool.sort((a, b) => rank[a.severity] - rank[b.severity]);
+    return pool.slice(0, 3);
+  },
 };
+
+function fmtBRL(v: number): string {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+export type InsightSeverity = 'warning' | 'positive' | 'opportunity';
+export type InsightIcon = 'trend-up' | 'trend-down' | 'target' | 'clock' | 'sparkle';
+export interface Insight {
+  id: string;
+  severity: InsightSeverity;
+  icon: InsightIcon;
+  title: string;
+  message: string;
+}
 
 export type MetricsService = typeof metricsService;
