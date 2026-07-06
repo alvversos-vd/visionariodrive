@@ -1050,11 +1050,11 @@ export default function ShiftMode({ onChange }: Props) {
         </div>
 
         {/* Últimas corridas */}
-        {shift.rides.length > 0 && (
+        {activeRides.length > 0 && (
           <div className="relative space-y-1.5 pt-1">
             <p className="text-label">Últimas corridas</p>
             <div className="space-y-1">
-              {shift.rides.slice(0, 5).map(r => {
+              {activeRides.slice(0, 5).map(rideModelToShiftRide).map(r => {
                 const dotCls = r.resultado === 'boa' ? 'bg-profit' : r.resultado === 'aceitavel' ? 'bg-warning' : 'bg-loss';
                 return (
                   <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-[12px]">
