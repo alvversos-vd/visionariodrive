@@ -7,6 +7,7 @@
  */
 
 import { markDirty } from '../cloudSync';
+import { eventBus } from '../eventBus';
 import {
   FinancialEntry,
   FinancialPayload,
@@ -86,6 +87,9 @@ export const financialRepository = {
   write(payload: FinancialPayload, opts: { markCloud?: boolean } = {}): void {
     localStorage.setItem(FINANCIAL_STORAGE_KEY, JSON.stringify(payload));
     mirrorExpensesToLegacy(payload.entries);
-    if (opts.markCloud !== false) markDirty({ immediate: true });
+    if (opts.markCloud !== false) {
+      markDirty({ immediate: true });
+      eventBus.emit('financial:changed');
+    }
   },
 };
