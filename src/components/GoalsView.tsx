@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { goalsService, type Goals } from '@/lib/services/goalsService';
 import { settingsService } from '@/lib/services/settingsService';
 import { metricsService } from '@/lib/services/metricsService';
-import { rideRepository } from '@/lib/repositories/rideRepository';
+import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ const MOTIVATIONAL = [
 ];
 
 export default function GoalsView({ refresh, onSaved }: Props) {
-  const entries = useMemo(() => rideRepository.listEntries(), [refresh]);
+  const entries = useMemo(() => rideService.listEntries(), [refresh]);
   const settings = useMemo(() => settingsService.get(), [refresh]);
   const initialGoals = useMemo(() => goalsService.get(), [refresh]);
   const [goals, setGoals] = useState<Goals>(initialGoals);
