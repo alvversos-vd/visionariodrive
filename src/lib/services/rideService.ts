@@ -25,6 +25,8 @@
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
 import { metricsService, type RideAnalysis } from './metricsService';
 import { classifyRide, getShifts, markRideRegistered, type Shift } from '../shifts';
+import { eventBus } from '../eventBus';
+import type { DailyEntry } from '../types';
 import type {
   RideModel,
   CaptureMode,
@@ -294,6 +296,10 @@ export const rideService = {
     );
     rideRepository.add(ride);
     markRideRegistered(shift.turno_id, dateIso);
+    // Sinaliza para o rideDetectionService que o driver registrou uma
+    // corrida manual — permite computar gps_false_negative sem acoplar
+    // este service ao detector (comunicação por evento).
+    eventBus.emit('rides:manual-registered');
     return ride;
   },
 
@@ -386,6 +392,17 @@ export const rideService = {
     const analysis = reclassify(shift, value, km);
     return rideRepository.update(rideId, { km, value, edits, analysis });
   },
+
+  // ─── DailyEntry legacy (Calculador Diário) ───────────────────────────
+  // Fachada fina sobre o repository — componentes NUNCA importam o
+  // repository. Marcado @deprecated: DailyEntry só existe até a
+  // consolidação do Sprint 5 (DBT-L3).
+  /** @deprecated DailyEntry legacy — remover junto com Calculador Diário. */
+  listEntries(): DailyEntry[] { return rideRepository.listEntries(); },
+  /** @deprecated DailyEntry legacy. */
+  saveEntry(entry: DailyEntry): void { rideRepository.saveEntry(entry); },
+  /** @deprecated DailyEntry legacy. */
+  deleteEntry(id: string): void { rideRepository.deleteEntry(id); },
 };
 
 export type RideService = typeof rideService;

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { goalsService } from '@/lib/services/goalsService';
 import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsService';
-import { rideRepository } from '@/lib/repositories/rideRepository';
+// Sprint 4: HistoryView consome apenas Services — zero repository direto.
 import type { RideModel, FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
 import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
@@ -165,7 +165,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   }, [entries]);
 
   const handleDeleteEntry = (id: string) => {
-    rideRepository.deleteEntry(id);
+    rideService.deleteEntry(id);
     onRefresh();
   };
 

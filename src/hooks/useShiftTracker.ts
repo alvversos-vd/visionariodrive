@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
+import { rideDetectionService } from '@/lib/services/rideDetectionService';
 
 
 export type GpsState =
@@ -214,6 +215,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       if (!prev) {
         lastPoint.current = cur;
         shiftService.appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+        rideDetectionService.ingest(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, acc: cur.acc, spd: cur.spd });
         try { gpsTelemetry.event('fix_accepted', { reason: 'first_or_reanchor' }); } catch { /* noop */ }
         onTickRef.current?.();
         return;
@@ -222,6 +224,8 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       const meters = haversineMeters(prev, cur);
       if (meters < 2) {
         try { gpsTelemetry.event('fix_dropped', { reason: 'micro_move', meters, speed_kmh: (meters / dt) * 3.6 }); } catch { /* noop */ }
+        // Micro-movimento ainda alimenta o detector para estado "parado".
+        rideDetectionService.ingest(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, acc: cur.acc, spd: cur.spd });
         return;
       }
       const speedKmh = (meters / dt) * 3.6;
@@ -233,6 +237,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       }
       shiftService.addGpsDistance(turnoId, meters);
       shiftService.appendRoutePoint(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, spd: cur.spd, hdg: cur.hdg });
+      rideDetectionService.ingest(turnoId, { lat: cur.lat, lng: cur.lng, t: cur.t, acc: cur.acc, spd: cur.spd });
       lastPoint.current = cur;
       try { gpsTelemetry.event('fix_accepted', { meters, speed_kmh: speedKmh }); } catch { /* noop */ }
       onTickRef.current?.();
@@ -278,6 +283,8 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       clearInterval(interval);
       handle.stop();
       try { gpsTelemetry.event('watch_stopped', { turnoId }); } catch { /* noop */ }
+      // Reset da sessão de detecção — próxima ativação começa limpa.
+      rideDetectionService.resetShift(turnoId);
       lastPoint.current = null;
     };
 

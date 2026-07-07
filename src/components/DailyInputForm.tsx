@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
 import { settingsService } from '@/lib/services/settingsService';
-import { rideRepository } from '@/lib/repositories/rideRepository';
+import { rideService } from '@/lib/services/rideService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -148,7 +148,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
       date: new Date().toISOString(),
     };
 
-    rideRepository.saveEntry(entry);
+    rideService.saveEntry(entry);
     onCalculate(entry);
   };
 

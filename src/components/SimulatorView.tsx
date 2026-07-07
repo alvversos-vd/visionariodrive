@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { goalsService } from '@/lib/services/goalsService';
 import { settingsService } from '@/lib/services/settingsService';
 import { metricsService } from '@/lib/services/metricsService';
-import { rideRepository } from '@/lib/repositories/rideRepository';
+import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lightbulb, AlertTriangle, TrendingUp } from 'lucide-react';
@@ -14,7 +14,7 @@ interface Props {
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function SimulatorView({ refresh }: Props) {
-  const entries = useMemo(() => rideRepository.listEntries(), [refresh]);
+  const entries = useMemo(() => rideService.listEntries(), [refresh]);
   const goals = useMemo(() => goalsService.get(), [refresh]);
   const settings = useMemo(() => settingsService.get(), [refresh]);
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);

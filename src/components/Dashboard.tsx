@@ -230,6 +230,22 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               )}
             </div>
 
+            {/* Micro-UX Sprint 4: km do turno + tempo desde última corrida */}
+            {activeShift && shiftTotals && (
+              <div className="relative -mt-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-mono-num">
+                <span>{shiftTotals.km_total.toFixed(1)} km no turno</span>
+                {activeShift.ultima_corrida_iso && (
+                  <span>
+                    · última corrida há{' '}
+                    {shiftService.formatTempo(
+                      Math.max(0, Math.round((Date.now() - new Date(activeShift.ultima_corrida_iso).getTime()) / 60000)),
+                    )}
+                  </span>
+                )}
+              </div>
+            )}
+
+
             {/* Linha 2: lucro real — KPI hero */}
             <p className="relative text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
             <p className={`relative font-mono-num font-semibold mt-2 leading-none tracking-tight text-[44px] sm:text-[52px] ${
