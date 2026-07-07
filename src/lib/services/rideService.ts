@@ -296,6 +296,10 @@ export const rideService = {
     );
     rideRepository.add(ride);
     markRideRegistered(shift.turno_id, dateIso);
+    // Sinaliza para o rideDetectionService que o driver registrou uma
+    // corrida manual — permite computar gps_false_negative sem acoplar
+    // este service ao detector (comunicação por evento).
+    eventBus.emit('rides:manual-registered');
     return ride;
   },
 
