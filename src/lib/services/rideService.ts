@@ -392,6 +392,17 @@ export const rideService = {
     const analysis = reclassify(shift, value, km);
     return rideRepository.update(rideId, { km, value, edits, analysis });
   },
+
+  // ─── DailyEntry legacy (Calculador Diário) ───────────────────────────
+  // Fachada fina sobre o repository — componentes NUNCA importam o
+  // repository. Marcado @deprecated: DailyEntry só existe até a
+  // consolidação do Sprint 5 (DBT-L3).
+  /** @deprecated DailyEntry legacy — remover junto com Calculador Diário. */
+  listEntries(): DailyEntry[] { return rideRepository.listEntries(); },
+  /** @deprecated DailyEntry legacy. */
+  saveEntry(entry: DailyEntry): void { rideRepository.saveEntry(entry); },
+  /** @deprecated DailyEntry legacy. */
+  deleteEntry(id: string): void { rideRepository.deleteEntry(id); },
 };
 
 export type RideService = typeof rideService;
