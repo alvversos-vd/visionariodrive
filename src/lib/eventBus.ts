@@ -1,34 +1,45 @@
 /**
- * eventBus — Sprint 3.
+ * eventBus — Sprint 3 / estendido na Sprint 4.
  *
  * Barramento local ultra-simples usado por Services para notificar hooks
  * (useSyncExternalStore). NÃO é fonte de verdade e NÃO carrega payload.
  * Apenas sinaliza "algo mudou nesta categoria — releia via Service".
  *
  * Eventos oficiais (fechados):
- *   - rides:changed
- *   - financial:changed
- *   - shift:changed
+ *   - rides:changed            → mutação em qualquer RideModel
+ *   - financial:changed        → mutação em FinancialEntry
+ *   - shift:changed            → mutação em Shift (start/pause/end/tracking)
+ *   - detection:changed        → transição do rideDetectionService (Sprint 4)
+ *   - rides:manual-registered  → sinal para detector zerar sessão / contar
+ *                                falsos negativos (Sprint 4)
  *
  * Regras:
  *   - Nenhum componente publica eventos. Apenas Services.
  *   - Nenhum evento carrega dados sensíveis.
  */
 
-export type BusEvent = 'rides:changed' | 'financial:changed' | 'shift:changed';
+export type BusEvent =
+  | 'rides:changed'
+  | 'financial:changed'
+  | 'shift:changed'
+  | 'detection:changed'
+  | 'rides:manual-registered';
 
 type Listener = () => void;
 const listeners: Record<BusEvent, Set<Listener>> = {
   'rides:changed': new Set(),
   'financial:changed': new Set(),
   'shift:changed': new Set(),
+  'detection:changed': new Set(),
+  'rides:manual-registered': new Set(),
 };
 
-// Versão monotônica por evento — snapshot para useSyncExternalStore.
 const version: Record<BusEvent, number> = {
   'rides:changed': 0,
   'financial:changed': 0,
   'shift:changed': 0,
+  'detection:changed': 0,
+  'rides:manual-registered': 0,
 };
 
 export const eventBus = {
@@ -42,6 +53,5 @@ export const eventBus = {
     listeners[evt].add(cb);
     return () => { listeners[evt].delete(cb); };
   },
-  /** Snapshot inteiro (numérico) — barato o suficiente para useSyncExternalStore. */
   getVersion(evt: BusEvent): number { return version[evt]; },
 };
