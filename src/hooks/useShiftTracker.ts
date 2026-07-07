@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
+import { rideDetectionService } from '@/lib/services/rideDetectionService';
 
 
 export type GpsState =
