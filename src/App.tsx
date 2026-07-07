@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Onboarding from "./components/Onboarding.tsx";
 import GpsDebugButton from "./components/GpsDebugButton.tsx";
 import ExportDebugButton from "./components/ExportDebugButton.tsx";
+import AutoRideToast from "./components/AutoRideToast.tsx";
 
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
       <Sonner />
       <GpsDebugButton />
       <ExportDebugButton />
+      <AutoRideToast />
       <BrowserRouter>
 
         <AuthProvider>
