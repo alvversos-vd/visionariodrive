@@ -25,6 +25,8 @@
 import { rideRepository, readAllRideModels } from '../repositories/rideRepository';
 import { metricsService, type RideAnalysis } from './metricsService';
 import { classifyRide, getShifts, markRideRegistered, type Shift } from '../shifts';
+import { eventBus } from '../eventBus';
+import type { DailyEntry } from '../types';
 import type {
   RideModel,
   CaptureMode,
