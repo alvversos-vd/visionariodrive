@@ -283,6 +283,8 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       clearInterval(interval);
       handle.stop();
       try { gpsTelemetry.event('watch_stopped', { turnoId }); } catch { /* noop */ }
+      // Reset da sessão de detecção — próxima ativação começa limpa.
+      rideDetectionService.resetShift(turnoId);
       lastPoint.current = null;
     };
 
