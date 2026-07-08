@@ -25,7 +25,7 @@ import {
   deleteEntry as legacyDeleteEntry,
 } from '../storage';
 import { getShifts } from '../shifts';
-import { readVersioned, writeJson } from './baseRepository';
+import { writeJson } from './baseRepository';
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
 import type { DailyEntry } from '../types';
