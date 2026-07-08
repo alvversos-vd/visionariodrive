@@ -25,7 +25,7 @@ import {
   deleteEntry as legacyDeleteEntry,
 } from '../storage';
 import { getShifts } from '../shifts';
-import { readVersioned, writeJson } from './baseRepository';
+import { writeJson } from './baseRepository';
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
 import type { DailyEntry } from '../types';
@@ -53,13 +53,22 @@ function migrateRidesPayload(raw: unknown): RideModel[] {
 }
 
 function loadPayload(): RidePayload {
-  const v = readVersioned<RideModel[]>(
-    RIDES_KEY,
-    RIDE_SCHEMA_VERSION,
-    migrateRidesPayload,
-    () => [],
-  );
-  return { schemaVersion: v.schemaVersion, rides: v.data };
+  // Não usar readVersioned() aqui: o payload físico é `{schemaVersion, rides}`
+  // (contrato oficial do RidePayload), enquanto readVersioned assume
+  // `{schemaVersion, data}`. Rodamos o migrator sempre para normalizar
+  // ambos os formatos e defender contra payloads legacy/corrompidos vindos
+  // do cloudSync (coluna `rides_v2`).
+  if (typeof localStorage === 'undefined') {
+    return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
+  }
+  const raw = localStorage.getItem(RIDES_KEY);
+  if (!raw) return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
+  try {
+    const parsed = JSON.parse(raw);
+    return { schemaVersion: RIDE_SCHEMA_VERSION, rides: migrateRidesPayload(parsed) };
+  } catch {
+    return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
+  }
 }
 
 function persist(payload: RidePayload, opts: { silent?: boolean } = {}): void {
