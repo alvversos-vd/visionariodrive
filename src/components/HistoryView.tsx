@@ -110,9 +110,9 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   // When a filter is active, expense-only entries are dropped (they have no
   // vehicle/rideType attribution) — this is intentional and surfaced via the
   // "limpar filtros" hint.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesEntry inline usa filtros já nas deps
   const entries = useMemo(
     () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matchesEntry(e))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesEntry inline usa filtros já nas deps
     [allEntries, vehicleFilter, rideTypeFilter],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesRide inline usa filtros já nas deps
