@@ -14,9 +14,9 @@ interface Props {
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function SimulatorView({ refresh }: Props) {
-  const entries = useMemo(() => rideService.listEntries(), [refresh]);
-  const goals = useMemo(() => goalsService.get(), [refresh]);
-  const settings = useMemo(() => settingsService.get(), [refresh]);
+  const entries = useMemo(() => { void refresh; return rideService.listEntries(); }, [refresh]);
+  const goals = useMemo(() => { void refresh; return goalsService.get(); }, [refresh]);
+  const settings = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
 
   const today = stats.todayEntry;

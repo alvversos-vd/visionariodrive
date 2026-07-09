@@ -26,8 +26,8 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
   const [details, setDetails] = useState<{ costPerKm: number; minIdealKm: number; ridePerKm: number } | null>(null);
   const [error, setError] = useState('');
   const [touched, setTouched] = useState<{ value: boolean; km: boolean }>({ value: false, km: false });
-  const vehicles = useMemo(() => settingsService.getVehicleTags(), [refresh]);
-  const rideTypes = useMemo(() => settingsService.getRideTypeTags(), [refresh]);
+  const vehicles = useMemo(() => { void refresh; return settingsService.getVehicleTags(); }, [refresh]);
+  const rideTypes = useMemo(() => { void refresh; return settingsService.getRideTypeTags(); }, [refresh]);
   const [vehicle, setVehicle] = useState<string>('');
   const [rideType, setRideType] = useState<string>('');
 
@@ -46,11 +46,11 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
 
   // Base de custo do dia (última DailyEntry) — vem do MetricsService,
   // sem acessar repositório direto.
-  const costBase = useMemo(() => metricsService.rideCostBase(), [refresh]);
+  const costBase = useMemo(() => { void refresh; return metricsService.rideCostBase(); }, [refresh]);
   const costPerKm = costBase?.costPerKm ?? null;
   const minIdealKm = costBase?.minIdealKm ?? null;
   // settings ainda é usado para outras leituras (mantém referência)
-  const settings = useMemo(() => settingsService.get(), [refresh]);
+  const settings = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
   void settings;
 
   // Realtime calculation

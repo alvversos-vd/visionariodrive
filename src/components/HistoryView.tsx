@@ -73,10 +73,10 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
   // Todos os DailyEntry já ajustados com despesas do dia — vem do MetricsService.
-  const allEntries: AdjustedDailyEntry[] = useMemo(() => metricsService.historyEntries(), [refresh]);
-  const allRides: RideModel[] = useMemo(() => metricsService.recentIndividualRides(9999), [refresh]);
-  const goals = useMemo(() => goalsService.get(), [refresh]);
-  const bonusEntries = useMemo(() => financialService.list({ type: 'bonus' }), [refresh]);
+  const allEntries: AdjustedDailyEntry[] = useMemo(() => { void refresh; return metricsService.historyEntries(); }, [refresh]);
+  const allRides: RideModel[] = useMemo(() => { void refresh; return metricsService.recentIndividualRides(9999); }, [refresh]);
+  const goals = useMemo(() => { void refresh; return goalsService.get(); }, [refresh]);
+  const bonusEntries = useMemo(() => { void refresh; return financialService.list({ type: 'bonus' }); }, [refresh]);
 
   const [vehicleFilter, setVehicleFilter] = useState<string>(ALL);
   const [rideTypeFilter, setRideTypeFilter] = useState<string>(ALL);
@@ -111,9 +111,11 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   // vehicle/rideType attribution) — this is intentional and surfaced via the
   // "limpar filtros" hint.
   const entries = useMemo(
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesEntry inline usa filtros já nas deps
     () => allEntries.filter(e => (e.expenseOnly ? !(vehicleFilter !== ALL || rideTypeFilter !== ALL) : matchesEntry(e))),
     [allEntries, vehicleFilter, rideTypeFilter],
   );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- matchesRide inline usa filtros já nas deps
   const rides = useMemo(() => allRides.filter(matchesRide), [allRides, vehicleFilter, rideTypeFilter]);
 
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);

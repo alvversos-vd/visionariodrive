@@ -76,11 +76,11 @@ export default function ShiftHistoryView({ refresh }: Props) {
   };
 
   const shifts = useMemo<Shift[]>(
-    () => shiftService.list().filter(s => s.status === 'finalizado'),
+    () => { void refresh; return shiftService.list().filter(s => s.status === 'finalizado'); },
     [refresh]
   );
-  const meta = useMemo(() => goalsService.get().daily, [refresh]);
-  const vehicles = useMemo(() => getVehiclesV2(), [refresh]);
+  const meta = useMemo(() => { void refresh; return goalsService.get().daily; }, [refresh]);
+  const vehicles = useMemo(() => { void refresh; return getVehiclesV2(); }, [refresh]);
 
   // Counts per period filter (respeitando filtros de veículo e app)
   const periodCounts = useMemo(() => {
@@ -105,7 +105,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     [shifts, filter, vehicleFilter, appFilter]
   );
 
-  const ridesByShift = useMemo(() => rideService.groupByShift(), [refresh]);
+  const ridesByShift = useMemo(() => { void refresh; return rideService.groupByShift(); }, [refresh]);
 
   const totals = useMemo(() => {
     const acc = { lucro: 0, ganho: 0, km: 0, corridas: 0, minutos: 0, custo: 0 };
@@ -124,7 +124,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
       lucroPorKm: acc.km > 0 ? acc.lucro / acc.km : 0,
       lucroPorTurno: filtered.length > 0 ? acc.lucro / filtered.length : 0,
     };
-  }, [filtered, ridesByShift]);
+  }, [filtered, ridesByShift]); // ridesByShift força recomputo quando corridas por turno mudam
 
   // Melhor app & melhor veículo (no filtro atual de período)
   const insights = useMemo(() => {
