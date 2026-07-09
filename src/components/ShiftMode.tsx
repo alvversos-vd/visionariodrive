@@ -215,11 +215,11 @@ export default function ShiftMode({ onChange }: Props) {
   }});
 
   const activeRides = useMemo(
-    () => (shift ? rideService.listByShift(shift.turno_id) : []),
+    () => { void ridesVersion; return shift ? rideService.listByShift(shift.turno_id) : []; },
     [shift, ridesVersion],
   );
   const totals = useMemo(
-    () => (shift ? shiftService.getTotals(shift) : null),
+    () => { void activeRides; return shift ? shiftService.getTotals(shift) : null; },
     [shift, activeRides],
   );
   const meta = useMemo(() => shift && totals ? shiftService.metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
@@ -244,6 +244,7 @@ export default function ShiftMode({ onChange }: Props) {
       }
       fallbackShownRef.current = key;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shift?.turno_id é o identificador estável; usar shift completo reexecutaria em toda mudança de objeto
   }, [gps, shift?.turno_id]);
 
   const openPicker = () => {

@@ -104,6 +104,7 @@ export default function ShiftLiveMap({ shift, className }: Props) {
     } else {
       map.panTo(last, { animate: true, duration: 0.6 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shift.rota?.length é o gatilho estável (comprimento); identidade do array muda a cada tick
   }, [shift.rota?.length]);
 
   const pts = shift.rota || [];
