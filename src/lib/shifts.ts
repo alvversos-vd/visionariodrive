@@ -128,7 +128,7 @@ export function setShiftGpsStatus(turno_id: string, status: NonNullable<Shift['g
 
 function getDeviceTz(): { tz: string; offset: number } {
   let tz = 'UTC';
-  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch {}
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { /* noop */ }
   const offset = -new Date().getTimezoneOffset();
   return { tz, offset };
 }

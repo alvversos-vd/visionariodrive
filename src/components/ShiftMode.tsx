@@ -1012,11 +1012,11 @@ export default function ShiftMode({ onChange }: Props) {
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={async () => { (await exportRouteGpx(shift)) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { if (await exportRouteGpx(shift)) toast.success('GPX exportado'); else toast('Rota muito curta'); }}
                 className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
-                onClick={async () => { (await exportRouteKml(shift)) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { if (await exportRouteKml(shift)) toast.success('KML exportado'); else toast('Rota muito curta'); }}
                 className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>

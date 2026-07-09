@@ -78,8 +78,9 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
       });
       await refreshProfile();
       onFinish();
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e?.message ?? 'Tente novamente', variant: 'destructive' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Tente novamente';
+      toast({ title: 'Erro', description: msg, variant: 'destructive' });
     } finally {
       setSaving(false);
     }

@@ -418,11 +418,12 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                 </p>
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <button
-                                    onClick={async () => { (await exportRouteGpx(s)) ? toast.success('GPX exportado') : toast('Rota vazia'); }}
+                                    onClick={async () => { if (await exportRouteGpx(s)) toast.success('GPX exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> GPX</button>
+                                  <button>
                                   <button
-                                    onClick={async () => { (await exportRouteKml(s)) ? toast.success('KML exportado') : toast('Rota vazia'); }}
+                                    onClick={async () => { if (await exportRouteKml(s)) toast.success('KML exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> KML</button>
                                   <button

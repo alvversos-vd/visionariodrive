@@ -105,8 +105,8 @@ export function hasGpsConsent(): boolean {
   try { return localStorage.getItem(CONSENT_KEY) === '1'; } catch { return false; }
 }
 export function saveGpsConsent(): void {
-  try { localStorage.setItem(CONSENT_KEY, '1'); } catch {}
+  try { localStorage.setItem(CONSENT_KEY, '1'); } catch { /* noop */ }
 }
 export function clearGpsConsent(): void {
-  try { localStorage.removeItem(CONSENT_KEY); } catch {}
+  try { localStorage.removeItem(CONSENT_KEY); } catch { /* noop */ }
 }
