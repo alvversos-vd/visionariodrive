@@ -77,6 +77,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       onTickRef.current?.();
     }, 1000);
     return () => clearInterval(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shift?.turno_id/status são gatilhos estáveis; identidade do shift muda a cada tick e reiniciaria o tracker
   }, [shift?.turno_id, shift?.status]);
 
   // Visibility / lifecycle: marca background, força flush e reanexa watcher ao voltar
@@ -136,6 +137,7 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onVisible);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver justificativa acima
   }, [shift?.turno_id, shift?.status]);
 
   // Wake Lock — tenta manter tela ligada durante turno ativo (best-effort)
@@ -161,7 +163,9 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       wakeLock.current?.release().catch(() => {});
       wakeLock.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver justificativa acima
   }, [shift?.turno_id, shift?.status]);
+
 
   // GPS watch + polling suplementar (combate throttling do browser)
   useEffect(() => {
@@ -288,7 +292,9 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       lastPoint.current = null;
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver justificativa acima (identidade do shift instável)
   }, [shift?.turno_id, shift?.status, restartKey, opts?.restartSignal, opts?.mode]);
+
 
   return { gps, lastFixAt };
 }
