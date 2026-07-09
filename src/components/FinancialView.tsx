@@ -47,13 +47,13 @@ export default function FinancialView({ refresh, onChanged }: Props) {
 
   // Métricas do período (via MetricsService)
   const monthMetrics = useMemo(
-    () => metricsService.rangeMetrics(startOfMonth(), new Date()),
+    () => { void refresh; return metricsService.rangeMetrics(startOfMonth(), new Date()); },
     [refresh],
   );
 
   // Listagem da aba ativa (via FinancialService)
   const entries = useMemo<FinancialEntry[]>(
-    () => financialService.list({ type: tab }),
+    () => { void refresh; return financialService.list({ type: tab }); },
     [refresh, tab],
   );
 

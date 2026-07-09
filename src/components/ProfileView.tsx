@@ -58,8 +58,9 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
       toast({ title: 'Conta excluída', description: 'Seus dados foram removidos. Até logo!' });
       // Hard reload para limpar estado de memória
       window.location.href = '/auth';
-    } catch (e: any) {
-      toast({ title: 'Erro inesperado', description: e?.message ?? 'Tente novamente.', variant: 'destructive' });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Tente novamente.';
+      toast({ title: 'Erro inesperado', description: msg, variant: 'destructive' });
       setDeleting(false);
     }
   };
@@ -81,9 +82,10 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
     setSaving(true);
     try {
       await profileService.update(user.id, { nome_usuario: value || null });
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSaving(false);
-      toast({ title: 'Erro ao salvar', description: error?.message ?? 'Tente novamente', variant: 'destructive' });
+      const msg = error instanceof Error ? error.message : 'Tente novamente';
+      toast({ title: 'Erro ao salvar', description: msg, variant: 'destructive' });
       return;
     }
     setSaving(false);
@@ -168,8 +170,9 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
                       if (!user || active) return;
                       try {
                         await profileService.update(user.id, { objetivo_principal: opt.key });
-                      } catch (error: any) {
-                        toast({ title: 'Erro ao salvar', description: error?.message ?? 'Tente novamente', variant: 'destructive' });
+                      } catch (error: unknown) {
+                        const msg = error instanceof Error ? error.message : 'Tente novamente';
+                        toast({ title: 'Erro ao salvar', description: msg, variant: 'destructive' });
                         return;
                       }
                       await refreshProfile();

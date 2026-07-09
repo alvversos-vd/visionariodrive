@@ -76,11 +76,11 @@ export default function ShiftHistoryView({ refresh }: Props) {
   };
 
   const shifts = useMemo<Shift[]>(
-    () => shiftService.list().filter(s => s.status === 'finalizado'),
+    () => { void refresh; return shiftService.list().filter(s => s.status === 'finalizado'); },
     [refresh]
   );
-  const meta = useMemo(() => goalsService.get().daily, [refresh]);
-  const vehicles = useMemo(() => getVehiclesV2(), [refresh]);
+  const meta = useMemo(() => { void refresh; return goalsService.get().daily; }, [refresh]);
+  const vehicles = useMemo(() => { void refresh; return getVehiclesV2(); }, [refresh]);
 
   // Counts per period filter (respeitando filtros de veículo e app)
   const periodCounts = useMemo(() => {
@@ -105,9 +105,10 @@ export default function ShiftHistoryView({ refresh }: Props) {
     [shifts, filter, vehicleFilter, appFilter]
   );
 
-  const ridesByShift = useMemo(() => rideService.groupByShift(), [refresh]);
+  const ridesByShift = useMemo(() => { void refresh; return rideService.groupByShift(); }, [refresh]);
 
   const totals = useMemo(() => {
+    void ridesByShift; // força recomputo quando corridas mudam
     const acc = { lucro: 0, ganho: 0, km: 0, corridas: 0, minutos: 0, custo: 0 };
     filtered.forEach(s => {
       const t = shiftService.getTotals(s);
@@ -128,6 +129,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
 
   // Melhor app & melhor veículo (no filtro atual de período)
   const insights = useMemo(() => {
+    void ridesByShift; // força recomputo quando corridas mudam
     const periodShifts = shifts.filter(s => inFilter(s.data_operacional, filter));
     const byApp: Record<string, { lucro: number; turnos: number }> = {};
     const byVeh: Record<string, { lucro: number; km: number; turnos: number; nome: string }> = {};
@@ -418,11 +420,12 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                 </p>
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <button
-                                    onClick={async () => { (await exportRouteGpx(s)) ? toast.success('GPX exportado') : toast('Rota vazia'); }}
+                                    onClick={async () => { if (await exportRouteGpx(s)) toast.success('GPX exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> GPX</button>
+                                  
                                   <button
-                                    onClick={async () => { (await exportRouteKml(s)) ? toast.success('KML exportado') : toast('Rota vazia'); }}
+                                    onClick={async () => { if (await exportRouteKml(s)) toast.success('KML exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> KML</button>
                                   <button

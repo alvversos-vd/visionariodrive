@@ -32,20 +32,20 @@ export function useDashboard(refresh: number = 0): DashboardData {
   const s = useBusVersion('shift:changed');
   const dataV = r + f + s;
 
-  const goals = useMemo(() => goalsService.get(), [dataV, refresh]);
-  const settings = useMemo(() => settingsService.get(), [dataV, refresh]);
+  const goals = useMemo(() => { void dataV; void refresh; return goalsService.get(); }, [dataV, refresh]);
+  const settings = useMemo(() => { void dataV; void refresh; return settingsService.get(); }, [dataV, refresh]);
   const snapshot = useMemo(
-    () => metricsService.dashboardSnapshot(goals.daily),
+    () => { void r; void f; void refresh; return metricsService.dashboardSnapshot(goals.daily); },
     [r, f, goals.daily, refresh],
   );
-  const activeShift = useMemo(() => shiftService.getActive(), [s, refresh]);
+  const activeShift = useMemo(() => { void s; void refresh; return shiftService.getActive(); }, [s, refresh]);
   const shiftTotals = useMemo(
     () => (activeShift ? shiftService.getTotals(activeShift) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [s, r, activeShift?.turno_id, activeShift?.status, refresh],
   );
   const insights = useMemo(
-    () => metricsService.insights(goals.daily),
+    () => { void r; void f; void refresh; return metricsService.insights(goals.daily); },
     [r, f, goals.daily, refresh],
   );
 

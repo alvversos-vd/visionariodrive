@@ -59,13 +59,8 @@ export default function EntryForm({ open, type, onClose, onSubmit }: Props) {
   const [app, setApp] = useState<RideApp | ''>('');
   const [notes, setNotes] = useState('');
 
-  // Resetar quando muda o tipo
-  useMemo(() => {
-    setCategory(cats[0]);
-    setValue('');
-    setApp('');
-    setNotes('');
-  }, [cats, type, open]);
+  // Resetar quando muda o tipo (open/type são gatilhos intencionais de reset; cats deriva de type)
+  useMemo(() => { void open; void type; setCategory(cats[0]); setValue(''); setApp(''); setNotes(''); }, [cats, type, open]);
 
   const submit = () => {
     const v = parseFloat(value.replace(',', '.'));

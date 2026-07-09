@@ -79,7 +79,7 @@ export class BackgroundGpsProvider implements GpsProvider {
       distanceFilter: 5,
     };
 
-    // eslint-disable-next-line no-console
+     
     console.info('[BackgroundGpsProvider] watch() chamado — preparando addWatcher', watcherOptions);
     try {
       gpsTelemetry.event('bg_add_watcher_called', {
@@ -114,7 +114,7 @@ export class BackgroundGpsProvider implements GpsProvider {
           watcherOptions,
           (location?: BgLocation, error?: { code?: string; message?: string }) => {
             if (error) {
-              // eslint-disable-next-line no-console
+               
               console.error('[BackgroundGpsProvider] callback error', error);
               const code = (error.code ?? '').toLowerCase();
               if (code.includes('denied') || code.includes('not authorized')) {
@@ -173,14 +173,14 @@ export class BackgroundGpsProvider implements GpsProvider {
         }
 
         watcherId = id;
-        // eslint-disable-next-line no-console
+         
         console.info('[BackgroundGpsProvider] addWatcher iniciado com sucesso', { id });
         try {
           gpsTelemetry.event('bg_watcher_added', { id });
           gpsTelemetry.event('bg_watcher_started', { id, provider: 'background' });
         } catch { /* noop */ }
       } catch (e) {
-        // eslint-disable-next-line no-console
+         
         console.error('[BackgroundGpsProvider] addWatcher falhou', e);
         onError?.('unavailable', e);
         try {

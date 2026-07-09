@@ -340,7 +340,7 @@ export const gpsTelemetry = {
     const blob = new Blob([JSON.stringify(snap, null, 2)], { type: 'application/json' });
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const path = await saveBlob(blob, `gps-diag-${stamp}.json`);
-    // eslint-disable-next-line no-console
+     
     console.info('[gpsTelemetry] export delivery path:', path, '| size:', blob.size, 'bytes');
     return path;
   },

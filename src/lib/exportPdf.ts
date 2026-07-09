@@ -124,7 +124,7 @@ export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobP
       fmt(total.profitPerHour),
     ]],
   });
-  y = (doc as any).lastAutoTable.finalY + 10;
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
   // Médias semanais
   const weeks = aggregate(entries, weekKey);
@@ -141,7 +141,7 @@ export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobP
       return [w.label, s.days.toString(), fmt(s.earnings), fmt(s.cost), fmt(s.profit), fmt(s.avgProfit), s.km.toFixed(0)];
     }),
   });
-  y = (doc as any).lastAutoTable.finalY + 10;
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
   // Médias mensais
   const months = aggregate(entries, monthKey);
@@ -158,7 +158,7 @@ export async function exportHistoryPdf(entries: DailyEntry[]): Promise<SaveBlobP
       return [m.label, s.days.toString(), fmt(s.earnings), fmt(s.cost), fmt(s.profit), fmt(s.avgProfit), s.km.toFixed(0)];
     }),
   });
-  y = (doc as any).lastAutoTable.finalY + 10;
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
   // Detalhe diário
   doc.setFontSize(13);

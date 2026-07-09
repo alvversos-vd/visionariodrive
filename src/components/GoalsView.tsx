@@ -26,9 +26,9 @@ const MOTIVATIONAL = [
 ];
 
 export default function GoalsView({ refresh, onSaved }: Props) {
-  const entries = useMemo(() => rideService.listEntries(), [refresh]);
-  const settings = useMemo(() => settingsService.get(), [refresh]);
-  const initialGoals = useMemo(() => goalsService.get(), [refresh]);
+  const entries = useMemo(() => { void refresh; return rideService.listEntries(); }, [refresh]);
+  const settings = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
+  const initialGoals = useMemo(() => { void refresh; return goalsService.get(); }, [refresh]);
   const [goals, setGoals] = useState<Goals>(initialGoals);
   const [focusMode, setFocusMode] = useState(false);
   const [phrase, setPhrase] = useState(MOTIVATIONAL[0]);

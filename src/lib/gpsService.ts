@@ -295,9 +295,9 @@ function pickProvider(): GpsProvider {
     label = 'web:navigator.geolocation';
   }
 
-  // eslint-disable-next-line no-console
+   
   console.info(`[gpsService] Provider: ${label}`);
-  // eslint-disable-next-line no-console
+   
   console.info('[gpsService] Runtime diagnostics', {
     selectedProvider: label,
     native,

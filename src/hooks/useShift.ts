@@ -10,12 +10,12 @@ import { useBusVersion } from './useBusVersion';
 
 export function useActiveShift(): Shift | null {
   const v = useBusVersion('shift:changed');
-  return useMemo(() => shiftService.getActive(), [v]);
+  return useMemo(() => { void v; return shiftService.getActive(); }, [v]);
 }
 
 export function useShifts(): Shift[] {
   const v = useBusVersion('shift:changed');
-  return useMemo(() => shiftService.list(), [v]);
+  return useMemo(() => { void v; return shiftService.list(); }, [v]);
 }
 
 /** Totals já orquestrados (rides + shift). Reativo a rides:changed também. */

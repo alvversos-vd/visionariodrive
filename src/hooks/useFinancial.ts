@@ -8,5 +8,7 @@ import { useBusVersion } from './useBusVersion';
 
 export function useFinancialEntries(filters?: ListFilters) {
   const v = useBusVersion('financial:changed');
-  return useMemo(() => financialService.list(filters), [v, JSON.stringify(filters ?? {})]);
+  const filtersKey = JSON.stringify(filters ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- filtersKey encodes filters; obj identity ignored
+  return useMemo(() => financialService.list(filters), [v, filtersKey]);
 }

@@ -86,8 +86,9 @@ export default function Auth() {
         });
         if (error) throw error;
       }
-    } catch (err: any) {
-      const msg = err?.message?.includes('Invalid login') ? 'E-mail ou senha incorretos.' : err?.message ?? 'Erro inesperado';
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : '';
+      const msg = raw.includes('Invalid login') ? 'E-mail ou senha incorretos.' : (raw || 'Erro inesperado');
       toast({ title: 'Erro', description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);

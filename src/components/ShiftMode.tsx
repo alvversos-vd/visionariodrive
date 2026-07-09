@@ -215,11 +215,11 @@ export default function ShiftMode({ onChange }: Props) {
   }});
 
   const activeRides = useMemo(
-    () => (shift ? rideService.listByShift(shift.turno_id) : []),
+    () => { void ridesVersion; return shift ? rideService.listByShift(shift.turno_id) : []; },
     [shift, ridesVersion],
   );
   const totals = useMemo(
-    () => (shift ? shiftService.getTotals(shift) : null),
+    () => { void activeRides; return shift ? shiftService.getTotals(shift) : null; },
     [shift, activeRides],
   );
   const meta = useMemo(() => shift && totals ? shiftService.metaProgresso(shift, totals.lucro_total) : null, [shift, totals]);
@@ -244,6 +244,7 @@ export default function ShiftMode({ onChange }: Props) {
       }
       fallbackShownRef.current = key;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shift?.turno_id é o identificador estável; usar shift completo reexecutaria em toda mudança de objeto
   }, [gps, shift?.turno_id]);
 
   const openPicker = () => {
@@ -358,7 +359,7 @@ export default function ShiftMode({ onChange }: Props) {
           });
           void handleGranted();
         } catch (e) {
-          // eslint-disable-next-line no-console
+           
           console.warn('[ShiftMode] Capacitor Geolocation falhou', e);
           handleUnavailable();
         }
@@ -1012,11 +1013,11 @@ export default function ShiftMode({ onChange }: Props) {
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={async () => { (await exportRouteGpx(shift)) ? toast.success('GPX exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { if (await exportRouteGpx(shift)) toast.success('GPX exportado'); else toast('Rota muito curta'); }}
                 className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
-                onClick={async () => { (await exportRouteKml(shift)) ? toast.success('KML exportado') : toast('Rota muito curta'); }}
+                onClick={async () => { if (await exportRouteKml(shift)) toast.success('KML exportado'); else toast('Rota muito curta'); }}
                 className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>
@@ -1094,7 +1095,7 @@ export default function ShiftMode({ onChange }: Props) {
         open={bgConsentOpen}
         onAccept={async () => {
           saveBackgroundGpsConsent();
-          // eslint-disable-next-line no-console
+           
           console.info('[ShiftMode] Background GPS consent aceito', { turnoId: bgConsentTurnoId });
           try { gpsTelemetry.event('bg_consent_accepted', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);
@@ -1118,7 +1119,7 @@ export default function ShiftMode({ onChange }: Props) {
                   const ok = await openAppLocationSettings();
                   try { gpsTelemetry.event('bg_open_settings_clicked', { turnoId: bgConsentTurnoId, from: 'consent-toast' }); } catch { /* noop */ }
                   if (!ok) {
-                    // eslint-disable-next-line no-console
+                     
                     console.warn('[ShiftMode] openSettings falhou');
                     toast.error('Abra manualmente: Ajustes do celular → Apps → Visionário Drive → Permissões → Localização → "Permitir o tempo todo"');
                   }
@@ -1134,7 +1135,7 @@ export default function ShiftMode({ onChange }: Props) {
         }}
         onDecline={() => {
           declineBackgroundGpsConsent();
-          // eslint-disable-next-line no-console
+           
           console.info('[ShiftMode] Background GPS consent recusado', { turnoId: bgConsentTurnoId });
           try { gpsTelemetry.event('bg_consent_declined', { turnoId: bgConsentTurnoId }); } catch { /* noop */ }
           setBgConsentOpen(false);

@@ -121,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => sub.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init único; loadProfile é estável (useCallback interno)
   }, []);
 
   // Realtime: detecta mudança de plano (ex.: upgrade para PRO)

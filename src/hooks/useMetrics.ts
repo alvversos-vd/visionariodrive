@@ -17,15 +17,16 @@ function useDataVersion(): number {
 export function useDayMetrics(date: Date = new Date()) {
   const v = useDataVersion();
   const key = date.toDateString();
-  return useMemo(() => metricsService.dayMetrics(date), [v, key]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- key encodes date; date obj identity intentionally ignored
+  return useMemo(() => { void v; return metricsService.dayMetrics(date); }, [v, key]);
 }
 
 export function useDashboardSnapshot(goalDaily: number) {
   const v = useDataVersion();
-  return useMemo(() => metricsService.dashboardSnapshot(goalDaily), [v, goalDaily]);
+  return useMemo(() => { void v; return metricsService.dashboardSnapshot(goalDaily); }, [v, goalDaily]);
 }
 
 export function useInsights(goalDaily: number): Insight[] {
   const v = useDataVersion();
-  return useMemo(() => metricsService.insights(goalDaily), [v, goalDaily]);
+  return useMemo(() => { void v; return metricsService.insights(goalDaily); }, [v, goalDaily]);
 }

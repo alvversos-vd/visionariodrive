@@ -34,7 +34,7 @@ function push(ev: ExportEvent) {
   buf.push(ev);
   if (buf.length > MAX_EVENTS) buf.shift();
   // Log estruturado para captura em remote/adb logcat
-  // eslint-disable-next-line no-console
+   
   console.info('[exportTelemetry]', ev);
 }
 

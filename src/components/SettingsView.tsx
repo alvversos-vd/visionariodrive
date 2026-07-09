@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function SettingsView({ refresh, onChanged }: Props) {
-  const initial = useMemo(() => settingsService.get(), [refresh]);
+  const initial = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
   const [marginPct, setMarginPct] = useState(String(((initial.profitMargin - 1) * 100).toFixed(0)));
   const [estHours, setEstHours] = useState(String(initial.estimatedHours));
   const [confirmReset, setConfirmReset] = useState(false);
