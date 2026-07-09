@@ -60,12 +60,8 @@ export default function EntryForm({ open, type, onClose, onSubmit }: Props) {
   const [notes, setNotes] = useState('');
 
   // Resetar quando muda o tipo
-  useMemo(() => {
-    setCategory(cats[0]);
-    setValue('');
-    setApp('');
-    setNotes('');
-  }, [cats, type, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- open/type são gatilhos intencionais de reset; cats deriva de type
+  useMemo(() => { void open; void type; setCategory(cats[0]); setValue(''); setApp(''); setNotes(''); }, [cats, type, open]);
 
   const submit = () => {
     const v = parseFloat(value.replace(',', '.'));
