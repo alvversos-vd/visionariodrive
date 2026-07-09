@@ -10,16 +10,19 @@ import { useBusVersion } from './useBusVersion';
 
 export function useRides(filters?: RideListFilters) {
   const v = useBusVersion('rides:changed');
-  return useMemo(() => rideService.list(filters), [v, JSON.stringify(filters ?? {})]);
+  const filtersKey = JSON.stringify(filters ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- filtersKey encodes filters; obj identity ignored
+  return useMemo(() => rideService.list(filters), [v, filtersKey]);
 }
 
 export function useRidesByShift(shiftId: string | null | undefined) {
   const v = useBusVersion('rides:changed');
-  return useMemo(() => (shiftId ? rideService.listByShift(shiftId) : []), [v, shiftId]);
+  return useMemo(() => { void v; return shiftId ? rideService.listByShift(shiftId) : []; }, [v, shiftId]);
 }
 
 export function useRidesByDay(date: Date = new Date()) {
   const v = useBusVersion('rides:changed');
   const key = date.toDateString();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- key encodes date; date obj identity intentionally ignored
   return useMemo(() => rideService.listByDay(date), [v, key]);
 }
