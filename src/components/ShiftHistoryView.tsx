@@ -421,7 +421,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                     onClick={async () => { if (await exportRouteGpx(s)) toast.success('GPX exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> GPX</button>
-                                  <button>
+                                  
                                   <button
                                     onClick={async () => { if (await exportRouteKml(s)) toast.success('KML exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
