@@ -5,7 +5,7 @@ import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsS
 // Sprint 4: HistoryView consome apenas Services — zero repository direto.
 import type { RideModel, FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles, BarChart3 } from 'lucide-react';
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
