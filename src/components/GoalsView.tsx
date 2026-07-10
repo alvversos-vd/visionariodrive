@@ -75,6 +75,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
 
   const handleSave = () => {
     goalsService.save(goals);
+    toast.success('Metas salvas 👊');
     onSaved();
   };
 

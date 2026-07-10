@@ -71,8 +71,9 @@ export default function FinancialView({ refresh, onChanged }: Props) {
   };
 
   const handleRemove = (id: string) => {
+    const entry = entries.find(e => e.id === id);
     financialService.remove(id);
-    toast.success('Removido');
+    toast.success(entry ? `${TAB_META[entry.type].label} removido` : 'Removido');
     onChanged();
   };
 
