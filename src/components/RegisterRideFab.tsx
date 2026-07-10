@@ -5,6 +5,7 @@ import { shiftService } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { verdictToResultado } from '@/lib/adapters/rideAdapters';
 import { getVehicleById } from '@/lib/vehicles';
+import { useActiveShift } from '@/hooks/useShift';
 
 interface Props { onChange?: () => void }
 
@@ -23,22 +24,23 @@ function fmtSince(iso?: string): string {
 }
 
 export default function RegisterRideFab({ onChange }: Props) {
-  const [shift, setShift] = useState(() => shiftService.getActive());
+  // Sprint 5.2 — reativo via eventBus (shift:changed / rides:changed).
+  // Substitui o polling anterior (setInterval 3s + 1s → shiftService.getActive()).
+  // Elimina timer sempre-ativo e renders periódicos desnecessários.
+  const shift = useActiveShift();
   const [open, setOpen] = useState(false);
   const [valor, setValor] = useState('');
   const [km, setKm] = useState('');
   const [obs, setObs] = useState('');
   const [forceManual, setForceManual] = useState(false);
+  const [, setNowTick] = useState(0);
 
-  useEffect(() => {
-    const i = setInterval(() => setShift(shiftService.getActive()), 3000);
-    return () => clearInterval(i);
-  }, []);
-
-  // Refresh interno enquanto modal aberto — para km_auto e tempo "desde última" ficarem vivos
+  // Enquanto o modal está aberto, tick 1x/s apenas para atualizar
+  // o rótulo "última há Xs" (fmtSince). Não relê o service — o hook
+  // reativo já refletirá qualquer mudança de shift automaticamente.
   useEffect(() => {
     if (!open) return;
-    const i = setInterval(() => setShift(shiftService.getActive()), 1000);
+    const i = setInterval(() => setNowTick(t => t + 1), 1000);
     return () => clearInterval(i);
   }, [open]);
 
