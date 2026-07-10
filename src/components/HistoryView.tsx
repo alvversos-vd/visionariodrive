@@ -178,10 +178,14 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   if (allEntries.length === 0 && allRides.length === 0) {
     return (
-      <div className="text-center py-16 text-muted-foreground animate-slide-up">
-        <p className="text-4xl mb-3">📊</p>
-        <p className="font-display font-semibold">Nenhum registro ainda</p>
-        <p className="text-sm">Faça seu primeiro cálculo para ver o histórico.</p>
+      <div className="text-center py-16 px-6 animate-slide-up">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-4">
+          <BarChart3 size={28} className="text-primary" />
+        </div>
+        <p className="font-display font-semibold text-foreground text-base">Seu histórico começa aqui</p>
+        <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">
+          Registre sua primeira corrida ou inicie um turno para acompanhar sua evolução por dia, semana e mês.
+        </p>
       </div>
     );
   }
