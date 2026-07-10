@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { goalsService, type Goals } from '@/lib/services/goalsService';
 import { settingsService } from '@/lib/services/settingsService';
 import { metricsService } from '@/lib/services/metricsService';
