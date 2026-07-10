@@ -50,13 +50,13 @@ export default function Auth() {
     e.preventDefault();
     const parsed = schema.safeParse({ email, password, nome_usuario: nomeUsuario || undefined });
     if (!parsed.success) {
-      toast({ title: 'Erro', description: parsed.error.issues[0].message, variant: 'destructive' });
+      toast({ title: 'Confira os dados', description: parsed.error.issues[0].message, variant: 'destructive' });
       return;
     }
     if (mode === 'signup' && !acceptTerms) {
       toast({
-        title: 'Aceite necessário',
-        description: 'Você precisa aceitar os Termos de Uso e a Política de Privacidade para criar a conta.',
+        title: 'Falta aceitar os termos',
+        description: 'Marque o aceite dos Termos de Uso e da Política de Privacidade para continuar.',
         variant: 'destructive',
       });
       return;
@@ -88,8 +88,10 @@ export default function Auth() {
       }
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : '';
-      const msg = raw.includes('Invalid login') ? 'E-mail ou senha incorretos.' : (raw || 'Erro inesperado');
-      toast({ title: 'Erro', description: msg, variant: 'destructive' });
+      const isCred = raw.includes('Invalid login');
+      const title = mode === 'login' ? 'Não conseguimos entrar' : 'Não conseguimos criar sua conta';
+      const msg = isCred ? 'E-mail ou senha incorretos. Tente novamente.' : (raw || 'Verifique sua conexão e tente novamente.');
+      toast({ title, description: msg, variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
