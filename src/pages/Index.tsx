@@ -164,7 +164,7 @@ export default function Index() {
           ))}
         </nav>
 
-        {renderContent()}
+        <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
       {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
