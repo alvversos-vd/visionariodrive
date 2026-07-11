@@ -1,23 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { DailyEntry } from '@/lib/types';
 import Dashboard from '@/components/Dashboard';
 import DailyInputForm from '@/components/DailyInputForm';
-import ResultsView from '@/components/ResultsView';
-import HistoryView from '@/components/HistoryView';
-import RideAnalyzer from '@/components/RideAnalyzer';
-import GoalsView from '@/components/GoalsView';
-import SettingsView from '@/components/SettingsView';
-import SimulatorView from '@/components/SimulatorView';
-import ProfileView from '@/components/ProfileView';
-import FinancialView from '@/components/FinancialView';
 import ProRequired from '@/components/ProRequired';
-import UpgradeView from '@/components/UpgradeView';
 import PermissionOnboarding from '@/components/PermissionOnboarding';
 import { isOnboardingCompleted } from '@/lib/permissionDiagnostic';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles } from 'lucide-react';
+import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles, Loader2 } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
+
+// Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
+// Cada view carrega apenas quando o usuário navegar até ela.
+const ResultsView = lazy(() => import('@/components/ResultsView'));
+const HistoryView = lazy(() => import('@/components/HistoryView'));
+const RideAnalyzer = lazy(() => import('@/components/RideAnalyzer'));
+const GoalsView = lazy(() => import('@/components/GoalsView'));
+const SettingsView = lazy(() => import('@/components/SettingsView'));
+const SimulatorView = lazy(() => import('@/components/SimulatorView'));
+const ProfileView = lazy(() => import('@/components/ProfileView'));
+const FinancialView = lazy(() => import('@/components/FinancialView'));
+const UpgradeView = lazy(() => import('@/components/UpgradeView'));
+
+function ViewFallback() {
+  return (
+    <div className="flex items-center justify-center py-16 text-muted-foreground">
+      <Loader2 className="animate-spin" size={20} />
+    </div>
+  );
+}
 
 type Tab = 'home' | 'input' | 'ride' | 'goals' | 'financial' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
@@ -153,7 +164,7 @@ export default function Index() {
           ))}
         </nav>
 
-        {renderContent()}
+        <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
       {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
