@@ -1,4 +1,9 @@
-# Technical Roadmap — Pós Sprint 3
+# Technical Roadmap — Pós Release Freeze v1.0.0
+
+> **Release Freeze ativo desde 2026-07-12.** Ver `docs/release/release-freeze.md`.
+> Nenhum item abaixo pode ser implementado durante o Freeze. Somente organização.
+
+---
 
 ## Sprint 3 — Ativação da Fundação ✅ CONCLUÍDA
 
@@ -10,35 +15,72 @@
 | Insights v1 (`metricsService.insights`, máx. 3) + `InsightsCard` | ✅ |
 | `eventBus` reativo (`rides:changed`, `financial:changed`, `shift:changed`) | ✅ |
 
+## Sprint 4 — Expansão ✅ CONCLUÍDA
 
-## Sprint 4 — Expansão
+| Item | Status |
+|------|--------|
+| GPS automático de corridas (`rideDetectionService`) | ✅ ADR-008 |
+| Bulk export/import RideModel | ✅ |
+| Remover coluna `shifts.rides` | ⚠ postergado — Sprint 6 |
 
-| Item | Objetivo | Dependências | Risco | Prioridade |
-|------|----------|--------------|-------|------------|
-| GPS automático de corridas | Detectar rides via `gpsService` + `addGpsRide` | ADR-001, ADR-006 | Alto | Alta |
-| Bulk export/import RideModel | Backup local + share | Adapters | Médio | Média |
-| Remover coluna `shifts.rides` | Encerrar DBT-M2 | Telemetria Sprint 3 | Alto | Média |
+## Sprint 5 — Estabilização Release Candidate ✅ CONCLUÍDA
 
-## Sprint 5 — Consolidação
+| Sprint | Escopo | Status |
+|--------|--------|--------|
+| 5.1 | Zero Warning Gate | ✅ |
+| 5.2 | Robustness Audit | ✅ |
+| 5.3 | UX Review (motorista real) | ✅ |
+| 5.4 | Security & LGPD Audit | ✅ |
+| 5.5 | Performance & RC1 (lazy loading) | ✅ |
+| 5.6 | GO / NO-GO Review — **GO** | ✅ |
 
-| Item | Objetivo | Dependências | Risco | Prioridade |
-|------|----------|--------------|-------|------------|
-| CI de arquitetura | Rodar checklist como gate | Checklist | Baixo | Alta |
-| Web Worker p/ metrics | Sair da main thread | MetricsService puro | Médio | Média |
-| Remover `ensureMigratedFromLegacy` | Encerrar DBT-M1 | Telemetria | Médio | Média |
+---
 
-## PRO (Fase 3+)
+## Sprint 6 — Pós-Beta (planejada, congelada até fim do Freeze)
 
-| Item | Objetivo | Dependências | Risco | Prioridade |
-|------|----------|--------------|-------|------------|
-| IA de insights avançados | LLM consumindo `RideModel` histórico | AI Gateway | Alto | Alta |
-| Comparativos entre motoristas | Requer telemetria opt-in | LGPD, consentimento | Alto | Média |
-| Previsão de ganhos | Modelo estatístico sobre `metricsService` | MetricsService | Médio | Média |
-| Antifraude estrutural | Detecção de padrões anômalos | RideModel completo | Alto | Alta |
+| Item | Objetivo | Origem | Prioridade |
+|------|----------|--------|------------|
+| Resolver 16 warnings `react-refresh/only-export-components` | Cleanup lint | Sprint 5.1 | Média |
+| Remover coluna legada `shifts.rides` | Encerrar DBT-M2 | Sprint 4 | Média |
+| Remover `ensureMigratedFromLegacy` | Encerrar DBT-M1 | Sprint 5 | Média |
+| Documentar `remove()` para 5 listeners singleton | Robustness (R-002..R-006) | Sprint 5.2 | Baixa |
+| Consolidar feedback P2 do Beta | Backlog reativo | `beta-feedback.md` | Alta |
+
+## Sprint 7 — Consolidação Arquitetural
+
+| Item | Objetivo | Prioridade |
+|------|----------|------------|
+| CI de arquitetura (checklist como gate) | Governança | Alta |
+| Web Worker p/ metrics | Sair da main thread | Média |
+| Bulk import RideModel com validação de esquema | Backup robusto | Média |
+
+## Plano PRO (Fase 3+)
+
+| Item | Dependências | Risco |
+|------|--------------|-------|
+| IA de insights avançados (LLM sobre RideModel) | AI Gateway | Alto |
+| Comparativos entre motoristas | Telemetria opt-in, LGPD | Alto |
+| Previsão de ganhos | `metricsService` | Médio |
+| Antifraude estrutural | RideModel completo | Alto |
+| Gamificação / badges / streaks visuais | UX PRO | Médio |
+| Heatmap de zonas de alta demanda | GPS agregado anonimizado | Alto |
+| Barra de notificação persistente Android | Foreground service dedicado | Médio |
+| Dashboards avançados (semana/mês/ano) | MetricsService puro | Médio |
+
+## Futuro (sem sprint alocada)
+
+- iOS build (Capacitor iOS)
+- Multi-idioma (i18n)
+- Integração bancária (Open Finance) — apenas leitura
+- Modo frota (multi-motorista, PRO Empresa)
+- Comparativo entre apps (Uber / 99 / iFood) — sem scraping
+
+---
 
 ## Princípios de priorização
 
-1. Nenhuma feature Pro pode quebrar START.
+1. Nenhuma feature PRO pode quebrar START.
 2. Nenhuma feature nova pode introduzir owner duplicado.
 3. Toda mudança em API pública requer ADR.
 4. Débitos M/A bloqueiam features que dependem deles.
+5. **Durante Release Freeze:** somente Crash / P0 / P1 / LGPD / Segurança / Play Store.
