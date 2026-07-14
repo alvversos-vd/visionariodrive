@@ -10,6 +10,7 @@ import Auth from "./pages/Auth.tsx";
 import Legal from "./pages/Legal.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Onboarding from "./components/Onboarding.tsx";
+import AdminCRM from "./pages/AdminCRM.tsx";
 import GpsDebugButton from "./components/GpsDebugButton.tsx";
 import ExportDebugButton from "./components/ExportDebugButton.tsx";
 import AutoRideToast from "./components/AutoRideToast.tsx";
@@ -55,6 +56,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/legal" element={<Legal />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminCRM /></ProtectedRoute>} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
