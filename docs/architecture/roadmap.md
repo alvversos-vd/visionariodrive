@@ -1,7 +1,7 @@
-# Technical Roadmap — Pós Release Freeze v1.0.0
+# Technical Roadmap — Pós Sprint 6
 
-> **Release Freeze ativo desde 2026-07-12.** Ver `docs/release/release-freeze.md`.
-> Nenhum item abaixo pode ser implementado durante o Freeze. Somente organização.
+> **Release Freeze v1.0.0 encerrado em 2026-07-14.** v1.0.0 permanece como baseline de produção.
+> Sprint 6 em andamento sobre a mesma arquitetura — ver `docs/release/sprint-6.md` e `docs/architecture/adr/ADR-009-gamification.md`.
 
 ---
 
