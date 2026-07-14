@@ -5,7 +5,7 @@
  * Consome exclusivamente useCrm (Service). Sem acesso direto a Repository/Supabase.
  */
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Users, Activity, Car, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Users, Activity, Car, TrendingUp, Clock, MapPin, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -15,7 +15,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 
-function Kpi({ label, value, icon: Icon }: { label: string; value: string | number; icon: React.ComponentType<{ size?: number; className?: string }> }) {
+function Kpi({ label, value, icon: Icon }: { label: string; value: string | number; icon: LucideIcon }) {
   return (
     <Card className="p-4">
       <div className="flex items-center gap-3">
