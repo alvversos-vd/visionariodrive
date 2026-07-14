@@ -23,7 +23,13 @@ export type BusEvent =
   | 'financial:changed'
   | 'shift:changed'
   | 'detection:changed'
-  | 'rides:manual-registered';
+  | 'rides:manual-registered'
+  // Sprint 6 — CRM + Gamification + Invites
+  | 'crm:changed'
+  | 'xp:changed'
+  | 'achievement:unlocked'
+  | 'profile:changed'
+  | 'invite:changed';
 
 type Listener = () => void;
 const listeners: Record<BusEvent, Set<Listener>> = {
@@ -32,6 +38,11 @@ const listeners: Record<BusEvent, Set<Listener>> = {
   'shift:changed': new Set(),
   'detection:changed': new Set(),
   'rides:manual-registered': new Set(),
+  'crm:changed': new Set(),
+  'xp:changed': new Set(),
+  'achievement:unlocked': new Set(),
+  'profile:changed': new Set(),
+  'invite:changed': new Set(),
 };
 
 const version: Record<BusEvent, number> = {
@@ -40,6 +51,11 @@ const version: Record<BusEvent, number> = {
   'shift:changed': 0,
   'detection:changed': 0,
   'rides:manual-registered': 0,
+  'crm:changed': 0,
+  'xp:changed': 0,
+  'achievement:unlocked': 0,
+  'profile:changed': 0,
+  'invite:changed': 0,
 };
 
 export const eventBus = {
