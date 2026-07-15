@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles, Loader2 } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
+import { achievementService } from '@/lib/services/achievementService';
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
 // Cada view carrega apenas quando o usuário navegar até ela.
@@ -44,6 +45,8 @@ export default function Index() {
   useEffect(() => {
     setRefresh(p => p + 1);
   }, [dataVersion]);
+
+  useEffect(() => { achievementService.markTabVisited(tab); }, [tab]);
 
   useEffect(() => {
     const open = () => setShowOnboarding(true);

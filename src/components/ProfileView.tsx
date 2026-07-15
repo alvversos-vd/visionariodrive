@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 // Auth-only: reautenticação + delete-account edge function ficam em Auth,
 // não em regra de perfil. `supabase` importado apenas para auth (permitido).
 import { supabase } from '@/integrations/supabase/client';
+import ProfileGamificationCard from '@/components/gamification/ProfileGamificationCard';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -97,6 +98,8 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   const created = profile?.created_at ? new Date(profile.created_at).toLocaleDateString('pt-BR') : '—';
 
   return (
+    <div className="space-y-4">
+    <ProfileGamificationCard accountCreatedAt={profile?.created_at ?? null} />
     <Card>
       <CardHeader>
         <CardTitle className="font-display flex items-center justify-between">
@@ -285,5 +288,6 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
