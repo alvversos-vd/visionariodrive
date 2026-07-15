@@ -14,6 +14,8 @@ import AdminCRM from "./pages/AdminCRM.tsx";
 import GpsDebugButton from "./components/GpsDebugButton.tsx";
 import ExportDebugButton from "./components/ExportDebugButton.tsx";
 import AutoRideToast from "./components/AutoRideToast.tsx";
+import AchievementToast from "./components/gamification/AchievementToast.tsx";
+import GamificationBoot from "./components/gamification/GamificationBoot.tsx";
 
 
 const queryClient = new QueryClient();
@@ -50,9 +52,11 @@ const App = () => (
       <GpsDebugButton />
       <ExportDebugButton />
       <AutoRideToast />
+      <AchievementToast />
       <BrowserRouter>
 
         <AuthProvider>
+          <GamificationBoot />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/legal" element={<Legal />} />
