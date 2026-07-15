@@ -1,17 +1,9 @@
 /**
- * eventBus — Sprint 3 / estendido na Sprint 4.
+ * eventBus — Sprint 3 / estendido nas Sprints 4 e 6.
  *
  * Barramento local ultra-simples usado por Services para notificar hooks
  * (useSyncExternalStore). NÃO é fonte de verdade e NÃO carrega payload.
  * Apenas sinaliza "algo mudou nesta categoria — releia via Service".
- *
- * Eventos oficiais (fechados):
- *   - rides:changed            → mutação em qualquer RideModel
- *   - financial:changed        → mutação em FinancialEntry
- *   - shift:changed            → mutação em Shift (start/pause/end/tracking)
- *   - detection:changed        → transição do rideDetectionService (Sprint 4)
- *   - rides:manual-registered  → sinal para detector zerar sessão / contar
- *                                falsos negativos (Sprint 4)
  *
  * Regras:
  *   - Nenhum componente publica eventos. Apenas Services.
@@ -20,43 +12,44 @@
 
 export type BusEvent =
   | 'rides:changed'
+  | 'rides:manual-registered'
   | 'financial:changed'
   | 'shift:changed'
+  | 'shift:started'
+  | 'shift:finished'
+  | 'goals:changed'
   | 'detection:changed'
-  | 'rides:manual-registered'
   // Sprint 6 — CRM + Gamification + Invites
   | 'crm:changed'
   | 'xp:changed'
+  | 'xp:earned'
+  | 'level-up'
   | 'achievement:unlocked'
   | 'profile:changed'
   | 'invite:changed';
 
 type Listener = () => void;
-const listeners: Record<BusEvent, Set<Listener>> = {
-  'rides:changed': new Set(),
-  'financial:changed': new Set(),
-  'shift:changed': new Set(),
-  'detection:changed': new Set(),
-  'rides:manual-registered': new Set(),
-  'crm:changed': new Set(),
-  'xp:changed': new Set(),
-  'achievement:unlocked': new Set(),
-  'profile:changed': new Set(),
-  'invite:changed': new Set(),
-};
 
-const version: Record<BusEvent, number> = {
-  'rides:changed': 0,
-  'financial:changed': 0,
-  'shift:changed': 0,
-  'detection:changed': 0,
-  'rides:manual-registered': 0,
-  'crm:changed': 0,
-  'xp:changed': 0,
-  'achievement:unlocked': 0,
-  'profile:changed': 0,
-  'invite:changed': 0,
-};
+const EVENTS: BusEvent[] = [
+  'rides:changed', 'rides:manual-registered',
+  'financial:changed',
+  'shift:changed', 'shift:started', 'shift:finished',
+  'goals:changed',
+  'detection:changed',
+  'crm:changed',
+  'xp:changed', 'xp:earned', 'level-up',
+  'achievement:unlocked',
+  'profile:changed',
+  'invite:changed',
+];
+
+const listeners: Record<BusEvent, Set<Listener>> = Object.fromEntries(
+  EVENTS.map(e => [e, new Set<Listener>()]),
+) as Record<BusEvent, Set<Listener>>;
+
+const version: Record<BusEvent, number> = Object.fromEntries(
+  EVENTS.map(e => [e, 0]),
+) as Record<BusEvent, number>;
 
 export const eventBus = {
   emit(evt: BusEvent): void {
