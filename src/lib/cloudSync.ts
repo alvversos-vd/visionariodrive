@@ -111,19 +111,31 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
 
   if (key === GAMIFICATION_KEY) {
     // Merge determinístico: XP nunca reduz, conquistas nunca somem,
-    // stats sempre pelo máximo. Emite eventos no bus + telemetria (sem PII).
+    // stats sempre pelo máximo. Eventos/telemetria são emitidos pelo caller
+    // (hydrate/realtime) para não ruído durante pushToCloud (que é idempotente).
     const localPayload = gamificationRepository.normalize(readLocal(GAMIFICATION_KEY));
     const incomingPayload = gamificationRepository.normalize(incoming);
-    const { merged, hadConflict } = mergeGamification(localPayload, incomingPayload);
-    try {
-      telemetry.recordGamification('gamification_merge', 1);
-      if (hadConflict) telemetry.recordGamification('gamification_conflict', 1);
-      eventBus.emit('gamification:merged');
-    } catch { /* noop */ }
+    const { merged } = mergeGamification(localPayload, incomingPayload);
     return merged;
   }
 
   return incoming;
+}
+
+function notifyGamificationApplied(prevRaw: string | null, nextRaw: string): void {
+  if (prevRaw === nextRaw) return;
+  try {
+    const prev = gamificationRepository.normalize(prevRaw ? JSON.parse(prevRaw) : null);
+    const next = gamificationRepository.normalize(JSON.parse(nextRaw));
+    const conflict =
+      prev.xp.totalXp !== next.xp.totalXp ||
+      prev.achievements.length !== next.achievements.length;
+    telemetry.recordGamification('gamification_merge', 1);
+    if (conflict) telemetry.recordGamification('gamification_conflict', 1);
+    eventBus.emit('gamification:merged');
+    if (prev.xp.totalXp !== next.xp.totalXp) eventBus.emit('xp:changed');
+    if (prev.achievements.length !== next.achievements.length) eventBus.emit('achievement:unlocked');
+  } catch { /* noop */ }
 }
 
 export async function hydrateFromCloud(userId: string) {
