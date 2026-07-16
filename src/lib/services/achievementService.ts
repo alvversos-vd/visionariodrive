@@ -9,6 +9,7 @@
  * profileService quando disponível). Nada de storage direto.
  */
 import { achievementRepository, type UnlockedAchievement } from '../repositories/achievementRepository';
+import { gamificationRepository } from '../repositories/gamificationRepository';
 import { ACHIEVEMENTS, type Achievement, type StatsContext, getAchievement } from '../gamification/catalog';
 import { rideService } from './rideService';
 import { shiftService } from './shiftService';
@@ -124,6 +125,28 @@ export const achievementService = {
       already.add(a.id);
       newlyUnlocked.push(a.id);
     }
+
+    // Atualiza snapshot de stats no payload de gamificação (para sync entre
+    // dispositivos). Feito mesmo sem novas conquistas — stats evolui sozinho.
+    try {
+      const shifts = shiftService.list();
+      const longestShiftMinutes = shifts.reduce((max, s) => {
+        const start = s?.inicio_ts ? Date.parse(s.inicio_ts) : NaN;
+        const end = s?.fim_ts ? Date.parse(s.fim_ts) : NaN;
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return max;
+        return Math.max(max, Math.round((end - start) / 60000));
+      }, 0);
+      const g = gamificationRepository.read();
+      g.stats = {
+        rides: ctx.ridesTotal,
+        distanceKm: Math.round(ctx.totalKm * 100) / 100,
+        turns: ctx.shiftsTotal,
+        earnings: Math.round(ctx.totalEarned * 100) / 100,
+        longestShiftMinutes,
+        currentStreak: ctx.consecutiveDays,
+      };
+      gamificationRepository.write(g);
+    } catch { /* stats é acessório — nunca bloqueia evaluate */ }
 
     if (newlyUnlocked.length === 0) return [];
 
