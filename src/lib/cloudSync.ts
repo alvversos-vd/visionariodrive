@@ -199,8 +199,6 @@ async function pushToCloud() {
   try {
     telemetry.recordGamification('gamification_sync', 1);
     eventBus.emit('gamification:synced');
-    eventBus.emit('xp:changed');
-    eventBus.emit('achievement:unlocked');
   } catch { /* noop */ }
 }
 
