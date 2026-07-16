@@ -157,8 +157,11 @@ export async function hydrateFromCloud(userId: string) {
         const col = KEY_MAP[lk];
         const value = (data as Record<string, unknown>)[col];
         if (value !== undefined && value !== null) {
+          const prev = lk === GAMIFICATION_KEY ? localStorage.getItem(lk) : null;
           const merged = mergeIncomingForKey(lk, value);
-          localStorage.setItem(lk, JSON.stringify(merged));
+          const next = JSON.stringify(merged);
+          localStorage.setItem(lk, next);
+          if (lk === GAMIFICATION_KEY) notifyGamificationApplied(prev, next);
         }
       }
       window.dispatchEvent(new CustomEvent('cloud-hydrated'));
@@ -256,8 +259,11 @@ export function subscribeRealtime(userId: string, onChange: () => void) {
             const col = KEY_MAP[lk];
             const value = row[col];
             if (value !== undefined && value !== null) {
+              const prev = lk === GAMIFICATION_KEY ? localStorage.getItem(lk) : null;
               const merged = mergeIncomingForKey(lk, value);
-              localStorage.setItem(lk, JSON.stringify(merged));
+              const next = JSON.stringify(merged);
+              localStorage.setItem(lk, next);
+              if (lk === GAMIFICATION_KEY) notifyGamificationApplied(prev, next);
             }
           }
         } finally {
