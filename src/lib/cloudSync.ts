@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getTombstones, filterByTombstones } from './tombstones';
+import { eventBus } from './eventBus';
+import { telemetry } from './telemetry';
+import {
+  GAMIFICATION_KEY,
+  emptyGamification,
+  mergeGamification,
+  gamificationRepository,
+} from './repositories/gamificationRepository';
 
 // Keys mapped to columns
 const KEY_MAP = {
@@ -18,6 +26,8 @@ const KEY_MAP = {
   // Rides unificado (Fase 2.1): payload versionado { schemaVersion, rides:RideModel[] }.
   // `rides` (legacy RideEntry) e `shifts` seguem existindo como espelho legacy.
   'vd-rides': 'rides_v2',
+  // Sprint 6.2.5 — Gamificação (XP + Conquistas + Stats snapshot).
+  [GAMIFICATION_KEY]: 'gamification',
 } as const;
 
 type LocalKey = keyof typeof KEY_MAP;
@@ -41,6 +51,7 @@ function readLocal(key: LocalKey): unknown {
       return { profitMargin: 1.3, currency: 'BRL', estimatedHours: 8 };
     if (key === 'vd-financial') return { schemaVersion: 1, entries: [] };
     if (key === 'vd-rides') return { schemaVersion: 1, rides: [] };
+    if (key === GAMIFICATION_KEY) return emptyGamification();
     return [];
   }
   try { return JSON.parse(raw); } catch { return null; }
