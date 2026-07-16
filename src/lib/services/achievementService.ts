@@ -131,8 +131,8 @@ export const achievementService = {
     try {
       const shifts = shiftService.list();
       const longestShiftMinutes = shifts.reduce((max, s) => {
-        const start = s?.inicio_ts ? Date.parse(s.inicio_ts) : NaN;
-        const end = s?.fim_ts ? Date.parse(s.fim_ts) : NaN;
+        const start = s?.inicio_turno ? Date.parse(s.inicio_turno) : NaN;
+        const end = s?.fim_turno ? Date.parse(s.fim_turno) : NaN;
         if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return max;
         return Math.max(max, Math.round((end - start) / 60000));
       }, 0);
