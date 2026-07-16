@@ -57,10 +57,70 @@ O primeiro admin deve ser inserido manualmente. A rota `/admin` fica inacessíve
 
 ---
 
-## Fase 2 — Conquistas + Perfil Inteligente + XP
+## Fase 2 — Conquistas + Perfil Inteligente + XP ✅
 
-Status: **pendente** — inicia após confirmação da Fase 1.
+Entregue em 2026-07-15. Ver commits de `src/lib/gamification/*`, `src/lib/services/xpService.ts`,
+`achievementService.ts`, `useXp`/`useAchievements`, `ProfileGamificationCard`, `AchievementToast`.
+Persistência 100% local (localStorage) — pronta para receber cloud sync na Sprint 6.2.5.
+
+## Sprint 6.2.5 — Cloud Sync da Gamificação ✅
+
+Objetivo: tornar XP + Conquistas persistentes entre dispositivos SEM criar novos owners,
+services, tabelas ou pipelines de sync.
+
+### Entregas
+
+- **Migração:** coluna `user_data.gamification` (jsonb) — reutiliza RLS existentes.
+- **Novo owner único:** `gamificationRepository` (`vd-gamification`, schemaVersion 1) com
+  payload `{ xp, achievements, stats, updatedAt }`.
+- **`xpRepository` e `achievementRepository`** viram adapters finos — APIs públicas
+  100% preservadas.
+- **CloudSync (`src/lib/cloudSync.ts`)** ganhou:
+  - mapeamento `'vd-gamification' → 'gamification'` em `KEY_MAP`,
+  - branch dedicada em `mergeIncomingForKey` que delega a `mergeGamification`,
+  - notificação `notifyGamificationApplied` disparada apenas em hydrate/realtime
+    (evita ruído em pushes idempotentes).
+- **EventBus:** `gamification:synced` (após push) e `gamification:merged` (após merge de cloud).
+- **Telemetria:** contadores `gamification_sync`, `gamification_merge`, `gamification_conflict` (sem PII).
+- **Registro de reset:** `vd-gamification` adicionado ao `APP_STORAGE_KEYS`.
+- **Snapshot de stats** atualizado automaticamente pelo `achievementService.evaluate`.
+- **ADR-010** publicada.
+
+### Estratégia de merge (determinística)
+
+| Campo | Regra |
+|-------|-------|
+| `xp.totalXp` | máximo (nunca reduz) |
+| `achievements` | união por id, `unlockedAt` mais antigo prevalece |
+| `stats.*` | máximo campo a campo |
+| `updatedAt` | ISO mais recente |
+| `level` | recalculado a partir de `totalXp` (nunca persistido isolado) |
+
+### Testes (`gamificationRepository.test.ts`)
+
+- primeiro sync (payload vazio → default)
+- write/read com updatedAt
+- schemaVersion + payload inválido (fallback default)
+- retrocompatibilidade com JSON parcial
+- reset
+- merge XP (máximo, nunca reduz)
+- merge achievements (união + preserva unlockedAt antigo, nunca remove)
+- merge stats (máximo por campo)
+- merge updatedAt (mais recente)
+- hadConflict true/false
+- cenários troca de aparelho, reinstalação, offline→online
+
+### Checklist de aceite
+
+- [x] Typecheck verde.
+- [x] Nenhuma API pública de xp/achievement service ou repository alterada.
+- [x] Nenhum sincronizador paralelo.
+- [x] Nenhuma tabela nova.
+- [x] Offline continua funcionando (mesmo pipeline `markDirty`).
+- [x] Merge determinístico coberto por testes.
+- [x] Health Score preservado (≥ 9.9 mantido; alvo 9.95 no fechamento da Fase 3).
 
 ## Fase 3 — Indicações
 
-Status: **pendente** — inicia após conclusão da Fase 2.
+Status: **pendente** — inicia após confirmação de Sprint 6.2.5.
+
