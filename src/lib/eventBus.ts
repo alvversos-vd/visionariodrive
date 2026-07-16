@@ -26,7 +26,10 @@ export type BusEvent =
   | 'level-up'
   | 'achievement:unlocked'
   | 'profile:changed'
-  | 'invite:changed';
+  | 'invite:changed'
+  // Sprint 6.2.5 — Cloud Sync da gamificação
+  | 'gamification:synced'
+  | 'gamification:merged';
 
 type Listener = () => void;
 
@@ -41,6 +44,7 @@ const EVENTS: BusEvent[] = [
   'achievement:unlocked',
   'profile:changed',
   'invite:changed',
+  'gamification:synced', 'gamification:merged',
 ];
 
 const listeners: Record<BusEvent, Set<Listener>> = Object.fromEntries(

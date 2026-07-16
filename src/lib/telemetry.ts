@@ -38,12 +38,22 @@ export interface GpsCounters {
   gps_false_negative: number;
 }
 
-export type GamificationCounter = 'achievement_unlocked' | 'xp_earned' | 'level_up';
+export type GamificationCounter =
+  | 'achievement_unlocked'
+  | 'xp_earned'
+  | 'level_up'
+  // Sprint 6.2.5 — Cloud Sync
+  | 'gamification_sync'
+  | 'gamification_merge'
+  | 'gamification_conflict';
 
 export interface GamificationCounters {
   achievement_unlocked: number;
   xp_earned: number;      // soma de XP ganho (não contagem de chamadas)
   level_up: number;
+  gamification_sync: number;
+  gamification_merge: number;
+  gamification_conflict: number;
 }
 
 function emptyCounters(): GpsCounters {
@@ -51,7 +61,10 @@ function emptyCounters(): GpsCounters {
 }
 
 function emptyGamif(): GamificationCounters {
-  return { achievement_unlocked: 0, xp_earned: 0, level_up: 0 };
+  return {
+    achievement_unlocked: 0, xp_earned: 0, level_up: 0,
+    gamification_sync: 0, gamification_merge: 0, gamification_conflict: 0,
+  };
 }
 
 function readEvents(): TelemetryEvent[] {

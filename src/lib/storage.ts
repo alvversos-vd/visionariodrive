@@ -28,6 +28,8 @@ export const APP_STORAGE_KEYS: string[] = [
   'vd-financial',
   'lucro-delivery-shifts',
   'lucro-delivery-vehicles-v2',
+  // Sprint 6.2.5 — payload unificado de gamificação (XP + Conquistas + Stats)
+  'vd-gamification',
   // estado local não-sincronizado
   'lucro-delivery-vehicle-active',
   'lucro-delivery-last-app',

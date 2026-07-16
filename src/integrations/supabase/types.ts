@@ -77,6 +77,7 @@ export type Database = {
           entries: Json
           expenses: Json
           financial: Json
+          gamification: Json
           goals: Json
           ride_types: Json
           rides: Json
@@ -93,6 +94,7 @@ export type Database = {
           entries?: Json
           expenses?: Json
           financial?: Json
+          gamification?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json
@@ -109,6 +111,7 @@ export type Database = {
           entries?: Json
           expenses?: Json
           financial?: Json
+          gamification?: Json
           goals?: Json
           ride_types?: Json
           rides?: Json

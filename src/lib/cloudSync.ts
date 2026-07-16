@@ -1,5 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getTombstones, filterByTombstones } from './tombstones';
+import { eventBus } from './eventBus';
+import { telemetry } from './telemetry';
+import {
+  GAMIFICATION_KEY,
+  emptyGamification,
+  mergeGamification,
+  gamificationRepository,
+} from './repositories/gamificationRepository';
 
 // Keys mapped to columns
 const KEY_MAP = {
@@ -18,6 +26,8 @@ const KEY_MAP = {
   // Rides unificado (Fase 2.1): payload versionado { schemaVersion, rides:RideModel[] }.
   // `rides` (legacy RideEntry) e `shifts` seguem existindo como espelho legacy.
   'vd-rides': 'rides_v2',
+  // Sprint 6.2.5 — Gamificação (XP + Conquistas + Stats snapshot).
+  [GAMIFICATION_KEY]: 'gamification',
 } as const;
 
 type LocalKey = keyof typeof KEY_MAP;
@@ -41,6 +51,7 @@ function readLocal(key: LocalKey): unknown {
       return { profitMargin: 1.3, currency: 'BRL', estimatedHours: 8 };
     if (key === 'vd-financial') return { schemaVersion: 1, entries: [] };
     if (key === 'vd-rides') return { schemaVersion: 1, rides: [] };
+    if (key === GAMIFICATION_KEY) return emptyGamification();
     return [];
   }
   try { return JSON.parse(raw); } catch { return null; }
@@ -98,7 +109,33 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
     );
   }
 
+  if (key === GAMIFICATION_KEY) {
+    // Merge determinístico: XP nunca reduz, conquistas nunca somem,
+    // stats sempre pelo máximo. Eventos/telemetria são emitidos pelo caller
+    // (hydrate/realtime) para não ruído durante pushToCloud (que é idempotente).
+    const localPayload = gamificationRepository.normalize(readLocal(GAMIFICATION_KEY));
+    const incomingPayload = gamificationRepository.normalize(incoming);
+    const { merged } = mergeGamification(localPayload, incomingPayload);
+    return merged;
+  }
+
   return incoming;
+}
+
+function notifyGamificationApplied(prevRaw: string | null, nextRaw: string): void {
+  if (prevRaw === nextRaw) return;
+  try {
+    const prev = gamificationRepository.normalize(prevRaw ? JSON.parse(prevRaw) : null);
+    const next = gamificationRepository.normalize(JSON.parse(nextRaw));
+    const conflict =
+      prev.xp.totalXp !== next.xp.totalXp ||
+      prev.achievements.length !== next.achievements.length;
+    telemetry.recordGamification('gamification_merge', 1);
+    if (conflict) telemetry.recordGamification('gamification_conflict', 1);
+    eventBus.emit('gamification:merged');
+    if (prev.xp.totalXp !== next.xp.totalXp) eventBus.emit('xp:changed');
+    if (prev.achievements.length !== next.achievements.length) eventBus.emit('achievement:unlocked');
+  } catch { /* noop */ }
 }
 
 export async function hydrateFromCloud(userId: string) {
@@ -120,8 +157,11 @@ export async function hydrateFromCloud(userId: string) {
         const col = KEY_MAP[lk];
         const value = (data as Record<string, unknown>)[col];
         if (value !== undefined && value !== null) {
+          const prev = lk === GAMIFICATION_KEY ? localStorage.getItem(lk) : null;
           const merged = mergeIncomingForKey(lk, value);
-          localStorage.setItem(lk, JSON.stringify(merged));
+          const next = JSON.stringify(merged);
+          localStorage.setItem(lk, next);
+          if (lk === GAMIFICATION_KEY) notifyGamificationApplied(prev, next);
         }
       }
       window.dispatchEvent(new CustomEvent('cloud-hydrated'));
@@ -171,6 +211,10 @@ async function pushToCloud() {
   await supabase
     .from('user_data')
     .upsert(payload as never, { onConflict: 'user_id' });
+  try {
+    telemetry.recordGamification('gamification_sync', 1);
+    eventBus.emit('gamification:synced');
+  } catch { /* noop */ }
 }
 
 /** Flush síncrono best-effort em eventos de ciclo de vida (mobile/PWA).
@@ -215,8 +259,11 @@ export function subscribeRealtime(userId: string, onChange: () => void) {
             const col = KEY_MAP[lk];
             const value = row[col];
             if (value !== undefined && value !== null) {
+              const prev = lk === GAMIFICATION_KEY ? localStorage.getItem(lk) : null;
               const merged = mergeIncomingForKey(lk, value);
-              localStorage.setItem(lk, JSON.stringify(merged));
+              const next = JSON.stringify(merged);
+              localStorage.setItem(lk, next);
+              if (lk === GAMIFICATION_KEY) notifyGamificationApplied(prev, next);
             }
           }
         } finally {
