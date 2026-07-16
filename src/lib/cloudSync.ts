@@ -109,6 +109,20 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
     );
   }
 
+  if (key === GAMIFICATION_KEY) {
+    // Merge determinístico: XP nunca reduz, conquistas nunca somem,
+    // stats sempre pelo máximo. Emite eventos no bus + telemetria (sem PII).
+    const localPayload = gamificationRepository.normalize(readLocal(GAMIFICATION_KEY));
+    const incomingPayload = gamificationRepository.normalize(incoming);
+    const { merged, hadConflict } = mergeGamification(localPayload, incomingPayload);
+    try {
+      telemetry.recordGamification('gamification_merge', 1);
+      if (hadConflict) telemetry.recordGamification('gamification_conflict', 1);
+      eventBus.emit('gamification:merged');
+    } catch { /* noop */ }
+    return merged;
+  }
+
   return incoming;
 }
 
@@ -182,6 +196,12 @@ async function pushToCloud() {
   await supabase
     .from('user_data')
     .upsert(payload as never, { onConflict: 'user_id' });
+  try {
+    telemetry.recordGamification('gamification_sync', 1);
+    eventBus.emit('gamification:synced');
+    eventBus.emit('xp:changed');
+    eventBus.emit('achievement:unlocked');
+  } catch { /* noop */ }
 }
 
 /** Flush síncrono best-effort em eventos de ciclo de vida (mobile/PWA).
