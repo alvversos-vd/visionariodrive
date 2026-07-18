@@ -71,6 +71,7 @@ function emptyGamif(): GamificationCounters {
   return {
     achievement_unlocked: 0, xp_earned: 0, level_up: 0,
     gamification_sync: 0, gamification_merge: 0, gamification_conflict: 0,
+    achievement_view: 0, achievement_details: 0, levelup_modal: 0,
   };
 }
 
