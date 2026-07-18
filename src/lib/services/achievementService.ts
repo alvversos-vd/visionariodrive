@@ -91,6 +91,27 @@ export const achievementService = {
     const dailyGoal = goalsService.getDaily();
     const totalRideEarned = rides.reduce((s, r) => s + (Number(r.value) || 0), 0);
     const totalFinancial = income.concat(bonus).reduce((s, e) => s + (Number(e.value) || 0), 0);
+    // Extras Sprint 6.3
+    const dailyMap = new Map<string, number>();
+    for (const r of rides) {
+      const k = new Date(r.date).toISOString().slice(0, 10);
+      const v = Number.isFinite((r as { profit?: number }).profit)
+        ? Number((r as { profit?: number }).profit)
+        : (Number(r.value) || 0);
+      dailyMap.set(k, (dailyMap.get(k) ?? 0) + v);
+    }
+    let bestDailyEarned = 0;
+    for (const v of dailyMap.values()) if (v > bestDailyEarned) bestDailyEarned = v;
+    const longestShiftMinutes = shifts.reduce((max, s) => {
+      const start = s?.inicio_turno ? Date.parse(s.inicio_turno) : NaN;
+      const end = s?.fim_turno ? Date.parse(s.fim_turno) : NaN;
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return max;
+      return Math.max(max, Math.round((end - start) / 60000));
+    }, 0);
+    const daysUsingApp = accountCreatedAt
+      ? Math.max(1, Math.floor((Date.now() - Date.parse(accountCreatedAt)) / 86400000) + 1)
+      : 0;
+    const xpProgress = xpService.progress();
     return {
       ridesTotal: rides.length,
       totalKm: rides.reduce((s, r) => s + (Number(r.km) || 0), 0),
@@ -100,6 +121,11 @@ export const achievementService = {
       goalHitCount: computeGoalHitCount(rides, dailyGoal),
       accountCreatedAt,
       tabsVisited: readTabsVisited(),
+      bestDailyEarned,
+      longestShiftMinutes,
+      daysUsingApp,
+      xpEarnedToday: xpService.earnedToday(),
+      totalXp: xpProgress.totalXp,
     };
   },
 

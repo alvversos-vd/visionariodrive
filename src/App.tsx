@@ -15,6 +15,7 @@ import GpsDebugButton from "./components/GpsDebugButton.tsx";
 import ExportDebugButton from "./components/ExportDebugButton.tsx";
 import AutoRideToast from "./components/AutoRideToast.tsx";
 import AchievementToast from "./components/gamification/AchievementToast.tsx";
+import LevelUpModal from "./components/gamification/LevelUpModal.tsx";
 import GamificationBoot from "./components/gamification/GamificationBoot.tsx";
 
 
@@ -53,6 +54,7 @@ const App = () => (
       <ExportDebugButton />
       <AutoRideToast />
       <AchievementToast />
+      <LevelUpModal />
       <BrowserRouter>
 
         <AuthProvider>

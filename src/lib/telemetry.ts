@@ -45,7 +45,11 @@ export type GamificationCounter =
   // Sprint 6.2.5 — Cloud Sync
   | 'gamification_sync'
   | 'gamification_merge'
-  | 'gamification_conflict';
+  | 'gamification_conflict'
+  // Sprint 6.3 — UI de conquistas
+  | 'achievement_view'
+  | 'achievement_details'
+  | 'levelup_modal';
 
 export interface GamificationCounters {
   achievement_unlocked: number;
@@ -54,6 +58,9 @@ export interface GamificationCounters {
   gamification_sync: number;
   gamification_merge: number;
   gamification_conflict: number;
+  achievement_view: number;
+  achievement_details: number;
+  levelup_modal: number;
 }
 
 function emptyCounters(): GpsCounters {
@@ -64,6 +71,7 @@ function emptyGamif(): GamificationCounters {
   return {
     achievement_unlocked: 0, xp_earned: 0, level_up: 0,
     gamification_sync: 0, gamification_merge: 0, gamification_conflict: 0,
+    achievement_view: 0, achievement_details: 0, levelup_modal: 0,
   };
 }
 

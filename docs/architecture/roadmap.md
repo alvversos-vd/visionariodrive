@@ -46,7 +46,33 @@
 | Documentar `remove()` para 5 listeners singleton | Robustness (R-002..R-006) | Sprint 5.2 | Baixa |
 | Consolidar feedback P2 do Beta | Backlog reativo | `beta-feedback.md` | Alta |
 
-## Sprint 7 — Consolidação Arquitetural
+## Sprint 6.3 — Finalização da Gamificação ✅ CONCLUÍDA
+
+| Item | Status |
+|------|--------|
+| Perfil Inteligente expandido (10 stats, XP hoje, dias no app) | ✅ |
+| `AchievementsModal` (histórico completo + progresso) | ✅ |
+| `LevelUpModal` reativo em `level-up` | ✅ |
+| `xpService.earnedToday()` + `weeklySeries()` (localStorage) | ✅ |
+| Gráfico `MyEvolutionChart` (Recharts, sem sync) | ✅ |
+| Novas conquistas (`visionary_shifts`) + relabel (streak_30, rides_500) | ✅ |
+| Telemetria: `achievement_view`, `achievement_details`, `levelup_modal` | ✅ |
+| ADR-011 (Gamification Module Completed) | ✅ |
+
+## Sprint 7 — Driver Quick Actions Nativas (Android)
+
+**Escopo removido da Sprint 6.3 por conflito com Release Freeze e ausência de plugin Capacitor nativo.**
+
+| Item | Objetivo | Dependência | Prioridade |
+|------|----------|-------------|------------|
+| Plugin Capacitor Java (`VisionarioNotificationsPlugin`) | Foreground Service com `NotificationCompat.Action` (Registrar / Finalizar / Confirmar Auto) e `BroadcastReceiver` → `notifyListeners` | Nova infra nativa | Alta |
+| `notificationActionService` (TS) | Recebe ações do plugin e chama `RideService`/`ShiftService` | Plugin acima | Alta |
+| Painel enriquecido (km/lucro/corridas do turno) | Reagir ao bus, sem polling | EventBus | Alta |
+| Deep-links `/quick/register` e `/quick/end-shift` | Fallback PWA e device com WebView morta | Router | Média |
+| Reabertura de `security-audit`, `play-store-checklist`, `LGPD` | Nova permissão `FOREGROUND_SERVICE_LOCATION` + notificação persistente | Sprint 7.x | Alta |
+| Teste em device físico (Android 10..15) | Regressão de tracking | QA | Alta |
+
+## Sprint 8 — Consolidação Arquitetural (renumerado)
 
 | Item | Objetivo | Prioridade |
 |------|----------|------------|
