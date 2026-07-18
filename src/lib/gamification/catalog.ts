@@ -1,5 +1,5 @@
 /**
- * Catálogo de Conquistas — Sprint 6 · Fase 2.
+ * Catálogo de Conquistas — Sprint 6 · Fase 2 + Sprint 6.3 (finalização).
  *
  * DESACOPLADO da UI. Nenhum componente hardcoda conquista;
  * todos leem daqui via achievementService.
@@ -19,6 +19,12 @@ export interface StatsContext {
   goalHitCount: number;     // dias em que a meta diária foi batida
   accountCreatedAt: string | null; // ISO
   tabsVisited: number;      // quantas tabs distintas o motorista abriu
+  // Sprint 6.3 — expansão do Perfil Inteligente (extras não-condicionais).
+  bestDailyEarned: number;      // melhor faturamento de 1 dia
+  longestShiftMinutes: number;  // maior turno registrado (min)
+  daysUsingApp: number;         // dias desde o cadastro
+  xpEarnedToday: number;        // XP ganho hoje (reflete xpService.earnedToday)
+  totalXp: number;              // XP total acumulado (snapshot)
 }
 
 export interface Achievement {
@@ -80,7 +86,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: c => c.ridesTotal >= 100, progress: c => pct(c.ridesTotal, 100),
   },
   {
-    id: 'rides_500', name: '500 Corridas', description: 'Registre 500 corridas.',
+    id: 'rides_500', name: 'Elite · 500 Corridas', description: 'Registre 500 corridas.',
     icon: '🏆', rarity: 'epic', xp: 500,
     condition: c => c.ridesTotal >= 500, progress: c => pct(c.ridesTotal, 500),
   },
@@ -95,7 +101,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     condition: c => c.consecutiveDays >= 7, progress: c => pct(c.consecutiveDays, 7),
   },
   {
-    id: 'streak_30', name: '30 dias consecutivos', description: 'Trabalhe 30 dias seguidos.',
+    id: 'streak_30', name: 'Persistente · 30 dias', description: 'Trabalhe 30 dias seguidos.',
     icon: '🌟', rarity: 'epic', xp: 500,
     condition: c => c.consecutiveDays >= 30, progress: c => pct(c.consecutiveDays, 30),
   },
@@ -113,6 +119,11 @@ export const ACHIEVEMENTS: Achievement[] = [
     id: 'visionary', name: 'Motorista Visionário', description: 'Acumule R$10.000 em ganhos.',
     icon: '👑', rarity: 'legendary', xp: 300,
     condition: c => c.totalEarned >= 10000, progress: c => pct(c.totalEarned, 10000),
+  },
+  {
+    id: 'visionary_shifts', name: 'Visionário · 100 turnos', description: 'Complete 100 turnos.',
+    icon: '🏁', rarity: 'epic', xp: 400,
+    condition: c => c.shiftsTotal >= 100, progress: c => pct(c.shiftsTotal, 100),
   },
   {
     id: 'founder', name: 'Fundador', description: 'Cadastro entre os primeiros do Visionário Drive.',
