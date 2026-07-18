@@ -1,16 +1,20 @@
 /**
- * ProfileGamificationCard — Sprint 6 · Fase 2.
- * Seção do Perfil Inteligente: nível, XP, conquistas e estatísticas.
+ * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 (expansão).
+ * Perfil Inteligente: nível, XP, stats detalhados, conquistas e evolução.
  * Consome APENAS Services (via hooks).
  */
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Trophy, Lock, ChevronDown, ChevronUp, LineChart as LineChartIcon } from 'lucide-react';
 import XpProgressBar from './XpProgressBar';
+import AchievementsModal from './AchievementsModal';
+import MyEvolutionChart from './MyEvolutionChart';
 import { useXp } from '@/hooks/useXp';
 import { useAchievements } from '@/hooks/useAchievements';
 import { achievementService } from '@/lib/services/achievementService';
+import { telemetry } from '@/lib/telemetry';
 import type { Rarity } from '@/lib/gamification/catalog';
 
 const RARITY_STYLE: Record<Rarity, string> = {
@@ -24,6 +28,13 @@ function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 function fmtInt(n: number) { return new Intl.NumberFormat('pt-BR').format(Math.round(n)); }
+function fmtDuration(min: number): string {
+  if (min <= 0) return '—';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m}min`;
+  return `${h}h${m > 0 ? String(m).padStart(2, '0') : ''}`;
+}
 
 export default function ProfileGamificationCard({
   accountCreatedAt,
@@ -31,6 +42,7 @@ export default function ProfileGamificationCard({
   const { progress, totalXp } = useXp();
   const { all, unlocked } = useAchievements(accountCreatedAt);
   const [showLocked, setShowLocked] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const ctx = useMemo(() => achievementService.snapshotContext(accountCreatedAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,40 +51,65 @@ export default function ProfileGamificationCard({
   const unlockedList = all.filter(a => a.unlocked);
   const lockedList = all.filter(a => !a.unlocked);
 
+  const openModal = () => {
+    telemetry.recordGamification('achievement_details', 1);
+    setModalOpen(true);
+  };
+
   return (
+    <>
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil Inteligente</span>
-          <Badge variant="outline" className="gap-1"><Trophy size={12} /> {unlockedList.length}/{all.length}</Badge>
+          <Badge variant="outline" className="gap-1 cursor-pointer" onClick={openModal}>
+            <Trophy size={12} /> {unlockedList.length}/{all.length}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <XpProgressBar />
-          <p className="text-[11px] text-muted-foreground tabular-nums">
-            {fmtInt(totalXp)} XP totais
-          </p>
+          <div className="flex items-baseline justify-between text-[11px] text-muted-foreground tabular-nums">
+            <span>{fmtInt(totalXp)} XP totais</span>
+            {ctx.xpEarnedToday > 0 && <span>+{fmtInt(ctx.xpEarnedToday)} XP hoje</span>}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
           <Stat label="Corridas" value={fmtInt(ctx.ridesTotal)} />
           <Stat label="Km rodados" value={`${fmtInt(ctx.totalKm)} km`} />
           <Stat label="Faturado" value={fmtBRL(ctx.totalEarned)} />
+          <Stat label="Melhor dia" value={fmtBRL(ctx.bestDailyEarned)} />
           <Stat label="Turnos" value={fmtInt(ctx.shiftsTotal)} />
+          <Stat label="Maior turno" value={fmtDuration(ctx.longestShiftMinutes)} />
           <Stat label="Dias seguidos" value={fmtInt(ctx.consecutiveDays)} />
           <Stat label="Metas batidas" value={fmtInt(ctx.goalHitCount)} />
+          <Stat label="Dias no app" value={fmtInt(ctx.daysUsingApp)} />
+          <Stat label="Seções abertas" value={`${fmtInt(ctx.tabsVisited)}/5`} />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs font-display font-bold text-muted-foreground">
+            <LineChartIcon size={12} /> Minha evolução (XP por semana)
+          </div>
+          <MyEvolutionChart />
         </div>
 
         <div>
-          <h4 className="text-xs font-display font-bold text-muted-foreground mb-2">
-            Conquistas desbloqueadas
-          </h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-display font-bold text-muted-foreground">
+              Conquistas desbloqueadas
+            </h4>
+            <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={openModal}>
+              Ver todas
+            </Button>
+          </div>
           {unlockedList.length === 0 ? (
             <p className="text-[11px] text-muted-foreground italic">Nenhuma ainda — comece um turno para desbloquear.</p>
           ) : (
             <ul className="grid grid-cols-1 gap-1.5">
-              {unlockedList.map(a => (
+              {unlockedList.slice(0, 5).map(a => (
                 <li key={a.def.id} className={`flex items-center gap-2 rounded-md border px-2 py-1.5 ${RARITY_STYLE[a.def.rarity]}`}>
                   <span className="text-lg leading-none">{a.def.icon}</span>
                   <div className="min-w-0 flex-1">
@@ -82,6 +119,13 @@ export default function ProfileGamificationCard({
                   <span className="text-[10px] font-bold tabular-nums">+{a.def.xp} XP</span>
                 </li>
               ))}
+              {unlockedList.length > 5 && (
+                <li>
+                  <Button variant="ghost" size="sm" className="w-full text-[11px] h-7" onClick={openModal}>
+                    +{unlockedList.length - 5} conquistas
+                  </Button>
+                </li>
+              )}
             </ul>
           )}
         </div>
@@ -92,12 +136,12 @@ export default function ProfileGamificationCard({
             onClick={() => setShowLocked(v => !v)}
             className="w-full flex items-center justify-between text-xs font-display font-bold text-muted-foreground py-1.5"
           >
-            <span className="flex items-center gap-1.5"><Lock size={12} /> Conquistas bloqueadas ({lockedList.length})</span>
+            <span className="flex items-center gap-1.5"><Lock size={12} /> Próximas conquistas ({lockedList.length})</span>
             {showLocked ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
           {showLocked && (
             <ul className="grid grid-cols-1 gap-1.5 mt-1">
-              {lockedList.map(a => {
+              {lockedList.slice(0, 6).map(a => {
                 const pct = Math.round((a.progress ?? 0) * 100);
                 return (
                   <li key={a.def.id} className="rounded-md border border-border/60 bg-secondary/30 px-2 py-1.5">
@@ -117,11 +161,20 @@ export default function ProfileGamificationCard({
                   </li>
                 );
               })}
+              {lockedList.length > 6 && (
+                <li>
+                  <Button variant="ghost" size="sm" className="w-full text-[11px] h-7" onClick={openModal}>
+                    Ver todas ({lockedList.length})
+                  </Button>
+                </li>
+              )}
             </ul>
           )}
         </div>
       </CardContent>
     </Card>
+    <AchievementsModal open={modalOpen} onOpenChange={setModalOpen} accountCreatedAt={accountCreatedAt} />
+    </>
   );
 }
 
