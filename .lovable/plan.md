@@ -1,83 +1,178 @@
-# Sprint 6.3 — Plano de Execução
+# Sprint 7 — Driver Quick Actions (Plataforma Nativa Definitiva)
 
-Sprint grande e com duas fases obrigatoriamente sequenciais. Antes de tocar em código, quero alinhar escopo, ordem e um ponto crítico de arquitetura mobile que precisa da sua decisão.
-
----
-
-## Fase 1 — Finalização da Gamificação (SEM riscos arquiteturais)
-
-Toda a Fase 1 é frontend + catálogo + telemetria, encaixando no que já existe (`xpService`, `achievementService`, `xpEngine`, `catalog.ts`, hooks reativos via bus). Zero mudança de camada.
-
-### 1.1 Perfil Inteligente expandido
-Expandir `ProfileGamificationCard.tsx` (nada novo, só stats novos vindos de `achievementService.snapshotContext` + `xpService`):
-- Data de cadastro, dias usando o app, XP total, XP hoje, maior sequência, melhor faturamento diário, maior turno, km totais, corridas totais, turnos totais.
-- Novos getters em `xpService` (`xpEarnedToday()`) e em `achievementService.snapshotContext` (`bestDailyEarned`, `longestShiftMs`) — derivados do que já existe, sem novo storage.
-
-### 1.2 Histórico de Conquistas
-Modal "Todas as Conquistas" acionado por botão no card. Já temos `useAchievements` retornando `unlocked` + `locked` com `progress`. Só nova UI (`AchievementsModal.tsx`) — ícone, nome, descrição, raridade, XP, barra de progresso "8/10".
-
-### 1.3 Level Up Modal
-Componente `LevelUpModal.tsx` que escuta `level-up` via `useBusVersion`. Já emitido pelo `xpEngine`. Mostra "Nível X alcançado / +XP / conquistas desbloqueadas na sessão". Animação com Tailwind (`animate-in`).
-
-### 1.4 Barra Global
-Já existe `XpProgressBar`. Adicionar linha "XP restante para o próximo nível" (dado já calculado em `xpService.progress()`).
-
-### 1.5 Conquistas especiais
-Adicionar em `src/lib/gamification/catalog.ts`:
-- ⭐ **Fundador** — cadastro antes de uma data-limite fixa.
-- ⭐ **Beta Tester** — flag em `profiles` (nova coluna `beta_tester boolean default false`). **Precisa de migração** — confirme se ok.
-- ⭐ **Explorador** — visitou todas as abas (novo `visitedTabs: Set<string>` em `xpRepository` snapshot local, atualizado por um novo evento leve `tab:visited` no bus).
-- ⭐ **Persistente 30 dias**, ⭐ **Visionário 100 turnos**, ⭐ **Elite 500 corridas** — puro catálogo + `snapshotContext` (já temos `consecutiveDays`, `shiftsTotal`, `ridesTotal`).
-
-### 1.6 Estatísticas — Minha Evolução
-Gráfico simples com **Recharts** (já instalado, usado em `HistoryCharts`). Fonte: novo bucket `xpHistory: [{weekIso, xp, level}]` derivado on-the-fly em `xpService.weeklySeries()` a partir do log já persistido (ou reconstruído a partir dos eventos `xp:earned` acumulados em memória + snapshot semanal salvo por semana no `gamificationRepository`).
-
-### 1.7 Telemetria
-`achievement_view`, `achievement_details`, `levelup_modal` via `telemetry.ts`. Sem PII.
-
-### 1.8 Docs
-Atualiza ADR-009, ADR-010; cria ADR-011 "Gamification Module Completed".
+Sprint de **plataforma**, não de produto. Nenhuma regra nova. Apenas expor via notificação nativa Android o que já existe em Services. Zero deep-link, zero rota nova, zero UI Java duplicada.
 
 ---
 
-## Fase 2 — Driver Quick Actions
+## Arquitetura obrigatória (não-negociável)
 
-### ⚠️ Decisão arquitetural crítica (preciso da sua confirmação)
+```text
+Foreground Notification (Android)
+        ↕
+VisionarioQuickActionsPlugin (Java, apenas transporte)
+        ↕
+NotificationActionService (TS, apenas tradução)
+        ↓                              ↘
+RideService · ShiftService ·             eventBus.emit('notification:*')
+rideDetectionService · MetricsService              ↓
+        ↓                              UI React existente
+Repositories · CloudSync · EventBus     (RegisterRideFab / AutoRideToast)
+        ↑
+NotificationActionService assina EventBus e chama plugin.updateContent(...)
+```
 
-O escopo pede **notificação persistente do Android como painel operacional**, com **Foreground Service** e **botões que executam ações sem abrir o app**. Hoje o projeto **não tem isto**:
-
-- Não temos um Foreground Service com actions.
-- `@capacitor/local-notifications` (o que existe hoje via `gpsBackgroundProvider`) **não suporta ações que retornam à JS layer quando o app está morto** de forma confiável — actions só disparam se o app está em background/foreground vivo.
-- Um "painel operacional" real com botões que funcionam com o app matado exige **código Java nativo novo** (`ForegroundService` custom + `NotificationCompat.Action` + `BroadcastReceiver` que enfileira a ação e acorda a WebView, ou um `capacitor-plugin` custom).
-
-Isto é **fora do padrão arquitetural congelado** — é infra nova, não Service/Repository/EventBus. Não dá pra "reutilizar exclusivamente a infraestrutura oficial" para isso porque a infra nativa não existe.
-
-**Preciso que você escolha uma das opções antes de eu começar a Fase 2:**
-
-**Opção A — Full nativo (fiel ao escopo, ~2-3 sprints só disto)**
-Criar plugin Capacitor Java novo: Foreground Service com `NotificationCompat` de 3 actions (Registrar / Finalizar / Confirmar Auto), `BroadcastReceiver` que faz bridge com JS via `Plugin.notifyListeners`, `notificationActionService` (TS) que recebe o evento e chama `RideService`/`ShiftService`. UI de registro rápido = mini-activity nativa OU deep-link para tela dedicada `/quick/register` que abre o app. PWA fica com fallback (comportamento atual). Requer builds Android e testes em device real.
-
-**Opção B — Escopo reduzido (o que dá pra fazer sem quebrar Release Freeze)**
-Manter a notificação de tracking atual, **enriquecer o texto** com corridas/km/lucro em tempo real (reagindo ao bus, sem polling), e **adicionar 2 actions "deep-link"**: tocar em "Registrar" abre o app já com o modal `RegisterRideFab` aberto; tocar em "Finalizar" abre com o dialog de fim de turno. Notificação de "corrida detectada" idem, abre no toast existente `AutoRideToast`. **Sem código Java novo, sem plugin custom, 100% dentro da arquitetura.** Cobre 80% da UX prometida, é a que respeita "arquitetura congelada".
-
-**Opção C — Adiar Fase 2 inteira para Sprint 7**
-Fecho a Fase 1 nesta Sprint (é substancial sozinha), documento a Fase 2 no roadmap com o plano da Opção A completo, e Sprint 7 vira "Driver Quick Actions Nativas" com escopo próprio pra fazer certo. Alinhado com Release Freeze — não introduz risco no RC1.
-
-### Minha recomendação: **Opção C**
-
-Motivos:
-1. Fase 1 sozinha é uma sprint cheia (perfil expandido, modal de conquistas, level-up, gráfico, 6 conquistas novas, telemetria, 3 docs).
-2. Opção A quebra Release Freeze (código nativo novo, permissões novas potenciais, precisa reabrir security-audit, play-store-checklist, LGPD e testar em device físico antes de publicar).
-3. Opção B entrega valor mas o próprio texto da Sprint deixa claro que quer o painel real ("operar sem abrir o Dashboard") — meio-caminho vai frustrar.
-4. RC1 já está aprovado GO. Meter plugin nativo agora reabre riscos de crash/permissão que a Sprint 5 fechou.
+Plugin **não** toca Storage/Repository/Supabase. Service TS **não** persiste, calcula ou aplica regra. UI de edição continua **React**, aberta por evento no bus — **sem rota `/quick-register`, sem deep-link, sem navegação**.
 
 ---
 
-## O que eu preciso de você
+## GATE 0 — Leitura obrigatória
 
-**Confirme:**
-1. **Fase 2 → Opção A, B ou C?** (recomendo C)
-2. **Coluna `beta_tester` em `profiles`** — ok criar migração? (necessário pra conquista Beta Tester)
-3. **Data de corte da conquista Fundador** — que data usar? (sugiro `2026-12-31` — todos os cadastros de 2026 são fundadores)
+Ler e confirmar contratos: `rideService`, `shiftService`, `financialService`, `metricsService`, `rideDetectionService`, `cloudSync`, `eventBus`, hooks reativos, ADRs 001–011, `public-api.md`, `roadmap.md`, `architecture-score.md`.
 
-Assim que responder, sigo. Se for C, fecho Fase 1 nesta rodada e entrego docs + roadmap atualizado.
+## GATE 1 — Proibições
+
+Sem novo domínio, Repository, Storage, CloudSync, EventBus paralelo, cache, polling, timer JS permanente, regra de negócio, fluxo offline paralelo, UI Java duplicada, **rota nova**, **deep-link novo**.
+
+## GATE 2 — Fluxo único
+
+Notification → Plugin → `NotificationActionService` → Service existente → Repository → CloudSync → EventBus → Hook/BottomSheet existente → UI.
+
+## GATE 3 — Regressão
+
+Ao final de cada CHECKPOINT: `tsgo`, `eslint`, `vitest run`. Se algo quebrar: parar, corrigir, reexecutar.
+
+---
+
+## CHECKPOINT 0.5 — Auditoria de contratos (antes de qualquer arquivo)
+
+Confirmar que existem, com exatamente estas assinaturas públicas:
+
+- `rideService.createRide(...)`
+- `shiftService.endAtomic(turnoId)` e `shiftService.getActive()` e `shiftService.getTotals(shift)`
+- `rideDetectionService.confirmPending()` e `rideDetectionService.discardPending()` (promover a público se estiverem privados — **sem** alterar lógica)
+- `eventBus` emite `rides:changed`, `shift:started`, `shift:finished`, `shift:changed`, `detection:changed`
+- `RegisterRideFab` (ou equivalente) pode ser aberto por sinal externo (adicionar prop `openSignal?: number` derivada de `useBusVersion('notification:register')` — **reuso puro, mesmo componente, mesma lógica**)
+
+Se qualquer contrato divergir: **PARAR**, gerar `docs/release/sprint-7-audit.md`, **não** adaptar arquitetura, **não** criar workaround.
+
+Adicionar ao `eventBus` os eventos de **transporte UI** (não são regra de negócio, são sinais one-shot para abrir componentes existentes):
+
+- `notification:register`
+- `notification:edit-auto`
+
+Nada mais. Estes eventos vivem no bus oficial, não em bus paralelo.
+
+---
+
+## CHECKPOINT 1 — Infraestrutura (transporte puro)
+
+### Android (Java)
+
+- `VisionarioQuickActionsPlugin.java` — `@CapacitorPlugin(name="VisionarioQuickActions")`. Métodos: `start`, `stop`, `updateContent`, `showAutoRideCandidate`, `showUndo`, `hideUndo`. Emite `notifyListeners("action", {type, payload?})`.
+- `QuickActionsForegroundService.java` — `Service` com `startForeground(id, notification)`, canal `visionario_shift` (`IMPORTANCE_LOW`, ongoing, silencioso). `BigTextStyle`. Atualização usa `notify(id, builder.build())` sobre o **mesmo** id — jamais recria o Service.
+- `QuickActionsReceiver.java` — `BroadcastReceiver` traduzindo `ACTION_REGISTER | ACTION_FINISH | ACTION_CONFIRM_AUTO | ACTION_EDIT_AUTO | ACTION_DISCARD_AUTO | ACTION_UNDO` em `notifyListeners`.
+- **Timer do Undo (10s)** vive **exclusivamente** no plugin (`Handler.postDelayed` → `hideUndo`). Nunca em JS.
+- `AndroidManifest.xml`: `<service android:foregroundServiceType="location">`, `<receiver>`, permissões já presentes.
+- `MainActivity.java`: `registerPlugin(VisionarioQuickActionsPlugin.class)`.
+
+### TypeScript
+
+- `src/lib/native/quickActionsPlugin.ts` — `registerPlugin<QuickActionsPlugin>('VisionarioQuickActions')` com stub no-op para web/PWA.
+- `src/lib/services/notificationActionService.ts` — **apenas tradução**:
+  - `attach()` / `detach()`.
+  - Assina bus (`rides:changed`, `shift:started/finished/changed`, `detection:changed`) e chama `plugin.updateContent(...)` com totais lidos de `shiftService.getTotals(active)`. Sem PII.
+  - `shift:started` → `plugin.start()`; `shift:finished` → `plugin.stop()`.
+  - `detection:changed` → se há pending, `plugin.showAutoRideCandidate({valor, app})`.
+  - Escuta `action` do plugin e traduz:
+    - `register` → `eventBus.emit('notification:register')` (UI abre BottomSheet existente).
+    - `finish` → `shiftService.endAtomic(active.turno_id)`.
+    - `confirm-auto` → `rideDetectionService.confirmPending()`.
+    - `edit-auto` → `eventBus.emit('notification:edit-auto')` (UI reabre `AutoRideToast`/form existente com pending).
+    - `discard-auto` → `rideDetectionService.discardPending()`.
+    - `undo` → `rideService.undoLastRide()`.
+  - Cada handler chama `telemetry.recordNotification(...)`.
+- `src/components/native/NotificationActionsBoot.tsx` — componente `null` montado uma vez em `App.tsx`; `attach()` no mount, `detach()` no unmount.
+- Componentes UI existentes assinam os novos eventos com `useBusVersion`:
+  - `RegisterRideFab` já é ponto único de registro manual → escuta `notification:register` e abre o próprio sheet.
+  - `AutoRideToast` já lida com pending → escuta `notification:edit-auto` e força modo de edição.
+
+Fim: verde. Parar.
+
+---
+
+## CHECKPOINT 2 — Registrar / Finalizar / Undo
+
+- **Registrar**: evento `notification:register` reabre `RegisterRideFab` existente; salvar continua chamando `rideService.createRide(...)`.
+- **Finalizar**: `shiftService.endAtomic(active.turno_id)`. Confirmação = duplo-tap no plugin (≤ 4s), sem estado JS.
+- **Undo**: adicionar `rideService.undoLastRide(): Promise<boolean>` reutilizando `rideRepository.remove(lastId)` já existente (sem duplicar código). Após `createRide` bem-sucedido a partir da notificação, o service dispara `plugin.showUndo({resumo})`; plugin agenda `hideUndo` em 10s.
+
+Fim: verde. Parar.
+
+---
+
+## CHECKPOINT 3 — Auto Ride + Telemetria
+
+- `detection:changed` → `showAutoRideCandidate({valor, app})`.
+- **Confirmar** → `rideDetectionService.confirmPending()`.
+- **Editar** → `eventBus.emit('notification:edit-auto')` (UI React existente assume). Zero rota nova.
+- **Descartar** → `rideDetectionService.discardPending()`.
+- `src/lib/telemetry.ts`: adicionar contadores `notification_open`, `notification_register`, `notification_finish`, `notification_confirm`, `notification_edit`, `notification_discard`, `notification_undo`. Sem PII.
+
+Fim: verde. Parar.
+
+---
+
+## UI da notificação
+
+- Título: `Turno em andamento`
+- Linhas: `08h41 · 7 corridas · 82 km · R$214,50`
+- Sem PII, sem coordenadas, sem nome, sem ID.
+- Notificação nunca recriada — só `notify(id, ...)`.
+
+## Offline
+
+Zero mudança em CloudSync/fila/persistência. Tudo passa pelos Services existentes, que já são offline-first.
+
+## Testes
+
+- `notificationActionService.test.ts` — mock do plugin + Services; cobre `attach/detach`, cada handler, `updateContent` disparado por cada evento do bus, emissão de `notification:register` e `notification:edit-auto`.
+- `rideService.undoLastRide.test.ts` — cria/undo/estado final; garante `rides:changed`.
+- `quickActionsPlugin.mock.test.ts` — verifica stub web no-op e shape dos payloads.
+
+## Documentação
+
+- `docs/architecture/adr/ADR-012-driver-quick-actions.md`.
+- `docs/release/sprint-7.md` — plano + QA em device físico.
+- `docs/architecture/public-api.md` — `notificationActionService.{attach,detach}`, `rideService.undoLastRide`, `rideDetectionService.confirmPending/discardPending`, novos eventos `notification:register` / `notification:edit-auto`.
+- `docs/architecture/roadmap.md` — Sprint 7 concluída.
+- `docs/architecture/architecture-score.md` — meta ≥ 9.95.
+
+---
+
+## Critério de Reprovação (Sprint inválida se ocorrer qualquer item)
+
+- Duplicação de código.
+- Lógica repetida entre Plugin e Service.
+- Repository acessado fora dos Services.
+- Acesso direto a `localStorage`.
+- Acesso direto ao Supabase client (fora de Auth).
+- Polling.
+- Timer JS permanente.
+- Navegação/rota criada só para esta Sprint.
+- Deep-link novo.
+- UI de formulário em Java.
+- Qualquer alteração na arquitetura existente.
+- Bus paralelo ou cache paralelo.
+- Qualquer quebra de API pública.
+
+## Definição de concluído
+
+Motorista inicia turno, minimiza app; pela notificação: registra corrida (abre BottomSheet React via bus), confirma automática, edita (React via bus), desfaz (timer Android), finaliza turno. Offline preservado. Health Score ≥ 9.95. Código indistinguível do resto da arquitetura.
+
+## Fora do escopo
+
+iOS, widgets, Android Auto, PRO.
+
+---
+
+Confirmar para iniciar pelo **CHECKPOINT 0.5** (auditoria de contratos + adição dos eventos `notification:register` / `notification:edit-auto` no bus).
