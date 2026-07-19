@@ -29,7 +29,10 @@ export type BusEvent =
   | 'invite:changed'
   // Sprint 6.2.5 — Cloud Sync da gamificação
   | 'gamification:synced'
-  | 'gamification:merged';
+  | 'gamification:merged'
+  // Sprint 7 — Driver Quick Actions (sinais de transporte UI, não regra de negócio)
+  | 'notification:register'
+  | 'notification:edit-auto';
 
 type Listener = () => void;
 
