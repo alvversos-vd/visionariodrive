@@ -48,6 +48,7 @@ const EVENTS: BusEvent[] = [
   'profile:changed',
   'invite:changed',
   'gamification:synced', 'gamification:merged',
+  'notification:register', 'notification:edit-auto',
 ];
 
 const listeners: Record<BusEvent, Set<Listener>> = Object.fromEntries(
