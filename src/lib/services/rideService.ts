@@ -393,6 +393,24 @@ export const rideService = {
     return rideRepository.update(rideId, { km, value, edits, analysis });
   },
 
+  /**
+   * Sprint 7 — Desfaz a última corrida registrada (mais recente por `date`).
+   * Reutiliza `deleteRide` (que delega a `rideRepository.remove` + emite
+   * `rides:changed`). Não duplica lógica; apenas seleciona o alvo.
+   * Retorna o id removido ou `null` se não havia corrida.
+   */
+  undoLastRide(): string | null {
+    const all = readAllRideModels();
+    if (all.length === 0) return null;
+    const last = all.reduce((a, b) =>
+      new Date(a.date).getTime() >= new Date(b.date).getTime() ? a : b,
+    );
+    this.deleteRide(last.id);
+    return last.id;
+  },
+
+
+
   // ─── DailyEntry legacy (Calculador Diário) ───────────────────────────
   // Fachada fina sobre o repository — componentes NUNCA importam o
   // repository. Marcado @deprecated: DailyEntry só existe até a
