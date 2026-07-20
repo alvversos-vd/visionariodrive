@@ -17,6 +17,7 @@ import AutoRideToast from "./components/AutoRideToast.tsx";
 import AchievementToast from "./components/gamification/AchievementToast.tsx";
 import LevelUpModal from "./components/gamification/LevelUpModal.tsx";
 import GamificationBoot from "./components/gamification/GamificationBoot.tsx";
+import NotificationActionsBoot from "./components/native/NotificationActionsBoot.tsx";
 
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
 
         <AuthProvider>
           <GamificationBoot />
+          <NotificationActionsBoot />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/legal" element={<Legal />} />
