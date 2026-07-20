@@ -13,15 +13,16 @@ import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 
 /**
- * QuickActionsForegroundService — Sprint 7 · Checkpoint 1.
+ * QuickActionsForegroundService — Sprint 7 · Checkpoint 2.
  *
  * Foreground Service ongoing usado durante o turno ativo.
  * Não contém regra de negócio. Recebe comandos do plugin e atualiza
  * uma única notificação persistente (mesmo id) via notify(id, ...).
  *
- * A partir do Checkpoint 2/3 o Receiver despacha ações reais para o
- * plugin, que delega ao NotificationActionService (TS). Nesta fase
- * apenas a infraestrutura visual + ciclo start/stop está ativa.
+ * Botões (PendingIntent.getBroadcast → QuickActionsReceiver → Plugin):
+ *   - Registrar corrida  (sempre)
+ *   - Finalizar turno    (sempre)
+ *   - Desfazer           (apenas quando showUndo estiver ativo)
  */
 public class QuickActionsForegroundService extends Service {
 
@@ -34,9 +35,13 @@ public class QuickActionsForegroundService extends Service {
 
     public static final String EXTRA_TITLE = "extra_title";
     public static final String EXTRA_CONTENT = "extra_content";
+    public static final String EXTRA_UNDO_VISIBLE = "extra_undo_visible";
+    public static final String EXTRA_UNDO_LABEL = "extra_undo_label";
 
     private String currentTitle = "Turno em andamento";
     private String currentContent = "Aguardando dados do turno";
+    private boolean undoVisible = false;
+    private String undoLabel = "Desfazer";
 
     @Override
     public void onCreate() {
@@ -53,21 +58,26 @@ public class QuickActionsForegroundService extends Service {
             String c = intent.getStringExtra(EXTRA_CONTENT);
             if (t != null && !t.isEmpty()) currentTitle = t;
             if (c != null && !c.isEmpty()) currentContent = c;
+            if (intent.hasExtra(EXTRA_UNDO_VISIBLE)) {
+                undoVisible = intent.getBooleanExtra(EXTRA_UNDO_VISIBLE, false);
+            }
+            String lbl = intent.getStringExtra(EXTRA_UNDO_LABEL);
+            if (lbl != null && !lbl.isEmpty()) undoLabel = lbl;
         }
 
         if (ACTION_STOP.equals(action)) {
+            undoVisible = false;
             stopForeground(true);
             stopSelf();
             return START_NOT_STICKY;
         }
 
-        Notification n = buildNotification(currentTitle, currentContent);
+        Notification n = buildNotification();
 
         if (ACTION_UPDATE.equals(action)) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null) nm.notify(NOTIFICATION_ID, n);
         } else {
-            // ACTION_START ou primeira invocação
             startForeground(NOTIFICATION_ID, n);
         }
 
@@ -75,9 +85,7 @@ public class QuickActionsForegroundService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+    public IBinder onBind(Intent intent) { return null; }
 
     private void ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
@@ -95,24 +103,52 @@ public class QuickActionsForegroundService extends Service {
         nm.createNotificationChannel(channel);
     }
 
-    private Notification buildNotification(String title, String content) {
+    private PendingIntent broadcastPI(String action, int requestCode) {
+        Intent i = new Intent(this, QuickActionsReceiver.class);
+        i.setAction(action);
+        i.setPackage(getPackageName());
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        return PendingIntent.getBroadcast(this, requestCode, i, flags);
+    }
+
+    private Notification buildNotification() {
         Intent openApp = new Intent(this, MainActivity.class);
         openApp.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         int piFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) piFlags |= PendingIntent.FLAG_IMMUTABLE;
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openApp, piFlags);
 
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_menu_directions)
-                .setContentTitle(title)
-                .setContentText(content)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(content))
+                .setContentTitle(currentTitle)
+                .setContentText(currentContent)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(currentContent))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setContentIntent(contentIntent)
-                .build();
+                .addAction(
+                        android.R.drawable.ic_input_add,
+                        "Registrar",
+                        broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1)
+                )
+                .addAction(
+                        android.R.drawable.ic_media_pause,
+                        "Finalizar",
+                        broadcastPI(QuickActionsReceiver.ACTION_FINISH, 2)
+                );
+
+        if (undoVisible) {
+            b.addAction(
+                    android.R.drawable.ic_menu_revert,
+                    undoLabel,
+                    broadcastPI(QuickActionsReceiver.ACTION_UNDO, 3)
+            );
+        }
+
+        return b.build();
     }
 }
