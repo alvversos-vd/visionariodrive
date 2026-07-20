@@ -47,6 +47,15 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <service
+            android:name=".QuickActionsForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <receiver
+            android:name=".QuickActionsReceiver"
+            android:exported="false" />
     </application>
 
     <!-- Permissions -->
