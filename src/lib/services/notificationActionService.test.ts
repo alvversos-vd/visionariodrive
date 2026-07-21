@@ -14,48 +14,59 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const showAutoRideCandidate = vi.fn(async (_opts: { resumo?: string }) => undefined);
-const hideAutoRideCandidate = vi.fn(async () => undefined);
-const showUndo = vi.fn(async (_opts: { resumo?: string }) => undefined);
-const hideUndo = vi.fn(async () => undefined);
-const start = vi.fn(async (_opts?: { title?: string; content?: string }) => ({ started: true }));
-const stop = vi.fn(async () => ({ stopped: true }));
-const updateContent = vi.fn(async (_opts: { title?: string; content?: string }) => ({ updated: true }));
-const addListener = vi.fn();
+const h = vi.hoisted(() => ({
+  showAutoRideCandidate: vi.fn(async (_opts: { resumo?: string }) => undefined),
+  hideAutoRideCandidate: vi.fn(async () => undefined),
+  showUndo: vi.fn(async (_opts: { resumo?: string }) => undefined),
+  hideUndo: vi.fn(async () => undefined),
+  start: vi.fn(async (_opts?: { title?: string; content?: string }) => ({ started: true })),
+  stop: vi.fn(async () => ({ stopped: true })),
+  updateContent: vi.fn(async (_opts: { title?: string; content?: string }) => ({ updated: true })),
+  addListener: vi.fn(),
+  confirmPending: vi.fn(),
+  discardPending: vi.fn(),
+  getPending: vi.fn(),
+  undoLastRide: vi.fn(),
+  rideList: vi.fn(() => [] as unknown[]),
+  endAtomic: vi.fn(async () => null),
+  getActive: vi.fn(),
+  getTotals: vi.fn(() => ({
+    tempo_online_minutos: 90, corridas_total: 3, km_total: 42, lucro_total: 120,
+  })),
+}));
+
+const {
+  showAutoRideCandidate, hideAutoRideCandidate, showUndo, hideUndo,
+  start, stop, updateContent, addListener,
+  confirmPending, discardPending, getPending,
+  undoLastRide, rideList, endAtomic, getActive,
+} = h;
 
 vi.mock('../native/quickActionsPlugin', () => ({
   isQuickActionsNative: true,
   quickActionsPlugin: {
-    start, stop, updateContent,
-    showAutoRideCandidate, hideAutoRideCandidate,
-    showUndo, hideUndo,
-    addListener,
+    start: h.start, stop: h.stop, updateContent: h.updateContent,
+    showAutoRideCandidate: h.showAutoRideCandidate,
+    hideAutoRideCandidate: h.hideAutoRideCandidate,
+    showUndo: h.showUndo, hideUndo: h.hideUndo,
+    addListener: h.addListener,
   },
 }));
 
-const confirmPending = vi.fn();
-const discardPending = vi.fn();
-const getPending = vi.fn();
-
 vi.mock('./rideDetectionService', () => ({
-  rideDetectionService: { confirmPending, discardPending, getPending },
+  rideDetectionService: {
+    confirmPending: h.confirmPending,
+    discardPending: h.discardPending,
+    getPending: h.getPending,
+  },
 }));
-
-const undoLastRide = vi.fn();
-const rideList = vi.fn(() => [] as unknown[]);
 
 vi.mock('./rideService', () => ({
-  rideService: { undoLastRide, list: rideList },
-}));
-
-const endAtomic = vi.fn(async () => null);
-const getActive = vi.fn();
-const getTotals = vi.fn(() => ({
-  tempo_online_minutos: 90, corridas_total: 3, km_total: 42, lucro_total: 120,
+  rideService: { undoLastRide: h.undoLastRide, list: h.rideList },
 }));
 
 vi.mock('./shiftService', () => ({
-  shiftService: { getActive, endAtomic, getTotals },
+  shiftService: { getActive: h.getActive, endAtomic: h.endAtomic, getTotals: h.getTotals },
 }));
 
 import { eventBus } from '../eventBus';
