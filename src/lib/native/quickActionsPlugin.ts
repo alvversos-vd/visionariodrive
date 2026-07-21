@@ -28,6 +28,7 @@ export interface UpdateContentOptions {
 export interface AutoRideCandidateOptions {
   valor?: number;
   app?: string;
+  resumo?: string;
 }
 
 export interface UndoOptions {

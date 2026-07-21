@@ -171,7 +171,7 @@ class NotificationActionServiceImpl {
     if (pending) {
       if (this.lastPendingId === pending.id) return;
       this.lastPendingId = pending.id;
-      try { await quickActionsPlugin.showAutoRideCandidate({ resumo: buildAutoLabel(pending) } as unknown as { resumo?: string }); }
+      try { await quickActionsPlugin.showAutoRideCandidate({ resumo: buildAutoLabel(pending) }); }
       catch { /* noop */ }
       return;
     }
