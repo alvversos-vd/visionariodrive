@@ -31,6 +31,26 @@ export type GpsCounter =
   | 'gps_false_positive'
   | 'gps_false_negative';
 
+// Sprint 7 · Checkpoint 3 — Driver Quick Actions (sem PII).
+export type NotificationCounter =
+  | 'notification_open'
+  | 'notification_register'
+  | 'notification_finish'
+  | 'notification_confirm'
+  | 'notification_edit'
+  | 'notification_discard'
+  | 'notification_undo';
+
+export interface NotificationCounters {
+  notification_open: number;
+  notification_register: number;
+  notification_finish: number;
+  notification_confirm: number;
+  notification_edit: number;
+  notification_discard: number;
+  notification_undo: number;
+}
+
 export interface GpsCounters {
   gps_detection: number;
   gps_auto_saved: number;
