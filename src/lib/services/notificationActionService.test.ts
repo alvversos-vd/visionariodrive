@@ -14,13 +14,13 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const showAutoRideCandidate = vi.fn(async () => undefined);
+const showAutoRideCandidate = vi.fn(async (_opts: { resumo?: string }) => undefined);
 const hideAutoRideCandidate = vi.fn(async () => undefined);
-const showUndo = vi.fn(async () => undefined);
+const showUndo = vi.fn(async (_opts: { resumo?: string }) => undefined);
 const hideUndo = vi.fn(async () => undefined);
-const start = vi.fn(async () => ({ started: true }));
+const start = vi.fn(async (_opts?: { title?: string; content?: string }) => ({ started: true }));
 const stop = vi.fn(async () => ({ stopped: true }));
-const updateContent = vi.fn(async () => ({ updated: true }));
+const updateContent = vi.fn(async (_opts: { title?: string; content?: string }) => ({ updated: true }));
 const addListener = vi.fn();
 
 vi.mock('../native/quickActionsPlugin', () => ({
@@ -97,7 +97,7 @@ describe('NotificationActionService · CP3', () => {
     await Promise.resolve();
 
     expect(showAutoRideCandidate).toHaveBeenCalledTimes(1);
-    const arg = showAutoRideCandidate.mock.calls[0][0] as { resumo?: string };
+    const arg = showAutoRideCandidate.mock.calls[0][0];
     expect(arg.resumo).toMatch(/km/);
     expect(arg.resumo).toMatch(/confiança 78%/);
   });
@@ -200,7 +200,7 @@ describe('NotificationActionService · CP3', () => {
     await Promise.resolve();
 
     expect(updateContent).toHaveBeenCalledTimes(1);
-    const arg = updateContent.mock.calls[0][0] as { content?: string };
+    const arg = updateContent.mock.calls[0][0];
     expect(arg.content).toMatch(/3 corridas/);
   });
 
