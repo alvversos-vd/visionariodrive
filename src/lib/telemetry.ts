@@ -95,6 +95,27 @@ function emptyGamif(): GamificationCounters {
     achievement_view: 0, achievement_details: 0, levelup_modal: 0,
   };
 }
+function emptyNotif(): NotificationCounters {
+  return {
+    notification_open: 0, notification_register: 0, notification_finish: 0,
+    notification_confirm: 0, notification_edit: 0, notification_discard: 0,
+    notification_undo: 0,
+  };
+}
+
+function readNotif(): NotificationCounters {
+  if (typeof localStorage === 'undefined') return emptyNotif();
+  try {
+    const raw = localStorage.getItem(NOTIF_KEY);
+    if (!raw) return emptyNotif();
+    return { ...emptyNotif(), ...JSON.parse(raw) };
+  } catch { return emptyNotif(); }
+}
+
+function writeNotif(c: NotificationCounters): void {
+  if (typeof localStorage === 'undefined') return;
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(c)); } catch { /* noop */ }
+}
 
 function readEvents(): TelemetryEvent[] {
   if (typeof localStorage === 'undefined') return [];
