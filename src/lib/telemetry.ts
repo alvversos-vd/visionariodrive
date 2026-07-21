@@ -209,4 +209,16 @@ export const telemetry = {
     writeGamif(cur);
   },
   gamificationCounters(): GamificationCounters { return readGamif(); },
+
+  // ─── Driver Quick Actions (Sprint 7 · CP3) ─────────────────────────
+  /**
+   * Registra evento de UI da notificação persistente. Sem PII, sem
+   * coordenadas, sem valores financeiros. Só a contagem da ação.
+   */
+  recordNotification(counter: NotificationCounter, delta = 1): void {
+    const cur = readNotif();
+    cur[counter] = Math.max(0, (cur[counter] ?? 0) + Math.max(0, Math.floor(delta)));
+    writeNotif(cur);
+  },
+  notificationCounters(): NotificationCounters { return readNotif(); },
 };
