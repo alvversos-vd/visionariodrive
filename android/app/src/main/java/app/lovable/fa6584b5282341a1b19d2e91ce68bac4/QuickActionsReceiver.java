@@ -5,15 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * QuickActionsReceiver — Sprint 7 · Checkpoint 1.
+ * QuickActionsReceiver — Sprint 7 · Checkpoint 3.
  *
- * Placeholder de infraestrutura. Registrado no manifest para que os
- * PendingIntents dos botões (Checkpoint 2/3) já tenham um alvo estável.
- * Traduzirá cliques em chamadas ao VisionarioQuickActionsPlugin via
- * notifyListeners("action", { type, payload? }).
+ * Traduz cliques dos botões da notificação em chamadas ao
+ * VisionarioQuickActionsPlugin. Zero regra de negócio.
  *
- * Nesta etapa nada é despachado — o plugin ainda não expõe os handlers
- * de ação. Fase 1 (infra) apenas garante o pipeline visual.
+ * Para ações que exigem UI React (Registrar, Editar corrida detectada),
+ * também traz a MainActivity para o topo — o restante da lógica ocorre
+ * no JS via EventBus.
  */
 public class QuickActionsReceiver extends BroadcastReceiver {
 
@@ -28,6 +27,23 @@ public class QuickActionsReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent != null ? intent.getAction() : null;
         if (action == null) return;
+
+        if (ACTION_REGISTER.equals(action) || ACTION_EDIT_AUTO.equals(action)) {
+            bringAppToFront(context);
+        }
+
         VisionarioQuickActionsPlugin.dispatchAction(action);
+    }
+
+    private void bringAppToFront(Context context) {
+        try {
+            Intent i = new Intent(context, MainActivity.class);
+            i.setFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            | Intent.FLAG_ACTIVITY_CLEAR_TOP
+            );
+            context.startActivity(i);
+        } catch (Exception ignored) { /* noop */ }
     }
 }

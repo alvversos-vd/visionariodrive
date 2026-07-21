@@ -26,8 +26,10 @@ function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function PendingCard({ pending, onDone }: { pending: PendingRide; onDone: () => void }) {
-  const [editing, setEditing] = useState(false);
+function PendingCard({
+  pending, onDone, initialEditing = false,
+}: { pending: PendingRide; onDone: () => void; initialEditing?: boolean }) {
+  const [editing, setEditing] = useState(initialEditing);
   const [value, setValue] = useState<string>('');
   const [km, setKm] = useState<string>(pending.distanceKm.toFixed(1));
 
@@ -90,20 +92,32 @@ function PendingCard({ pending, onDone }: { pending: PendingRide; onDone: () => 
 
 export default function AutoRideToast() {
   const v = useBusVersion('detection:changed');
+  // Sprint 7 · CP3 — sinal do plugin nativo: abrir toast já em modo edição.
+  const editReq = useBusVersion('notification:edit-auto');
   const lastPendingIdRef = useRef<string | null>(null);
   const lastConfirmedIdRef = useRef<string | null>(null);
+  const lastEditVersionRef = useRef<number>(0);
 
   useEffect(() => {
     const pending = rideDetectionService.getPending();
     const cfg = getRideDetectionConfig();
 
+    // Sinal one-shot vindo da notificação nativa → reabrir toast em modo edit.
+    const editTriggered = editReq !== lastEditVersionRef.current;
+    lastEditVersionRef.current = editReq;
+
     if (pending) {
-      if (lastPendingIdRef.current === pending.id) return;
+      const sameId = lastPendingIdRef.current === pending.id;
+      if (sameId && !editTriggered) return;
       lastPendingIdRef.current = pending.id;
-      toast(<PendingCard pending={pending} onDone={() => toast.dismiss(PENDING_TOAST_ID)} />, {
-        id: PENDING_TOAST_ID,
-        duration: cfg.pendingTimeoutSeconds * 1000,
-      });
+      toast(
+        <PendingCard
+          pending={pending}
+          initialEditing={editTriggered}
+          onDone={() => toast.dismiss(PENDING_TOAST_ID)}
+        />,
+        { id: PENDING_TOAST_ID, duration: cfg.pendingTimeoutSeconds * 1000 },
+      );
       return;
     }
 
@@ -114,7 +128,6 @@ export default function AutoRideToast() {
       .find(r => r.kmOrigin === 'auto');
     if (!lastGpsRide) return;
     if (lastGpsRide.id === lastConfirmedIdRef.current) return;
-    // Só mostra undo se foi criado nos últimos segundos.
     const ageMs = Date.now() - new Date(lastGpsRide.date).getTime();
     if (ageMs > (cfg.undoWindowSeconds + 2) * 1000) return;
     lastConfirmedIdRef.current = lastGpsRide.id;
@@ -128,7 +141,7 @@ export default function AutoRideToast() {
         onClick: () => { rideDetectionService.undoConfirmed(lastGpsRide.id); },
       },
     });
-  }, [v]);
+  }, [v, editReq]);
 
   return null;
 }

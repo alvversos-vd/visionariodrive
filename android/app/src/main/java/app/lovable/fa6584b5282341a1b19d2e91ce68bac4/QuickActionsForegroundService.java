@@ -13,16 +13,20 @@ import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 
 /**
- * QuickActionsForegroundService — Sprint 7 · Checkpoint 2.
+ * QuickActionsForegroundService — Sprint 7 · Checkpoint 3.
  *
  * Foreground Service ongoing usado durante o turno ativo.
  * Não contém regra de negócio. Recebe comandos do plugin e atualiza
  * uma única notificação persistente (mesmo id) via notify(id, ...).
  *
- * Botões (PendingIntent.getBroadcast → QuickActionsReceiver → Plugin):
+ * Botões:
  *   - Registrar corrida  (sempre)
  *   - Finalizar turno    (sempre)
- *   - Desfazer           (apenas quando showUndo estiver ativo)
+ *   - Desfazer           (apenas quando undoVisible)
+ *   - Confirmar/Editar/Descartar (apenas quando autoVisible — CP3)
+ *
+ * Precedência visual: quando autoVisible=true, os botões da corrida
+ * detectada substituem Registrar/Finalizar. Undo permanece independente.
  */
 public class QuickActionsForegroundService extends Service {
 
@@ -37,11 +41,15 @@ public class QuickActionsForegroundService extends Service {
     public static final String EXTRA_CONTENT = "extra_content";
     public static final String EXTRA_UNDO_VISIBLE = "extra_undo_visible";
     public static final String EXTRA_UNDO_LABEL = "extra_undo_label";
+    public static final String EXTRA_AUTO_VISIBLE = "extra_auto_visible";
+    public static final String EXTRA_AUTO_LABEL = "extra_auto_label";
 
     private String currentTitle = "Turno em andamento";
     private String currentContent = "Aguardando dados do turno";
     private boolean undoVisible = false;
     private String undoLabel = "Desfazer";
+    private boolean autoVisible = false;
+    private String autoLabel = "Corrida detectada";
 
     @Override
     public void onCreate() {
@@ -63,10 +71,16 @@ public class QuickActionsForegroundService extends Service {
             }
             String lbl = intent.getStringExtra(EXTRA_UNDO_LABEL);
             if (lbl != null && !lbl.isEmpty()) undoLabel = lbl;
+            if (intent.hasExtra(EXTRA_AUTO_VISIBLE)) {
+                autoVisible = intent.getBooleanExtra(EXTRA_AUTO_VISIBLE, false);
+            }
+            String alb = intent.getStringExtra(EXTRA_AUTO_LABEL);
+            if (alb != null && !alb.isEmpty()) autoLabel = alb;
         }
 
         if (ACTION_STOP.equals(action)) {
             undoVisible = false;
+            autoVisible = false;
             stopForeground(true);
             stopSelf();
             return START_NOT_STICKY;
@@ -119,34 +133,53 @@ public class QuickActionsForegroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) piFlags |= PendingIntent.FLAG_IMMUTABLE;
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, openApp, piFlags);
 
+        String bodyText = autoVisible
+                ? autoLabel + "\n" + currentContent
+                : currentContent;
+
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_menu_directions)
                 .setContentTitle(currentTitle)
-                .setContentText(currentContent)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(currentContent))
+                .setContentText(autoVisible ? autoLabel : currentContent)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(bodyText))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setContentIntent(contentIntent)
-                .addAction(
-                        android.R.drawable.ic_input_add,
-                        "Registrar",
-                        broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1)
-                )
-                .addAction(
-                        android.R.drawable.ic_media_pause,
-                        "Finalizar",
-                        broadcastPI(QuickActionsReceiver.ACTION_FINISH, 2)
-                );
+                .setContentIntent(contentIntent);
 
-        if (undoVisible) {
+        if (autoVisible) {
             b.addAction(
-                    android.R.drawable.ic_menu_revert,
-                    undoLabel,
-                    broadcastPI(QuickActionsReceiver.ACTION_UNDO, 3)
+                    android.R.drawable.ic_menu_send,
+                    "Confirmar",
+                    broadcastPI(QuickActionsReceiver.ACTION_CONFIRM_AUTO, 10)
+            ).addAction(
+                    android.R.drawable.ic_menu_edit,
+                    "Editar",
+                    broadcastPI(QuickActionsReceiver.ACTION_EDIT_AUTO, 11)
+            ).addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    "Descartar",
+                    broadcastPI(QuickActionsReceiver.ACTION_DISCARD_AUTO, 12)
             );
+        } else {
+            b.addAction(
+                    android.R.drawable.ic_input_add,
+                    "Registrar",
+                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1)
+            ).addAction(
+                    android.R.drawable.ic_media_pause,
+                    "Finalizar",
+                    broadcastPI(QuickActionsReceiver.ACTION_FINISH, 2)
+            );
+            if (undoVisible) {
+                b.addAction(
+                        android.R.drawable.ic_menu_revert,
+                        undoLabel,
+                        broadcastPI(QuickActionsReceiver.ACTION_UNDO, 3)
+                );
+            }
         }
 
         return b.build();

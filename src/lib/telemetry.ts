@@ -14,6 +14,7 @@
 const EVENTS_KEY = 'vd-telemetry';
 const COUNTERS_KEY = 'vd-telemetry-counters';
 const GAMIF_KEY = 'vd-telemetry-gamification';
+const NOTIF_KEY = 'vd-telemetry-notification';
 const MAX = 100;
 
 export interface MigrationEvent {
@@ -30,6 +31,26 @@ export type GpsCounter =
   | 'gps_auto_saved'
   | 'gps_false_positive'
   | 'gps_false_negative';
+
+// Sprint 7 · Checkpoint 3 — Driver Quick Actions (sem PII).
+export type NotificationCounter =
+  | 'notification_open'
+  | 'notification_register'
+  | 'notification_finish'
+  | 'notification_confirm'
+  | 'notification_edit'
+  | 'notification_discard'
+  | 'notification_undo';
+
+export interface NotificationCounters {
+  notification_open: number;
+  notification_register: number;
+  notification_finish: number;
+  notification_confirm: number;
+  notification_edit: number;
+  notification_discard: number;
+  notification_undo: number;
+}
 
 export interface GpsCounters {
   gps_detection: number;
@@ -73,6 +94,27 @@ function emptyGamif(): GamificationCounters {
     gamification_sync: 0, gamification_merge: 0, gamification_conflict: 0,
     achievement_view: 0, achievement_details: 0, levelup_modal: 0,
   };
+}
+function emptyNotif(): NotificationCounters {
+  return {
+    notification_open: 0, notification_register: 0, notification_finish: 0,
+    notification_confirm: 0, notification_edit: 0, notification_discard: 0,
+    notification_undo: 0,
+  };
+}
+
+function readNotif(): NotificationCounters {
+  if (typeof localStorage === 'undefined') return emptyNotif();
+  try {
+    const raw = localStorage.getItem(NOTIF_KEY);
+    if (!raw) return emptyNotif();
+    return { ...emptyNotif(), ...JSON.parse(raw) };
+  } catch { return emptyNotif(); }
+}
+
+function writeNotif(c: NotificationCounters): void {
+  if (typeof localStorage === 'undefined') return;
+  try { localStorage.setItem(NOTIF_KEY, JSON.stringify(c)); } catch { /* noop */ }
 }
 
 function readEvents(): TelemetryEvent[] {
@@ -167,4 +209,16 @@ export const telemetry = {
     writeGamif(cur);
   },
   gamificationCounters(): GamificationCounters { return readGamif(); },
+
+  // ─── Driver Quick Actions (Sprint 7 · CP3) ─────────────────────────
+  /**
+   * Registra evento de UI da notificação persistente. Sem PII, sem
+   * coordenadas, sem valores financeiros. Só a contagem da ação.
+   */
+  recordNotification(counter: NotificationCounter, delta = 1): void {
+    const cur = readNotif();
+    cur[counter] = Math.max(0, (cur[counter] ?? 0) + Math.max(0, Math.floor(delta)));
+    writeNotif(cur);
+  },
+  notificationCounters(): NotificationCounters { return readNotif(); },
 };

@@ -120,10 +120,21 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         call.resolve(r);
     }
 
-    // Reservado para o Checkpoint 3 (Auto Ride).
     @PluginMethod
     public void showAutoRideCandidate(PluginCall call) {
-        call.resolve();
+        String label = call.getString("resumo");
+        pushAutoState(true, label != null && !label.isEmpty() ? label : "Corrida detectada");
+        JSObject r = new JSObject();
+        r.put("shown", true);
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void hideAutoRideCandidate(PluginCall call) {
+        pushAutoState(false, null);
+        JSObject r = new JSObject();
+        r.put("hidden", true);
+        call.resolve(r);
     }
 
     private void applyContentExtras(Intent i, PluginCall call) {
@@ -140,6 +151,16 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         i.setAction(QuickActionsForegroundService.ACTION_UPDATE);
         i.putExtra(QuickActionsForegroundService.EXTRA_UNDO_VISIBLE, visible);
         if (label != null) i.putExtra(QuickActionsForegroundService.EXTRA_UNDO_LABEL, label);
+        startForegroundServiceCompat(ctx, i);
+    }
+
+    private void pushAutoState(boolean visible, String label) {
+        Context ctx = getContext();
+        if (ctx == null) return;
+        Intent i = new Intent(ctx, QuickActionsForegroundService.class);
+        i.setAction(QuickActionsForegroundService.ACTION_UPDATE);
+        i.putExtra(QuickActionsForegroundService.EXTRA_AUTO_VISIBLE, visible);
+        if (label != null) i.putExtra(QuickActionsForegroundService.EXTRA_AUTO_LABEL, label);
         startForegroundServiceCompat(ctx, i);
     }
 
