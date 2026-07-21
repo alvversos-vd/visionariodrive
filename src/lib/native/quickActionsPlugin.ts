@@ -39,6 +39,7 @@ export interface QuickActionsPlugin {
   stop(): Promise<{ stopped: boolean }>;
   updateContent(options: UpdateContentOptions): Promise<{ updated: boolean }>;
   showAutoRideCandidate(options: AutoRideCandidateOptions): Promise<void>;
+  hideAutoRideCandidate(): Promise<void>;
   showUndo(options: UndoOptions): Promise<void>;
   hideUndo(): Promise<void>;
   addListener(
@@ -54,6 +55,7 @@ const webStub: QuickActionsPlugin = {
   stop: async () => ({ stopped: false }),
   updateContent: async () => ({ updated: false }),
   showAutoRideCandidate: noop,
+  hideAutoRideCandidate: noop,
   showUndo: noop,
   hideUndo: noop,
   addListener: async () => ({ remove: async () => undefined }) as PluginListenerHandle,
