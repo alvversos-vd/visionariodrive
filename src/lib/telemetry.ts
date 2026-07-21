@@ -14,6 +14,7 @@
 const EVENTS_KEY = 'vd-telemetry';
 const COUNTERS_KEY = 'vd-telemetry-counters';
 const GAMIF_KEY = 'vd-telemetry-gamification';
+const NOTIF_KEY = 'vd-telemetry-notification';
 const MAX = 100;
 
 export interface MigrationEvent {
