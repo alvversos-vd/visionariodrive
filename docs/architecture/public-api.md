@@ -41,6 +41,7 @@
 | `deleteShiftRide(id)` | `string` | `void` | Remove corrida do turno | escreve `vd-rides` |
 | `restoreShiftRide(snap)` | `ShiftRide` | `RideModel \| null` | Undo de delete | escreve `vd-rides` |
 | `revertLastShiftRideEdit(id)` | `string` | `RideModel \| null` | Desfaz última edição | escreve `vd-rides` |
+| `undoLastRide()` | — | `string \| null` | Sprint 7 · CP2 — remove a corrida mais recente (delega em `deleteRide`). Usado apenas pelo `NotificationActionService`. | escreve `vd-rides` |
 
 ### INTERNAL
 
