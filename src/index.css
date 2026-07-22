@@ -12,11 +12,11 @@
 
 @layer base {
   :root {
-    /* Superfícies em 4 níveis de grafite — nunca #000 absoluto */
-    --background: 222 18% 6%;          /* app */
+    /* Sprint 7.5 — AMOLED premium: bg preto puro, cards em grafite fino */
+    --background: 0 0% 0%;             /* AMOLED true black */
     --foreground: 210 20% 96%;
 
-    --card: 222 16% 9%;                /* elevated */
+    --card: 222 14% 7%;                /* elevated (carbono) */
     --card-foreground: 210 20% 96%;
 
     --popover: 222 14% 12%;            /* overlay (sheets/modais) */
@@ -60,7 +60,8 @@
     --radius-sm: 0.625rem;             /* 10px — inputs/buttons */
 
     /* Gradientes & efeitos */
-    --gradient-hero: linear-gradient(180deg, hsl(222 16% 10%) 0%, hsl(222 18% 6%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(222 14% 8%) 0%, hsl(0 0% 0%) 100%);
+    --gradient-carbon: linear-gradient(135deg, hsl(222 14% 8%) 0%, hsl(0 0% 3%) 60%, hsl(222 12% 6%) 100%);
     --gradient-brand: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
     --gradient-profit: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(160 70% 42%) 100%);
     --gradient-info: linear-gradient(135deg, hsl(var(--info)) 0%, hsl(221 83% 58%) 100%);
@@ -140,6 +141,29 @@
 
   /* Tap feedback premium */
   .press { @apply transition-transform duration-100 active:scale-[0.98]; }
+
+  /* ===== Sprint 7.5 — Cards premium (AMOLED + carbono + hairline) ===== */
+  .card-premium {
+    background: var(--gradient-carbon);
+    border: 1px solid hsl(var(--border) / 0.7);
+    box-shadow: inset 0 1px 0 hsl(210 20% 96% / 0.03), var(--shadow-elevated);
+    border-radius: var(--radius);
+  }
+  .card-glass {
+    background: hsl(222 14% 8% / 0.65);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid hsl(var(--border) / 0.6);
+    border-radius: var(--radius);
+  }
+  .card-highlight {
+    background: var(--gradient-carbon);
+    border: 1px solid hsl(var(--primary) / 0.35);
+    box-shadow: inset 0 1px 0 hsl(var(--primary) / 0.08), 0 0 24px -8px hsl(var(--primary) / 0.35);
+    border-radius: var(--radius);
+  }
+  .divider-hairline { border-top: 1px solid hsl(var(--border) / 0.6); }
+  .text-neon { color: hsl(var(--primary)); text-shadow: 0 0 12px hsl(var(--primary) / 0.45); }
 }
 
 /* ============================================================
@@ -174,6 +198,13 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in-up { animation: fade-in-up 240ms ease-out both; }
+
+@keyframes splash-in {
+  0% { opacity: 0; transform: scale(0.82); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-splash-in { animation: splash-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -9,7 +9,7 @@
 
     <!-- PWA / Mobile -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0F172A" />
+    <meta name="theme-color" content="#000000" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -17,6 +17,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      html,body{background:#000;}
+      #vd-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;transition:opacity .45s ease}
+      #vd-splash.hide{opacity:0;pointer-events:none}
+      #vd-splash .glow{position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.35),transparent 65%);filter:blur(24px);animation:vdpulse 2s ease-in-out infinite}
+      #vd-splash img{position:relative;width:112px;height:112px;border-radius:28px;animation:vdin .6s cubic-bezier(.22,1,.36,1) both}
+      @keyframes vdin{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+      @keyframes vdpulse{0%,100%{opacity:.55;transform:scale(.95)}50%{opacity:.85;transform:scale(1.05)}}
+      @media (prefers-reduced-motion:reduce){#vd-splash img,#vd-splash .glow{animation:none}}
+    </style>
 
     <meta name="format-detection" content="telephone=no" />
 
@@ -32,7 +42,20 @@
   </head>
 
   <body>
+    <div id="vd-splash" aria-hidden="true">
+      <div class="glow"></div>
+      <img src="/icon-512.png" alt="" draggable="false" />
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function(){
+        var s=document.getElementById('vd-splash');
+        if(!s)return;
+        var hide=function(){s.classList.add('hide');setTimeout(function(){s&&s.parentNode&&s.parentNode.removeChild(s)},600)};
+        var minShown=setTimeout(hide,900);
+        window.addEventListener('vd-app-ready',function(){clearTimeout(minShown);hide()},{once:true});
+      })();
+    </script>
   </body>
 </html>
