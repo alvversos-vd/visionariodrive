@@ -10,6 +10,7 @@ import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIc
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
 import { achievementService } from '@/lib/services/achievementService';
+import { BRAND_ICON_URL, BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
 // Cada view carrega apenas quando o usuário navegar até ela.
@@ -119,12 +120,18 @@ export default function Index() {
       <header className="bg-hero border-b border-border/60 px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
         <div className="container max-w-lg mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-gradient-brand shadow-glow-sm flex items-center justify-center">
-              <span className="font-display font-bold text-primary-foreground text-lg leading-none">V</span>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl blur-md bg-primary/30" />
+              <img
+                src={BRAND_ICON_URL}
+                alt=""
+                className="relative h-9 w-9 rounded-xl select-none"
+                draggable={false}
+              />
             </div>
             <div>
-              <h1 className="font-display text-[17px] font-bold text-foreground tracking-tight leading-none">Visionario Drive</h1>
-              <p className="text-[10px] text-muted-foreground tracking-wide mt-1">Lucro real · Decisão rápida · Controle</p>
+              <h1 className="font-display text-[17px] font-bold text-foreground tracking-tight leading-none">{BRAND_NAME}</h1>
+              <p className="text-[10px] text-muted-foreground tracking-wide mt-1">{BRAND_TAGLINE}</p>
             </div>
           </div>
           <div className="flex gap-1.5 items-center">

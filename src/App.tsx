@@ -18,6 +18,8 @@ import AchievementToast from "./components/gamification/AchievementToast.tsx";
 import LevelUpModal from "./components/gamification/LevelUpModal.tsx";
 import GamificationBoot from "./components/gamification/GamificationBoot.tsx";
 import NotificationActionsBoot from "./components/native/NotificationActionsBoot.tsx";
+import { BRAND_ICON_URL, BRAND_NAME } from "@/assets/branding/logo";
+import { useEffect } from "react";
 
 
 const queryClient = new QueryClient();
@@ -25,16 +27,30 @@ const queryClient = new QueryClient();
 function FullScreenLoader({ label }: { label: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-2xl shadow-lg animate-pulse">
-        VD
+      <div className="relative">
+        <div className="absolute inset-0 rounded-3xl blur-2xl bg-primary/30 animate-pulse-glow" />
+        <img
+          src={BRAND_ICON_URL}
+          alt=""
+          className="relative w-20 h-20 rounded-3xl animate-splash-in select-none"
+          draggable={false}
+        />
       </div>
-      <p className="font-display text-lg font-bold text-foreground">Visionario Drive</p>
+      <p className="font-display text-lg font-bold text-foreground tracking-tight">{BRAND_NAME}</p>
       <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Loader2 className="animate-spin" size={16} />
         <span>{label}</span>
       </div>
     </div>
   );
+}
+
+/** Sinaliza para o splash HTML que a app está pronta (uma vez por sessão). */
+function AppReadySignal() {
+  useEffect(() => {
+    window.dispatchEvent(new Event('vd-app-ready'));
+  }, []);
+  return null;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +75,7 @@ const App = () => (
       <BrowserRouter>
 
         <AuthProvider>
+          <AppReadySignal />
           <GamificationBoot />
           <NotificationActionsBoot />
           <Routes>
