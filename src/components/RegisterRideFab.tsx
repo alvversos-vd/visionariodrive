@@ -104,11 +104,11 @@ export default function RegisterRideFab({ onChange }: Props) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          className="overlay-scrim flex items-end sm:items-center justify-center"
           onClick={() => { setOpen(false); reset(); }}
         >
           <div
-            className="bg-card rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-sm space-y-4 border-t sm:border animate-slide-up max-h-[92vh] overflow-y-auto pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            className="bg-card rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-sm space-y-4 border-t sm:border animate-slide-up max-h-[92vh] overflow-y-auto pb-[max(1.25rem,env(safe-area-inset-bottom))]"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
