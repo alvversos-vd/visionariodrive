@@ -636,7 +636,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {pickerOpen && (
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPickerOpen(false)}>
-            <div className="surface-1 sm:rounded-2xl rounded-t-3xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
+            <div className="surface-1 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
               {step === 'date' && (
                 <>
                   <div className="space-y-1">
