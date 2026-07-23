@@ -140,6 +140,17 @@
   .text-label { @apply text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground; }
   .text-kpi { @apply font-display font-semibold tracking-tight; font-variant-numeric: tabular-nums; }
 
+  /* Sprint 7.5 Onda 1 — utilitários tipográficos aprovados */
+  .text-micro { font-size: 10px; line-height: 1.15; letter-spacing: 0.02em; }
+  .text-caption { font-size: 11px; line-height: 1.25; letter-spacing: 0.01em; }
+  .kpi-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
   .surface-1 { background-color: hsl(var(--card)); }
   .surface-2 { background-color: hsl(var(--popover)); }
   .surface-inset { background-color: hsl(var(--input)); }
@@ -169,6 +180,17 @@
   }
   .divider-hairline { border-top: 1px solid hsl(var(--border) / 0.6); }
   .text-neon { color: hsl(var(--primary)); text-shadow: 0 0 12px hsl(var(--primary) / 0.45); }
+
+  /* ===== Sprint 7.5 Onda 1 — overlay padrão para dialogs/sheets manuais ===== */
+  .overlay-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    animation: fade-in-up 200ms ease-out both;
+  }
 }
 
 /* ============================================================
