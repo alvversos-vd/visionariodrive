@@ -233,6 +233,25 @@
 }
 .animate-splash-in { animation: splash-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+/* Sprint 7.5 Onda 1 — microinterações premium */
+@keyframes count-up {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-count-up { animation: count-up 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes bar-fill {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+.animate-bar-fill { animation: bar-fill 600ms cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: left center; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0), 0 0 12px -2px hsl(var(--primary) / 0.35); }
+  50% { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), 0 0 24px -2px hsl(var(--primary) / 0.55); }
+}
+.animate-glow-pulse { animation: glow-pulse 2.4s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
