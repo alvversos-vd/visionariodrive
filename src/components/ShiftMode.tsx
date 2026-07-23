@@ -1192,7 +1192,7 @@ export default function ShiftMode({ onChange }: Props) {
   // ============ RIDE MODAL ============
   function renderRideModal() {
     return (
-      <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setRideOpen(false)}>
+      <div className="overlay-scrim z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setRideOpen(false)}>
         <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base">Nova corrida</h3>
