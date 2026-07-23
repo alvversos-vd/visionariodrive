@@ -1,9 +1,34 @@
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border border-border/70 bg-card text-card-foreground shadow-elevated", className)} {...props} />
+/**
+ * Card variants — Sprint 7.5 Onda 1.
+ * Consumidores devem preferir `variant` a className manual.
+ * - default: base neutro (mantido para compat).
+ * - premium: gradient carbon + hairline + shadow-elevated.
+ * - glass: backdrop-blur para overlays/sheets.
+ * - highlight: borda neon para hero/KPI destacado.
+ */
+const cardVariants = cva("text-card-foreground", {
+  variants: {
+    variant: {
+      default: "rounded-lg border border-border/70 bg-card shadow-elevated",
+      premium: "card-premium",
+      glass: "card-glass",
+      highlight: "card-highlight",
+    },
+  },
+  defaultVariants: { variant: "default" },
+});
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, variant, ...props }, ref) => (
+  <div ref={ref} className={cn(cardVariants({ variant }), className)} {...props} />
 ));
 
 Card.displayName = "Card";
@@ -41,4 +66,4 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants };

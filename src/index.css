@@ -56,8 +56,13 @@
     --input: 222 16% 11%;
     --ring: 142 72% 55%;
 
+    /* Mapa — cor semântica da rota GPS (Leaflet). Desacoplada da marca. */
+    --map-route-color: 16 100% 60%;          /* #FF6B35 aproximado */
+    --map-route-contrast: 210 20% 96%;       /* halo do marker */
+
     --radius: 0.875rem;                /* 14px — cards/sheets */
     --radius-sm: 0.625rem;             /* 10px — inputs/buttons */
+    --radius-lg: 1.25rem;              /* 20px — hero/bottom-sheets */
 
     /* Gradientes & efeitos */
     --gradient-hero: linear-gradient(180deg, hsl(222 14% 8%) 0%, hsl(0 0% 0%) 100%);
@@ -135,6 +140,17 @@
   .text-label { @apply text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground; }
   .text-kpi { @apply font-display font-semibold tracking-tight; font-variant-numeric: tabular-nums; }
 
+  /* Sprint 7.5 Onda 1 — utilitários tipográficos aprovados */
+  .text-micro { font-size: 10px; line-height: 1.15; letter-spacing: 0.02em; }
+  .text-caption { font-size: 11px; line-height: 1.25; letter-spacing: 0.01em; }
+  .kpi-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
   .surface-1 { background-color: hsl(var(--card)); }
   .surface-2 { background-color: hsl(var(--popover)); }
   .surface-inset { background-color: hsl(var(--input)); }
@@ -164,6 +180,17 @@
   }
   .divider-hairline { border-top: 1px solid hsl(var(--border) / 0.6); }
   .text-neon { color: hsl(var(--primary)); text-shadow: 0 0 12px hsl(var(--primary) / 0.45); }
+
+  /* ===== Sprint 7.5 Onda 1 — overlay padrão para dialogs/sheets manuais ===== */
+  .overlay-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background-color: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    animation: fade-in-up 200ms ease-out both;
+  }
 }
 
 /* ============================================================
@@ -205,6 +232,25 @@
   100% { opacity: 1; transform: scale(1); }
 }
 .animate-splash-in { animation: splash-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Sprint 7.5 Onda 1 — microinterações premium */
+@keyframes count-up {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-count-up { animation: count-up 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes bar-fill {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+.animate-bar-fill { animation: bar-fill 600ms cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: left center; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0), 0 0 12px -2px hsl(var(--primary) / 0.35); }
+  50% { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), 0 0 24px -2px hsl(var(--primary) / 0.55); }
+}
+.animate-glow-pulse { animation: glow-pulse 2.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

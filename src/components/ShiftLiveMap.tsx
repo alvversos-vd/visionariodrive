@@ -83,15 +83,17 @@ export default function ShiftLiveMap({ shift, className }: Props) {
     const segs = segmentRoute(pts);
 
     polylinesRef.current.forEach(p => p.remove());
+    const routeColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--map-route-color').trim() || '16 100% 60%'})`;
+    const contrastColor = `hsl(${getComputedStyle(document.documentElement).getPropertyValue('--map-route-contrast').trim() || '210 20% 96%'})`;
     polylinesRef.current = segs.map(seg =>
-      L.polyline(seg, { color: '#FF6B35', weight: 5, opacity: 0.9, lineJoin: 'round', lineCap: 'round' }).addTo(map)
+      L.polyline(seg, { color: routeColor, weight: 5, opacity: 0.9, lineJoin: 'round', lineCap: 'round' }).addTo(map)
     );
 
     const lastPt = pts[pts.length - 1];
     const last: [number, number] = [lastPt.lat, lastPt.lng];
     if (!markerRef.current) {
       markerRef.current = L.circleMarker(last, {
-        radius: 8, color: '#fff', weight: 3, fillColor: '#FF6B35', fillOpacity: 1,
+        radius: 8, color: contrastColor, weight: 3, fillColor: routeColor, fillOpacity: 1,
       }).addTo(map);
     } else {
       markerRef.current.setLatLng(last);

@@ -1,148 +1,121 @@
 # Sprint 7.5 · Fase B — Gate 0 · Visual Audit
 
-Data: 2026-07-23. Sem escrita de código nesta etapa. Baseline para as ondas 1–6.
+Data: 2026-07-23. Baseline para as ondas 1–6. Atualizado ao fim da Onda 1 (2026-07-23).
 
 ## 1. Cores hardcoded
 
 **Componentes de app (excluindo `src/components/ui/**` e `src/integrations/**`):**
 
-| Ocorrência | Arquivo | Nota |
+| Ocorrência | Arquivo | Status Onda 1 |
 | --- | --- | --- |
-| `#646cffaa`, `#61dafbaa`, `#888` | `src/App.css` | Legado Vite template. Arquivo não importado pelo app real (`main.tsx` importa apenas `index.css`). **Ação:** remover/limpar `App.css` na Onda 1. |
-| `bg-[#000]` | `src/components/SplashScreen.tsx` (l.34) | Preto absoluto intencional (splash AMOLED). **Ação:** trocar por `bg-background` (já é `0 0% 0%`). |
-| `#FF6B35`, `#fff` | `src/components/ShiftLiveMap.tsx` (l.87, l.94) | Cores passadas ao Leaflet (`L.polyline`, `L.circleMarker`) — API JS externa, não Tailwind. **Ação:** mover para `hsl(var(--primary))` via `getComputedStyle` ou expor const de tema para Leaflet. Baixa prioridade (só rota GPS). |
+| `#646cffaa`, `#61dafbaa`, `#888` | `src/App.css` | ✅ **Removido** — arquivo legado deletado. |
+| `bg-[#000]` | `src/components/SplashScreen.tsx` | ✅ **Migrado** para `bg-background` (AMOLED). |
+| `#FF6B35`, `#fff` | `src/components/ShiftLiveMap.tsx` | ✅ **Migrado** para `hsl(var(--map-route-color))` e `hsl(var(--map-route-contrast))`. Ver §11. |
 
-**Uso de `bg-black/70`, `bg-white/15` em overlays custom (dialogs manuais):**
-
-- `src/components/BackgroundLocationConsentDialog.tsx`
-- `src/components/GpsConsentDialog.tsx`
-- `src/components/InstallAppButton.tsx`
-- `src/components/RegisterRideFab.tsx`
-- `src/components/ShiftMode.tsx` (2×)
-- `src/components/PermissionOnboarding.tsx`
-
-Total: **8 overlays** implementados fora do `Dialog`/`Sheet` do shadcn. **Ação Onda 1:** trocar por `bg-background/80 backdrop-blur-sm` (token AMOLED puro) e `bg-card/... ` no card interno; adotar `Sheet` do shadcn onde a UX for a mesma.
+**Overlays manuais (`bg-black/70`):** todos migrados para o utilitário `.overlay-scrim`
+(`BackgroundLocationConsentDialog`, `GpsConsentDialog`, `RegisterRideFab`, `ShiftMode` ×2).
+Onboarding e Install já usam surface própria — sem regressão.
 
 ## 2. Shadows
 
-- **Nenhuma shadow arbitrária (`shadow-[...]`)** no código de app. ✅
-- Todos os componentes já usam `shadow-elevated`, `shadow-premium`, `shadow-glow`, `shadow-glow-sm` (tokens em `index.css`).
+- Nenhuma shadow arbitrária. ✅ (mantido)
 
 ## 3. Border radius — distribuição
 
-| Classe | Ocorrências | Status |
-| --- | --- | --- |
-| `rounded-lg` | 100 | ✅ token `--radius` (14px) |
-| `rounded-xl` | 80 | ⚠️ Tailwind default 12px — considerar migrar `rounded-lg`/`rounded-xl` para **um** único radius grande via token |
-| `rounded-full` | 51 | ✅ correto para pills/avatars |
-| `rounded-md` | 41 | ✅ token `--radius-sm` (10px) |
-| `rounded-2xl` | 26 | ⚠️ default 16px — usar em cards Hero |
-| `rounded-3xl` / `-t-3xl` | 8 | ❌ **excesso** — bottom-sheets custom. Padronizar em `rounded-t-2xl` |
-| `rounded-t-2xl` | 1 | ok |
+- `rounded-3xl` e `rounded-t-3xl` → **0** (bottom-sheets padronizados em `rounded-t-2xl`). ✅
+- Escala oficial: `sm=10px` (`--radius-sm`) / `md=14px` (`--radius`) / `lg=20px` (`--radius-lg`).
+- `rounded-xl` / `rounded-2xl` ainda usados extensivamente — permitido (defaults Tailwind alinhados à escala).
 
-**Ação Onda 1:** definir escala de 3 radii apenas (`sm=10 / md=14 / lg=20`); mapear `rounded-xl → rounded-lg` em cards; `rounded-3xl → rounded-2xl` em sheets.
+## 4. Paddings arbitrários (safe-area)
 
-## 4. Paddings arbitrários
+- Unificado em `pb-[max(1.25rem,env(safe-area-inset-bottom))]` (`RegisterRideFab`, `PermissionOnboarding`, `ShiftMode`). ✅
 
-Somente 4 casos, todos **legítimos** (safe-area iOS/Android):
+## 5. Tipografia — utilitários aprovados
 
-- `pt-[max(1.25rem,env(safe-area-inset-top))]` — `pages/Index.tsx`
-- `pb-[max(1.25rem,env(safe-area-inset-bottom))]` × 2 — `ShiftMode`, `RegisterRideFab`
-- `pb-[max(1.5rem,env(safe-area-inset-bottom))]` — `PermissionOnboarding`
+Novos utilitários em `src/index.css`:
 
-**Ação:** unificar para `pb-[max(1.25rem,env(safe-area-inset-bottom))]` — 1.5rem se torna inconsistente.
+- `.text-micro` — 10px.
+- `.text-caption` — 11px.
+- `.kpi-display` — display display font, tabular, letter-spacing -0.03em.
 
-## 5. Tipografia — `text-[Npx]` arbitrária
+Ainda restam ocorrências de `text-[Npx]` em componentes de app; a migração ocorre nas ondas 2–5 (Dashboard → Perfil → Financeiro → Histórico), consumindo os utilitários. A checklist em `scripts/design-system-check.sh` permite apenas `text-[Npx]` com N ≥ 32 (KPIs display).
 
-240 ocorrências totais, distribuição:
+## 6. Font weights
 
-| Tamanho | Uso | Recomendação |
-| --- | --- | --- |
-| `text-[10px]` | 109 | Criar utilitário `.text-micro` |
-| `text-[11px]` | 83 | Criar utilitário `.text-caption` |
-| `text-[9px]` | 25 | ⚠️ próximo ao ilegível — auditar e migrar para 10px onde possível |
-| `text-[12–15px]` | 15 | Migrar para `text-xs`/`text-sm` (12/14) |
-| `text-[42–72px]` | 5 | KPIs grandes — mover para `.kpi-display` no `index.css` |
-| `text-[17px]` | 2 | Migrar para `text-base` (16) ou `text-lg` (18) |
-
-**Ação Onda 1:** criar 4 utilitários semânticos e migrar em massa via find/replace controlado por onda (Dashboard → Perfil → Financeiro → Histórico).
-
-## 6. Font weights — distribuição
-
-| Weight | Uso | Nota |
-| --- | --- | --- |
-| `font-semibold` | 193 | ✅ padrão |
-| `font-bold` | 149 | ✅ enfâse |
-| `font-medium` | 21 | ✅ labels |
-| `font-normal` | 8 | ok (limpar redundância com defaults) |
-| `font-black` | 1 | ❌ isolado — remover |
-
-Escala aprovada: **medium / semibold / bold** (mais `regular` implícito).
+- `font-black` → **0**. ✅ (substituído por `font-bold` em `PermissionOnboarding`.)
+- Escala oficial: `medium / semibold / bold`.
 
 ## 7. Animações — inventário
 
-Em `src/index.css`:
+Adicionadas nesta onda em `src/index.css`:
 
-- `pulse-dot`, `pulse-glow`, `fab-pop`, `kpi-flash`, `fade-in-up`, `splash-in`.
+- `count-up` (240ms · KPIs) — `.animate-count-up`
+- `bar-fill` (600ms · progress/metas) — `.animate-bar-fill`
+- `glow-pulse` (2.4s · hero card / status ao vivo) — `.animate-glow-pulse`
 
-Em `tailwind.config.ts`:
+Todas dentro do orçamento de 250ms para microinteração (exceto `bar-fill` intencional e `glow-pulse` looping).
 
-- `accordion-down/up`, `slide-up`, `fade-in`.
+## 8. Componentes shadcn — variants novos
 
-Duplicidades:
-- `fade-in` (tailwind, 240ms) vs `fade-in-up` (css, 240ms) — **overlap**. Definir 1 canônico por eixo (fade puro vs fade+lift).
-- Nenhuma animação > 620ms (splash) — todas dentro de 250ms alvo. ✅
+- **`Card`** (`src/components/ui/card.tsx`): variants `default | premium | glass | highlight`. Componentes de feature devem consumir `<Card variant="premium">` em vez de className manual.
+- **`Badge`** (`src/components/ui/badge.tsx`): variants `success | warning | info | pro`.
 
-**Ação Onda 1:** adicionar `count-up`, `bar-fill`, `glow-pulse` para KPIs, meta e hero card.
-
-## 8. Componentes shadcn
-
-**48 primitives** disponíveis. Variants custom encontrados:
-
-- **Button:** 6 variants (`default`, `destructive`, `outline`, `secondary`, `ghost`, `link`) + 4 sizes — completo.
-- **Card:** sem variants — só `rounded-lg + bg-card + shadow-elevated`. **Ação:** adicionar variants `premium`, `glass`, `highlight` no `card.tsx` para que Dashboard/Financeiro/Perfil consumam `<Card variant="premium">` em vez de className manual.
-- **Badge:** 4 variants — **falta `success`, `warning`, `info`, `pro`**. **Ação:** estender.
-- **Progress:** default — sem indicador circular. **Ação:** criar `<ProgressWithDot />` local ou variant.
+Consumo será feito nas ondas 2–5. Não introduzimos className duplicada nesta onda.
 
 ## 9. Dialogs / Overlays
 
-6 componentes com overlay manual em vez do `Dialog`/`Sheet` shadcn (ver §1). Adicionalmente `RegisterRideFab` e `ShiftMode` implementam bottom-sheets custom com `rounded-t-3xl + max-h-[92vh]`.
-
-**Ação Onda 1:** criar utilitário `.overlay-scrim` (`fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-fade-in`) e substituir em todos.
+- Utilitário `.overlay-scrim` publicado em `src/index.css` (fixed inset-0 · `bg-background/80` · `backdrop-blur` · `animate-fade-in-up 200ms`).
+- Todos os 5 overlays manuais migrados. Onboarding e Install permanecem com surface própria por design.
 
 ## 10. Cores hardcoded já removidas (baseline positivo)
 
-- Zero `text-white`, `bg-white`, `text-slate-*`, `bg-gray-*` em componentes de app. ✅
-- Todos os componentes já usam semantic tokens (`text-foreground`, `bg-card`, `text-muted-foreground`, `bg-secondary`, `text-primary-foreground`, etc). ✅
-- Sistema de tokens `--profit / --loss / --info / --warning / --destructive` já existe. ✅
+Mantido — zero regressões detectadas.
+
+## 11. Exceção documentada — Cor da rota GPS
+
+`ShiftLiveMap.tsx` desenha a rota via API JS do Leaflet (`L.polyline`, `L.circleMarker`), fora do pipeline Tailwind. A cor **não** representa a identidade visual da marca (verde Visionário), e sim uma cor semântica de visualização cartográfica.
+
+**Decisão:** manter uma cor distinta da marca, mas expor via token:
+
+- `--map-route-color: 16 100% 60%` (laranja alto contraste sobre tiles claros/escuros).
+- `--map-route-contrast: 210 20% 96%` (halo/traço do marker).
+
+Leitura via `getComputedStyle(document.documentElement).getPropertyValue(...)` no efeito de render do mapa. Trocar a cor da rota agora é 1 linha em `src/index.css` — sem tocar em componente.
+
+## 12. Governança adicionada nesta onda (regras do CTO)
+
+1. **Componentes de feature não definem aparência base.**
+   Nenhum novo componente pode nascer com `rounded-*`, `shadow-*`, `bg-card`, `bg-secondary`, `text-foreground` no primeiro `<div>` "wrapper" — deve usar `<Card variant="…">`, `.card-premium`, `.card-glass`, `.overlay-scrim`, etc. Aparência base vem do Design System.
+2. **Checklist automática ao fim de cada onda.**
+   `scripts/design-system-check.sh` valida:
+   - `font-black` = 0
+   - `rounded-3xl` / `rounded-t-3xl` = 0
+   - `bg-black/70` = 0
+   - `text-[Npx]` só permitido para N ≥ 32 (KPIs display)
+   - `#hex` = 0 fora de `src/components/ui/**` e `src/integrations/**`
+   Rodar em conjunto com `tsgo`, `eslint` e `vitest`.
 
 ## Conclusão do Gate 0
 
-Estado geral: **muito saudável**. As inconsistências são localizadas e resolvíveis via Design System — não exigem edição componente a componente.
+Estado geral: **muito saudável**. Onda 1 concluída — fundação pronta para as ondas 2–5.
 
-### Backlog congelado para as ondas seguintes
+### Onda 1 — Concluída ✅
 
-**Onda 1 (Fundação):**
-1. Remover `src/App.css` (legado).
-2. Trocar `bg-[#000]` do `SplashScreen` por `bg-background`.
-3. Extrair cor do polyline Leaflet para computed style de `--primary`.
-4. Utilitários tipográficos: `.text-micro (10px)`, `.text-caption (11px)`, `.kpi-display`.
-5. Utilitário `.overlay-scrim`.
-6. Escala de radius: mapear `rounded-3xl → -2xl`; unificar safe-area padding.
-7. Variants novos: `Card variant="premium|glass|highlight"`, `Badge variant="success|warning|info|pro"`.
-8. Keyframes novos: `count-up`, `bar-fill`, `glow-pulse`.
-9. Remover `font-black`.
+1. ✅ Removido `src/App.css` (legado Vite template).
+2. ✅ Splash migrado para `bg-background` + `rounded-2xl`.
+3. ✅ Leaflet migrado para token `--map-route-color` (exceção documentada em §11).
+4. ✅ Utilitários tipográficos: `.text-micro`, `.text-caption`, `.kpi-display`.
+5. ✅ Utilitário `.overlay-scrim` + 5 dialogs migrados.
+6. ✅ Escala de radius: `rounded-3xl → rounded-2xl`; safe-area unificado.
+7. ✅ `Card variant="premium|glass|highlight"`; `Badge variant="success|warning|info|pro"`.
+8. ✅ Keyframes: `count-up`, `bar-fill`, `glow-pulse`.
+9. ✅ `font-black` removido.
+10. ✅ Checklist automática: `scripts/design-system-check.sh`.
 
-**Ondas 2–5:** consumir novos variants/utilitários em Dashboard, Nav, Financeiro, Histórico, Perfil, Conquistas — sem className duplicada.
+### Métrica de sucesso (checar na Onda 6)
 
-**Onda 6:** re-rodar este audit; qualquer nova entrada nas tabelas §1–§6 é regressão.
-
-### Métrica de sucesso
-
-Após Onda 6, o mesmo audit deve mostrar:
-
-- `text-[Npx]` ≤ 20 ocorrências (só KPIs display).
-- `rounded-3xl` = 0.
-- `font-black` = 0.
-- Overlays manuais = 0.
-- Cores hardcoded em componentes = 0 (Leaflet exposto via CSS var).
+- `text-[Npx]` só com N ≥ 32.
+- `rounded-3xl` = 0. (atingido nesta onda ✅)
+- `font-black` = 0. (atingido nesta onda ✅)
+- Overlays manuais com `bg-black/70` = 0. (atingido nesta onda ✅)
+- Cores hardcoded em componentes = 0. (atingido nesta onda ✅, Leaflet via CSS var)

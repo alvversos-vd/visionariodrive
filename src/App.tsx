@@ -28,11 +28,11 @@ function FullScreenLoader({ label }: { label: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
       <div className="relative">
-        <div className="absolute inset-0 rounded-3xl blur-2xl bg-primary/30 animate-pulse-glow" />
+        <div className="absolute inset-0 rounded-2xl blur-2xl bg-primary/30 animate-pulse-glow" />
         <img
           src={BRAND_ICON_URL}
           alt=""
-          className="relative w-20 h-20 rounded-3xl animate-splash-in select-none"
+          className="relative w-20 h-20 rounded-2xl animate-splash-in select-none"
           draggable={false}
         />
       </div>

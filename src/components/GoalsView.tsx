@@ -91,7 +91,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
           <p className="text-2xl font-display font-bold mt-1 number-tabular">{fmt(goals.daily)}</p>
         </div>
-        <div className="bg-gradient-to-br from-card to-secondary/30 rounded-3xl p-8 border border-border/60 shadow-premium">
+        <div className="bg-gradient-to-br from-card to-secondary/30 rounded-2xl p-8 border border-border/60 shadow-premium">
           <p className={`text-7xl font-display font-bold number-tabular ${dailyProgress >= 100 ? 'text-profit' : 'text-primary'}`}>{dailyProgress.toFixed(0)}%</p>
           <div className="w-full bg-secondary/60 rounded-full h-3 overflow-hidden mt-5">
             <div className={`h-full transition-all duration-700 ${dailyProgress >= 100 ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${dailyProgress}%` }} />

@@ -636,7 +636,7 @@ export default function ShiftMode({ onChange }: Props) {
 
         {pickerOpen && (
           <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setPickerOpen(false)}>
-            <div className="surface-1 sm:rounded-2xl rounded-t-3xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
+            <div className="surface-1 sm:rounded-2xl rounded-t-2xl p-5 w-full max-w-sm space-y-3 border-t sm:border border-border/60 shadow-premium max-h-[85vh] overflow-y-auto animate-fade-in-up pb-[max(1.25rem,env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
               {step === 'date' && (
                 <>
                   <div className="space-y-1">
@@ -1192,7 +1192,7 @@ export default function ShiftMode({ onChange }: Props) {
   // ============ RIDE MODAL ============
   function renderRideModal() {
     return (
-      <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setRideOpen(false)}>
+      <div className="overlay-scrim z-[70] flex items-end sm:items-center justify-center p-4" onClick={() => setRideOpen(false)}>
         <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base">Nova corrida</h3>
@@ -1270,7 +1270,7 @@ export default function ShiftMode({ onChange }: Props) {
     const previewValid = Number.isFinite(kmNum) && kmNum > 0 && Number.isFinite(valorNum) && valorNum > 0;
     const previewCls = previewValid ? shiftService.classifyRide(valorNum, kmNum, shift!) : null;
     return (
-      <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setEditing(null)}>
+      <div className="overlay-scrim z-[80] flex items-end sm:items-center justify-center p-4" onClick={() => setEditing(null)}>
         <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base flex items-center gap-2"><Pencil size={16}/> Editar corrida</h3>

@@ -159,10 +159,10 @@ export default function PermissionOnboarding({ onDone }: Props) {
       <div
         key={step}
         className="
-          surface-1 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl
+          surface-1 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl
           border-t border-border/60 sm:border shadow-premium
           max-h-[95vh] overflow-y-auto
-          pb-[max(1.5rem,env(safe-area-inset-bottom))]
+          pb-[max(1.25rem,env(safe-area-inset-bottom))]
           animate-fade-in-up
         "
       >
@@ -178,7 +178,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
             </button>
           ) : (
             <div className="w-9 h-9 rounded-xl bg-brand-gradient flex items-center justify-center shadow-glow-sm">
-              <span className="font-display font-black text-[15px] text-primary-foreground leading-none">V</span>
+              <span className="font-display font-bold text-[15px] text-primary-foreground leading-none">V</span>
             </div>
           )}
           <div className="min-w-0 flex-1">

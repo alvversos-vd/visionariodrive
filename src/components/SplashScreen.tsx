@@ -31,17 +31,17 @@ export default function SplashScreen() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#000] transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-background transition-opacity duration-500 ${
         fading ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       style={{ WebkitBackfaceVisibility: 'hidden' }}
     >
       <div className="relative">
-        <div className="absolute inset-0 rounded-full blur-3xl opacity-60 bg-primary/40 animate-pulse-glow" />
+        <div className="absolute inset-0 rounded-2xl blur-3xl opacity-60 bg-primary/40 animate-pulse-glow" />
         <img
           src={BRAND_ICON_URL}
           alt=""
-          className="relative w-28 h-28 rounded-3xl animate-splash-in select-none"
+          className="relative w-28 h-28 rounded-2xl animate-splash-in select-none"
           draggable={false}
         />
       </div>
