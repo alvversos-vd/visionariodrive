@@ -28,7 +28,7 @@ export default function BackgroundLocationConsentDialog({ open, onAccept, onDecl
   return (
     <div
       data-vd-modal="consent"
-      className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-in fade-in duration-200"
+      className="overlay-scrim z-[60] flex items-end sm:items-center justify-center p-3"
       onClick={onDecline}
     >
       <div
