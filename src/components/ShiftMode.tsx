@@ -1270,7 +1270,7 @@ export default function ShiftMode({ onChange }: Props) {
     const previewValid = Number.isFinite(kmNum) && kmNum > 0 && Number.isFinite(valorNum) && valorNum > 0;
     const previewCls = previewValid ? shiftService.classifyRide(valorNum, kmNum, shift!) : null;
     return (
-      <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setEditing(null)}>
+      <div className="overlay-scrim z-[80] flex items-end sm:items-center justify-center p-4" onClick={() => setEditing(null)}>
         <div className="bg-card rounded-2xl p-5 w-full max-w-sm space-y-4 border animate-slide-up" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-base flex items-center gap-2"><Pencil size={16}/> Editar corrida</h3>
