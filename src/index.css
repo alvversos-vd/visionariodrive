@@ -56,8 +56,13 @@
     --input: 222 16% 11%;
     --ring: 142 72% 55%;
 
+    /* Mapa — cor semântica da rota GPS (Leaflet). Desacoplada da marca. */
+    --map-route-color: 16 100% 60%;          /* #FF6B35 aproximado */
+    --map-route-contrast: 210 20% 96%;       /* halo do marker */
+
     --radius: 0.875rem;                /* 14px — cards/sheets */
     --radius-sm: 0.625rem;             /* 10px — inputs/buttons */
+    --radius-lg: 1.25rem;              /* 20px — hero/bottom-sheets */
 
     /* Gradientes & efeitos */
     --gradient-hero: linear-gradient(180deg, hsl(222 14% 8%) 0%, hsl(0 0% 0%) 100%);
