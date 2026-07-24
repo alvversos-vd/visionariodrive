@@ -1,9 +1,12 @@
 /**
  * FinancialView — aba "Financeiro" do START.
  *
- * Substitui a antiga "Gastos". Componente puramente apresentacional:
- * lê via FinancialService, dispara mutations via FinancialService.
- * Nenhuma regra de cálculo financeiro aqui.
+ * Sprint 7.5 Onda 3 — Estilo bancário:
+ * timeline hairline por linha, valor tabular à direita,
+ * ícone monocromo à esquerda, categoria + metadados no meio.
+ *
+ * Componente puramente apresentacional: lê via FinancialService,
+ * dispara mutations via FinancialService. Nenhuma regra de cálculo aqui.
  */
 
 import { useMemo, useState } from 'react';
@@ -28,13 +31,26 @@ function fmt(v: number) {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 }
 
-const TAB_META: Record<FinancialType, { label: string; icon: typeof Sparkles; empty: string; cta: string }> = {
-  bonus:   { label: 'Bônus',          icon: Sparkles, empty: 'Nenhum bônus registrado',          cta: 'Adicionar bônus' },
-  expense: { label: 'Despesas',       icon: Receipt,  empty: 'Nenhuma despesa registrada',       cta: 'Adicionar despesa' },
-  income:  { label: 'Outras receitas',icon: Banknote, empty: 'Nenhuma receita extra registrada', cta: 'Adicionar receita' },
+function groupByDate(entries: FinancialEntry[]): Array<{ date: string; items: FinancialEntry[] }> {
+  const map = new Map<string, FinancialEntry[]>();
+  for (const e of entries) {
+    const key = e.date.slice(0, 10);
+    const bucket = map.get(key) ?? [];
+    bucket.push(e);
+    map.set(key, bucket);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .map(([date, items]) => ({ date, items }));
+}
+
+const TAB_META: Record<FinancialType, { label: string; icon: typeof Sparkles; empty: string; cta: string; sign: '+' | '−'; color: string }> = {
+  bonus:   { label: 'Bônus',           icon: Sparkles, empty: 'Nenhum bônus registrado',          cta: 'Adicionar bônus',   sign: '+', color: 'text-profit' },
+  expense: { label: 'Despesas',        icon: Receipt,  empty: 'Nenhuma despesa registrada',       cta: 'Adicionar despesa', sign: '−', color: 'text-loss' },
+  income:  { label: 'Outras receitas', icon: Banknote, empty: 'Nenhuma receita extra registrada', cta: 'Adicionar receita', sign: '+', color: 'text-profit' },
 };
 
 function startOfMonth() {
@@ -45,17 +61,17 @@ export default function FinancialView({ refresh, onChanged }: Props) {
   const [tab, setTab] = useState<FinancialType>('bonus');
   const [formOpen, setFormOpen] = useState(false);
 
-  // Métricas do período (via MetricsService)
   const monthMetrics = useMemo(
     () => { void refresh; return metricsService.rangeMetrics(startOfMonth(), new Date()); },
     [refresh],
   );
 
-  // Listagem da aba ativa (via FinancialService)
   const entries = useMemo<FinancialEntry[]>(
     () => { void refresh; return financialService.list({ type: tab }); },
     [refresh, tab],
   );
+
+  const grouped = useMemo(() => groupByDate(entries), [entries]);
 
   const handleSubmit = (payload: { type: FinancialType; value: number; category: string; app?: FinancialEntry['app']; notes?: string }) => {
     financialService.add({
@@ -79,19 +95,23 @@ export default function FinancialView({ refresh, onChanged }: Props) {
 
   const meta = TAB_META[tab];
   const Icon = meta.icon;
+  const monthNet = monthMetrics.bonus + monthMetrics.income - monthMetrics.expense;
 
   return (
     <div className="space-y-4 animate-slide-up">
-      {/* Header / KPIs do mês */}
-      <div className="relative overflow-hidden rounded-2xl p-5 bg-card border border-border/70 shadow-premium">
+      {/* Header estilo extrato bancário — saldo do mês em destaque */}
+      <div className="card-premium relative overflow-hidden p-5 animate-fade-in-up">
         <div className="absolute inset-x-0 top-0 h-px bg-primary/60" />
-        <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">
-          Financeiro · este mês
+        <p className="text-micro uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">
+          Saldo financeiro · este mês
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          <Kpi label="Bônus"    value={fmt(monthMetrics.bonus)}    tone="profit" />
-          <Kpi label="Despesas" value={fmt(monthMetrics.expense)}  tone="loss" />
-          <Kpi label="Receitas" value={fmt(monthMetrics.income)}   tone="neutral" />
+        <p className={`kpi-display mt-2 text-[36px] ${monthNet >= 0 ? 'text-foreground' : 'text-loss'}`}>
+          {monthNet >= 0 ? '' : '−'}{fmt(Math.abs(monthNet))}
+        </p>
+        <div className="mt-5 grid grid-cols-3 gap-3 divide-x divide-border/60">
+          <StatCell label="Bônus"    value={fmt(monthMetrics.bonus)}    tone="profit" />
+          <StatCell label="Receitas" value={fmt(monthMetrics.income)}   tone="profit" />
+          <StatCell label="Despesas" value={fmt(monthMetrics.expense)}  tone="loss" />
         </div>
       </div>
 
@@ -119,33 +139,53 @@ export default function FinancialView({ refresh, onChanged }: Props) {
                 <p className="text-sm font-display font-semibold">{meta.empty}</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {entries.map(e => (
-                  <div key={e.id} className="bg-card rounded-xl p-3.5 border border-border/70 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-base font-display font-bold font-mono-num ${
-                          e.type === 'expense' ? 'text-loss' : 'text-profit'
-                        }`}>
-                          {e.type === 'expense' ? '−' : '+'}{fmt(e.value)}
-                        </span>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">
-                          {e.category}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {fmtDate(e.date)}
-                        {e.app && <> · {e.app}</>}
-                        {e.notes && <> · {e.notes}</>}
+              <div className="card-premium overflow-hidden">
+                {grouped.map((group, gi) => (
+                  <div key={group.date}>
+                    {gi > 0 && <div className="divider-hairline" />}
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+                      <p className="text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">
+                        {fmtDate(group.date)}
+                      </p>
+                      <p className={`text-caption font-mono-num ${TAB_META[t].color}`}>
+                        {TAB_META[t].sign}{fmt(group.items.reduce((s, e) => s + e.value, 0))}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleRemove(e.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive transition-colors press"
-                      aria-label="Remover"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    {group.items.map((e, i) => {
+                      const em = TAB_META[e.type];
+                      const IconRow = em.icon;
+                      return (
+                        <div key={e.id}>
+                          {i > 0 && <div className="mx-4 divider-hairline" />}
+                          <div className="flex items-center gap-3 px-4 py-3">
+                            <div className="h-8 w-8 rounded-lg surface-inset flex items-center justify-center shrink-0">
+                              <IconRow size={14} className={em.color} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-display font-semibold text-foreground truncate">
+                                {e.category}
+                              </p>
+                              <p className="text-caption text-muted-foreground truncate mt-0.5">
+                                {e.app && <>{e.app}</>}
+                                {e.app && e.notes && <> · </>}
+                                {e.notes}
+                                {!e.app && !e.notes && <span className="italic opacity-70">Sem detalhes</span>}
+                              </p>
+                            </div>
+                            <p className={`font-mono-num font-semibold text-base shrink-0 tracking-tight ${em.color}`}>
+                              {em.sign}{fmt(e.value)}
+                            </p>
+                            <button
+                              onClick={() => handleRemove(e.id)}
+                              className="p-1.5 -mr-1.5 text-muted-foreground/70 hover:text-destructive transition-colors press"
+                              aria-label="Remover"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -164,12 +204,12 @@ export default function FinancialView({ refresh, onChanged }: Props) {
   );
 }
 
-function Kpi({ label, value, tone }: { label: string; value: string; tone: 'profit' | 'loss' | 'neutral' }) {
+function StatCell({ label, value, tone }: { label: string; value: string; tone: 'profit' | 'loss' | 'neutral' }) {
   const color = tone === 'profit' ? 'text-profit' : tone === 'loss' ? 'text-loss' : 'text-foreground';
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold">{label}</p>
-      <p className={`mt-1 text-lg font-display font-bold font-mono-num ${color}`}>{value}</p>
+    <div className="px-3 first:pl-0 last:pr-0">
+      <p className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold">{label}</p>
+      <p className={`mt-1 text-base font-display font-semibold font-mono-num ${color}`}>{value}</p>
     </div>
   );
 }

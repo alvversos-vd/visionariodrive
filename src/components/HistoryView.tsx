@@ -280,19 +280,11 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {!(hasFilter && entries.length === 0 && rides.length === 0) && (
       <>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">7 dias</p>
-          <p className="font-display font-bold text-foreground">{daysLast7} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">30 dias</p>
-          <p className="font-display font-bold text-foreground">{daysLast30} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total</p>
-          <p className="font-display font-bold text-foreground">{totalDays} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
+      {/* Sprint 7.5 Onda 3 — dias trabalhados no formato compacto card-premium */}
+      <div className="card-premium p-3 grid grid-cols-3 divide-x divide-border/60">
+        <MiniStat label="7 dias" value={daysLast7} suffix="dias" />
+        <MiniStat label="30 dias" value={daysLast30} suffix="dias" />
+        <MiniStat label="Total" value={totalDays} suffix="dias" />
       </div>
 
       {/* Week summary */}
@@ -441,66 +433,79 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         </div>
       )}
 
-      {/* Daily entry list */}
+      {/* Sprint 7.5 Onda 3 — timeline diária: um card premium por dia */}
       <div className="space-y-2">
-        <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
+        <p className="text-caption font-display font-semibold text-muted-foreground uppercase tracking-wide px-1">
           Histórico diário {hasFilter && `· ${entries.length} de ${allEntries.length}`}
         </p>
         {entries.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-6">Nenhum registro com esse filtro.</p>
         ) : (
           entries.map((entry) => (
-            <div key={entry.id} className="bg-card rounded-lg p-4 border shadow-sm flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
-                    {weekday(entry.date)}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">{fmtDate(entry.date)}</span>
-                  <span className={`text-base font-display font-bold ${entry.profit >= 0 ? 'text-profit' : 'text-loss'}`}>
-                    {fmt(entry.profit)}
-                  </span>
-                </div>
-                {entry.expenseOnly ? (
-                  <>
-                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                      <Receipt size={11} /> Gastos avulsos sem turno registrado · {fmt(entry.expensesExtra)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 italic">
-                      Edite ou remova em "Gastos".
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Ganho: {fmt(entry.totalEarnings)} · Custo: {fmt(entry.totalCost)} · {entry.kmDriven.toFixed(0)} km
-                    </p>
-                    {entry.expensesExtra > 0 && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Receipt size={10} /> inclui {fmt(entry.expensesExtra)} de gastos avulsos
-                      </p>
-                    )}
-                    {(entry.vehicle || entry.rideType) && (
-                      <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                        {entry.vehicle && (
-                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {entry.vehicle}</span>
-                        )}
-                        {entry.rideType && (
-                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {entry.rideType}</span>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+            <div key={entry.id} className="card-premium p-4 animate-fade-in-up relative">
               {!entry.expenseOnly && (
                 <button
                   onClick={() => handleDeleteEntry(entry.id)}
-                  className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                  className="absolute top-2 right-2 p-1.5 text-muted-foreground/60 hover:text-destructive transition-colors press rounded-md"
                   aria-label="Excluir registro"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
+              )}
+              <div className="flex items-start justify-between gap-3 pr-6">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-micro font-display font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
+                      {weekday(entry.date)}
+                    </span>
+                    <span className="text-caption font-mono-num text-muted-foreground">{fmtDate(entry.date)}</span>
+                  </div>
+                  {entry.expenseOnly ? (
+                    <p className="text-caption text-muted-foreground mt-2 flex items-center gap-1.5">
+                      <Receipt size={12} className="text-loss" /> Gastos avulsos · edite em "Financeiro"
+                    </p>
+                  ) : (
+                    (entry.vehicle || entry.rideType) && (
+                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {entry.vehicle && (
+                          <span className="text-micro font-display font-semibold surface-inset text-foreground/80 px-1.5 py-0.5 rounded">{entry.vehicle}</span>
+                        )}
+                        {entry.rideType && (
+                          <span className="text-micro font-display font-semibold surface-inset text-foreground/80 px-1.5 py-0.5 rounded">{entry.rideType}</span>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`kpi-display text-[22px] tracking-tight ${entry.profit >= 0 ? 'text-foreground' : 'text-loss'}`}>
+                    {fmt(entry.profit)}
+                  </p>
+                  <p className="text-micro text-muted-foreground mt-0.5 uppercase tracking-wider">Lucro</p>
+                </div>
+              </div>
+
+              {!entry.expenseOnly && (
+                <div className="mt-3 pt-3 divider-hairline grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-micro uppercase tracking-wider text-muted-foreground">Ganho</p>
+                    <p className="text-caption font-mono-num font-semibold text-foreground mt-0.5">{fmt(entry.totalEarnings)}</p>
+                  </div>
+                  <div>
+                    <p className="text-micro uppercase tracking-wider text-muted-foreground">Custo</p>
+                    <p className="text-caption font-mono-num font-semibold text-loss mt-0.5">{fmt(entry.totalCost)}</p>
+                  </div>
+                  <div>
+                    <p className="text-micro uppercase tracking-wider text-muted-foreground">Km</p>
+                    <p className="text-caption font-mono-num font-semibold text-foreground mt-0.5">{entry.kmDriven.toFixed(0)}</p>
+                  </div>
+                </div>
+              )}
+
+              {!entry.expenseOnly && entry.expensesExtra > 0 && (
+                <p className="text-micro text-muted-foreground mt-2 flex items-center gap-1">
+                  <Receipt size={10} /> inclui {fmt(entry.expensesExtra)} de gastos avulsos
+                </p>
               )}
             </div>
           ))
@@ -596,4 +601,17 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     </div>
   );
 }
+
+function MiniStat({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
+  return (
+    <div className="px-3 first:pl-0 last:pr-0 text-center">
+      <p className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold">{label}</p>
+      <p className="mt-1 font-mono-num font-semibold text-foreground">
+        {value}
+        {suffix && <span className="text-caption font-normal text-muted-foreground ml-1">{suffix}</span>}
+      </p>
+    </div>
+  );
+}
+
 
