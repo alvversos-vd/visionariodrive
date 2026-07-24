@@ -72,12 +72,21 @@ export default function Index() {
     { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
   ];
 
+  // Sprint 7.5 Onda 2 — navegação "que respira": underline desliza, ícone sobe 2px,
+  // label ganha peso, glow médio aparece. Sincronizado em 180ms.
   const tabClass = (active: boolean) =>
-    `relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-[10px] font-display font-semibold tracking-wide transition-all duration-150 rounded-md min-w-0 flex-1 press ${
+    `group relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-caption font-display tracking-wide rounded-md min-w-0 flex-1 press overflow-hidden transition-colors duration-[180ms] ${
       active
-        ? 'bg-gradient-brand text-primary-foreground shadow-glow-sm'
-        : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+        ? 'text-primary font-bold'
+        : 'text-muted-foreground font-semibold hover:text-foreground'
+    } after:content-[""] after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:rounded-full after:transition-all after:duration-[180ms] after:ease-out ${
+      active
+        ? 'after:w-8 after:bg-primary after:shadow-[0_0_10px_hsl(var(--primary)/0.65)]'
+        : 'after:w-0 after:bg-transparent'
     }`;
+
+  const iconClass = (active: boolean) =>
+    `transition-transform duration-[180ms] ease-out ${active ? '-translate-y-0.5' : 'translate-y-0'}`;
 
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
