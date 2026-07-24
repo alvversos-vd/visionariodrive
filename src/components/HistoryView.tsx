@@ -602,3 +602,16 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   );
 }
 
+function MiniStat({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
+  return (
+    <div className="px-3 first:pl-0 last:pr-0 text-center">
+      <p className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold">{label}</p>
+      <p className="mt-1 font-mono-num font-semibold text-foreground">
+        {value}
+        {suffix && <span className="text-caption font-normal text-muted-foreground ml-1">{suffix}</span>}
+      </p>
+    </div>
+  );
+}
+
+
