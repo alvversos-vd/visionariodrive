@@ -375,40 +375,10 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </div>
         );
 
-        const sectionMeta = goals.daily > 0 ? (
-          <button
-            key="meta"
-            onClick={onGoToGoals}
-            className={`w-full rounded-xl p-4 border text-left transition-all press shadow-elevated ${
-              objective === 'bater_metas'
-                ? 'bg-primary/[0.05] border-primary/40 hover:border-primary/60'
-                : 'bg-card border-border/70 hover:border-border'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
-                <Target size={11} className="text-primary" /> Meta diária
-              </p>
-              <p className="text-[11px] text-muted-foreground font-mono-num">{goalProgress.toFixed(0)}%</p>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <p className="font-mono-num font-semibold text-2xl text-foreground">{fmt(goals.daily)}</p>
-              {today && today.profit >= goals.daily ? (
-                <span className="text-xs font-display font-semibold text-primary">✓ +{fmt(today.profit - goals.daily)}</span>
-              ) : (
-                <span className="text-xs font-display font-semibold text-foreground">
-                  Faltam <span className="font-mono-num">{fmt(goals.daily - Math.max(0, today?.profit ?? 0))}</span>
-                </span>
-              )}
-            </div>
-            <div className="w-full bg-secondary/70 rounded-full overflow-hidden h-1.5">
-              <div
-                className="h-full rounded-full transition-[width] duration-700 ease-out bg-gradient-brand"
-                style={{ width: `${goalProgress}%` }}
-              />
-            </div>
-          </button>
-        ) : null;
+        // Sprint 7.5 Onda 2 — meta vive somente no Hero (glow forte, barra sincronizada).
+        // Removido card duplicado para eliminar redundância visual e proteger a hierarquia
+        // Hero → KPIs → CTA → secundários.
+        const sectionMeta: React.ReactNode = null;
 
         const KpiTile = ({
           label,
