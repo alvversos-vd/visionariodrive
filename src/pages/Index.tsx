@@ -165,22 +165,25 @@ export default function Index() {
 
       <main className="container max-w-lg mx-auto px-4 mt-4 space-y-4">
         <nav className="flex bg-card/60 border border-border/60 rounded-xl p-1 gap-0.5">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              className={tabClass(tab === t.key)}
-              onClick={() => {
-                setTab(t.key);
-                if (t.key !== 'input') setResult(null);
-              }}
-            >
-              <t.icon size={16} />
-              <span className="truncate">{t.label}</span>
-              {t.pro && !isPro && (
-                <Lock size={8} className="absolute top-1 right-1 opacity-60" />
-              )}
-            </button>
-          ))}
+          {tabs.map(t => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                className={tabClass(active)}
+                onClick={() => {
+                  setTab(t.key);
+                  if (t.key !== 'input') setResult(null);
+                }}
+              >
+                <t.icon size={16} className={iconClass(active)} />
+                <span className="truncate">{t.label}</span>
+                {t.pro && !isPro && (
+                  <Lock size={8} className="absolute top-1 right-1 opacity-60" />
+                )}
+              </button>
+            );
+          })}
         </nav>
 
         <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
