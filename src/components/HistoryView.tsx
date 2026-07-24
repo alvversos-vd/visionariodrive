@@ -280,19 +280,11 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {!(hasFilter && entries.length === 0 && rides.length === 0) && (
       <>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">7 dias</p>
-          <p className="font-display font-bold text-foreground">{daysLast7} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">30 dias</p>
-          <p className="font-display font-bold text-foreground">{daysLast30} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
-        <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-          <p className="text-[10px] text-muted-foreground uppercase">Total</p>
-          <p className="font-display font-bold text-foreground">{totalDays} <span className="text-xs font-normal text-muted-foreground">dias</span></p>
-        </div>
+      {/* Sprint 7.5 Onda 3 — dias trabalhados no formato compacto card-premium */}
+      <div className="card-premium p-3 grid grid-cols-3 divide-x divide-border/60">
+        <MiniStat label="7 dias" value={daysLast7} suffix="dias" />
+        <MiniStat label="30 dias" value={daysLast30} suffix="dias" />
+        <MiniStat label="Total" value={totalDays} suffix="dias" />
       </div>
 
       {/* Week summary */}
