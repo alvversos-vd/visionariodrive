@@ -442,8 +442,17 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           <p className="text-center text-sm text-muted-foreground py-6">Nenhum registro com esse filtro.</p>
         ) : (
           entries.map((entry) => (
-            <div key={entry.id} className="card-premium p-4 animate-fade-in-up">
-              <div className="flex items-start justify-between gap-3">
+            <div key={entry.id} className="card-premium p-4 animate-fade-in-up relative">
+              {!entry.expenseOnly && (
+                <button
+                  onClick={() => handleDeleteEntry(entry.id)}
+                  className="absolute top-2 right-2 p-1.5 text-muted-foreground/60 hover:text-destructive transition-colors press rounded-md"
+                  aria-label="Excluir registro"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+              <div className="flex items-start justify-between gap-3 pr-6">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-micro font-display font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded">
@@ -497,17 +506,6 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                 <p className="text-micro text-muted-foreground mt-2 flex items-center gap-1">
                   <Receipt size={10} /> inclui {fmt(entry.expensesExtra)} de gastos avulsos
                 </p>
-              )}
-
-              {!entry.expenseOnly && (
-                <button
-                  onClick={() => handleDeleteEntry(entry.id)}
-                  className="absolute top-2 right-2 p-1.5 text-muted-foreground/60 hover:text-destructive transition-colors press rounded-md"
-                  aria-label="Excluir registro"
-                  style={{ position: 'relative', float: 'right' }}
-                >
-                  <Trash2 size={14} />
-                </button>
               )}
             </div>
           ))
