@@ -20,6 +20,7 @@ import { financialService } from '@/lib/services/financialService';
 import { metricsService } from '@/lib/services/metricsService';
 import type { FinancialEntry, FinancialType } from '@/lib/domain/models';
 import EntryForm from './financial/EntryForm';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Props {
   refresh: number;
