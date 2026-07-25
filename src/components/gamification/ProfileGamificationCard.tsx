@@ -1,6 +1,7 @@
 /**
- * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 (expansão).
- * Perfil Inteligente: nível, XP, stats detalhados, conquistas e evolução.
+ * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 + Sprint 7.5 Onda 4.
+ * Perfil Inteligente premium: XP hero, stats primárias (grid 2×3),
+ * secundárias compactas, conquistas com glow disciplinado por raridade.
  * Consome APENAS Services (via hooks).
  */
 import { useMemo, useState } from 'react';
@@ -17,11 +18,11 @@ import { achievementService } from '@/lib/services/achievementService';
 import { telemetry } from '@/lib/telemetry';
 import type { Rarity } from '@/lib/gamification/catalog';
 
-const RARITY_STYLE: Record<Rarity, string> = {
-  common: 'bg-secondary text-foreground border-border',
-  rare: 'bg-primary/10 text-primary border-primary/30',
-  epic: 'bg-purple-500/10 text-purple-500 border-purple-500/30',
-  legendary: 'bg-amber-500/10 text-amber-500 border-amber-500/40',
+const RARITY_CLASS: Record<Rarity, string> = {
+  common: 'rarity-common',
+  rare: 'rarity-rare',
+  epic: 'rarity-epic',
+  legendary: 'rarity-legendary',
 };
 
 function fmtBRL(v: number) {
@@ -58,7 +59,7 @@ export default function ProfileGamificationCard({
 
   return (
     <>
-    <Card>
+    <Card variant="premium">
       <CardHeader className="pb-3">
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil Inteligente</span>
@@ -70,27 +71,32 @@ export default function ProfileGamificationCard({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <XpProgressBar />
-          <div className="flex items-baseline justify-between text-[11px] text-muted-foreground tabular-nums">
+          <div className="flex items-baseline justify-between text-caption text-muted-foreground tabular-nums">
             <span>{fmtInt(totalXp)} XP totais</span>
-            {ctx.xpEarnedToday > 0 && <span>+{fmtInt(ctx.xpEarnedToday)} XP hoje</span>}
+            {ctx.xpEarnedToday > 0 && <span className="text-neon">+{fmtInt(ctx.xpEarnedToday)} XP hoje</span>}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <Stat label="Corridas" value={fmtInt(ctx.ridesTotal)} />
-          <Stat label="Km rodados" value={`${fmtInt(ctx.totalKm)} km`} />
-          <Stat label="Faturado" value={fmtBRL(ctx.totalEarned)} />
-          <Stat label="Melhor dia" value={fmtBRL(ctx.bestDailyEarned)} />
-          <Stat label="Turnos" value={fmtInt(ctx.shiftsTotal)} />
-          <Stat label="Maior turno" value={fmtDuration(ctx.longestShiftMinutes)} />
-          <Stat label="Dias seguidos" value={fmtInt(ctx.consecutiveDays)} />
-          <Stat label="Metas batidas" value={fmtInt(ctx.goalHitCount)} />
-          <Stat label="Dias no app" value={fmtInt(ctx.daysUsingApp)} />
-          <Stat label="Seções abertas" value={`${fmtInt(ctx.tabsVisited)}/5`} />
+        {/* Stats primárias: grid 2×3 */}
+        <div className="grid grid-cols-2 gap-2">
+          <PrimaryStat label="Corridas" value={fmtInt(ctx.ridesTotal)} />
+          <PrimaryStat label="Km rodados" value={`${fmtInt(ctx.totalKm)} km`} />
+          <PrimaryStat label="Faturado" value={fmtBRL(ctx.totalEarned)} highlight />
+          <PrimaryStat label="Melhor dia" value={fmtBRL(ctx.bestDailyEarned)} />
+          <PrimaryStat label="Turnos" value={fmtInt(ctx.shiftsTotal)} />
+          <PrimaryStat label="Dias seguidos" value={fmtInt(ctx.consecutiveDays)} />
+        </div>
+
+        {/* Stats secundárias: linha compacta */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1 divider-hairline">
+          <MiniStat label="Maior turno" value={fmtDuration(ctx.longestShiftMinutes)} />
+          <MiniStat label="Metas batidas" value={fmtInt(ctx.goalHitCount)} />
+          <MiniStat label="Dias no app" value={fmtInt(ctx.daysUsingApp)} />
+          <MiniStat label="Seções abertas" value={`${fmtInt(ctx.tabsVisited)}/5`} />
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs font-display font-bold text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-caption font-display font-bold text-muted-foreground">
             <LineChartIcon size={12} /> Minha evolução (XP por semana)
           </div>
           <MyEvolutionChart />
@@ -98,30 +104,30 @@ export default function ProfileGamificationCard({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-display font-bold text-muted-foreground">
+            <h4 className="text-caption font-display font-bold text-muted-foreground">
               Conquistas desbloqueadas
             </h4>
-            <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={openModal}>
+            <Button size="sm" variant="ghost" className="h-6 text-caption px-2" onClick={openModal}>
               Ver todas
             </Button>
           </div>
           {unlockedList.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground italic">Nenhuma ainda — comece um turno para desbloquear.</p>
+            <p className="text-caption text-muted-foreground italic">Nenhuma ainda — comece um turno para desbloquear.</p>
           ) : (
             <ul className="grid grid-cols-1 gap-1.5">
               {unlockedList.slice(0, 5).map(a => (
-                <li key={a.def.id} className={`flex items-center gap-2 rounded-md border px-2 py-1.5 ${RARITY_STYLE[a.def.rarity]}`}>
+                <li key={a.def.id} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${RARITY_CLASS[a.def.rarity]}`}>
                   <span className="text-lg leading-none">{a.def.icon}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                    <p className="text-[10px] opacity-80 truncate">{a.def.description}</p>
+                    <p className="text-micro opacity-80 truncate">{a.def.description}</p>
                   </div>
-                  <span className="text-[10px] font-bold tabular-nums">+{a.def.xp} XP</span>
+                  <span className="text-micro font-bold tabular-nums">+{a.def.xp} XP</span>
                 </li>
               ))}
               {unlockedList.length > 5 && (
                 <li>
-                  <Button variant="ghost" size="sm" className="w-full text-[11px] h-7" onClick={openModal}>
+                  <Button variant="ghost" size="sm" className="w-full text-caption h-7" onClick={openModal}>
                     +{unlockedList.length - 5} conquistas
                   </Button>
                 </li>
@@ -134,7 +140,7 @@ export default function ProfileGamificationCard({
           <button
             type="button"
             onClick={() => setShowLocked(v => !v)}
-            className="w-full flex items-center justify-between text-xs font-display font-bold text-muted-foreground py-1.5"
+            className="w-full flex items-center justify-between text-caption font-display font-bold text-muted-foreground py-1.5"
           >
             <span className="flex items-center gap-1.5"><Lock size={12} /> Próximas conquistas ({lockedList.length})</span>
             {showLocked ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -144,14 +150,14 @@ export default function ProfileGamificationCard({
               {lockedList.slice(0, 6).map(a => {
                 const pct = Math.round((a.progress ?? 0) * 100);
                 return (
-                  <li key={a.def.id} className="rounded-md border border-border/60 bg-secondary/30 px-2 py-1.5">
+                  <li key={a.def.id} className="rarity-locked rounded-md px-2 py-1.5">
                     <div className="flex items-center gap-2">
                       <span className="text-lg leading-none opacity-50">{a.def.icon}</span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{a.def.description}</p>
+                        <p className="text-micro text-muted-foreground truncate">{a.def.description}</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">+{a.def.xp} XP</span>
+                      <span className="text-micro text-muted-foreground tabular-nums">+{a.def.xp} XP</span>
                     </div>
                     {a.def.progress && (
                       <div className="mt-1 h-1 w-full bg-background rounded-full overflow-hidden">
@@ -163,7 +169,7 @@ export default function ProfileGamificationCard({
               })}
               {lockedList.length > 6 && (
                 <li>
-                  <Button variant="ghost" size="sm" className="w-full text-[11px] h-7" onClick={openModal}>
+                  <Button variant="ghost" size="sm" className="w-full text-caption h-7" onClick={openModal}>
                     Ver todas ({lockedList.length})
                   </Button>
                 </li>
@@ -178,11 +184,20 @@ export default function ProfileGamificationCard({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function PrimaryStat({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="rounded-md bg-secondary/60 px-2 py-1.5">
-      <p className="text-[10px] text-muted-foreground">{label}</p>
-      <p className="text-sm font-display font-bold tabular-nums">{value}</p>
+    <div className={`rounded-md px-2.5 py-2 ${highlight ? 'card-highlight' : 'bg-secondary/60 border border-border/60'}`}>
+      <p className="text-micro text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className={`text-sm font-display font-bold tabular-nums mt-0.5 ${highlight ? 'text-neon' : ''}`}>{value}</p>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between py-1">
+      <span className="text-micro text-muted-foreground">{label}</span>
+      <span className="text-caption font-display font-semibold tabular-nums">{value}</span>
     </div>
   );
 }

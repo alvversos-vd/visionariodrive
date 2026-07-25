@@ -9,7 +9,7 @@ export default function XpProgressBar({ compact = false }: { compact?: boolean }
   const pctInt = Math.round(progress.pct * 100);
   return (
     <div className="w-full">
-      <div className={`flex items-baseline justify-between ${compact ? 'text-[11px]' : 'text-xs'} mb-1`}>
+      <div className={`flex items-baseline justify-between ${compact ? 'text-caption' : 'text-xs'} mb-1`}>
         <span className="font-display font-bold tracking-wide">Nível {progress.level}</span>
         <span className="text-muted-foreground tabular-nums">
           {progress.currentLevelXp} / {progress.nextLevelXp} XP
@@ -29,10 +29,11 @@ export default function XpProgressBar({ compact = false }: { compact?: boolean }
         />
       </div>
       {!compact && progress.remainingXp > 0 && (
-        <p className="text-[10px] text-muted-foreground mt-1 text-right">
+        <p className="text-micro text-muted-foreground mt-1 text-right">
           faltam {progress.remainingXp} XP para o nível {progress.level + 1}
         </p>
       )}
     </div>
+
   );
 }

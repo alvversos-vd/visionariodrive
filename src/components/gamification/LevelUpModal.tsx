@@ -69,7 +69,7 @@ export default function LevelUpModal() {
                 <li key={r.id} className="flex items-center gap-2 rounded-md bg-secondary/60 px-2 py-1.5">
                   <span className="text-lg">{r.icon}</span>
                   <span className="text-xs font-display font-bold flex-1 truncate">{r.name}</span>
-                  <span className="text-[10px] tabular-nums font-bold">+{r.xp} XP</span>
+                  <span className="text-micro tabular-nums font-bold">+{r.xp} XP</span>
                 </li>
               ))}
             </ul>
