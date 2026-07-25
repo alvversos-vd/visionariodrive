@@ -23,8 +23,9 @@ export default function MyEvolutionChart() {
   if (data.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border/60 bg-secondary/20 px-3 py-6 text-center">
-        <p className="text-[11px] text-muted-foreground italic">
+        <p className="text-caption text-muted-foreground italic">
           Ganhe XP para começar sua evolução.
+
         </p>
       </div>
     );
