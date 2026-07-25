@@ -100,7 +100,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
   return (
     <div className="space-y-4">
     <ProfileGamificationCard accountCreatedAt={profile?.created_at ?? null} />
-    <Card>
+    <Card variant="premium">
       <CardHeader>
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil</span>
@@ -155,7 +155,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
 
           <div className="space-y-1.5 pt-2">
             <Label className="text-muted-foreground text-xs">Objetivo principal</Label>
-            <p className="text-[11px] text-muted-foreground">Personaliza o destaque e a ordem dos cards do painel.</p>
+            <p className="text-caption text-muted-foreground">Personaliza o destaque e a ordem dos cards do painel.</p>
             <div className="grid grid-cols-2 gap-2">
               {([
                 { key: 'ganhar_mais', label: '💰 Ganhar mais' },
@@ -269,7 +269,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
           </Button>
 
           <div className="pt-3 border-t mt-2">
-            <p className="text-[11px] text-muted-foreground mb-2">Documentos legais</p>
+            <p className="text-caption text-muted-foreground mb-2">Documentos legais</p>
             <div className="grid grid-cols-2 gap-2">
               <Link to="/legal?tab=termos" className="flex items-center gap-2 text-xs p-2 rounded-md bg-secondary hover:bg-accent transition-colors">
                 <FileText size={13} /> Termos de Uso
