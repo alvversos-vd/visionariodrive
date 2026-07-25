@@ -20,6 +20,7 @@ import { financialService } from '@/lib/services/financialService';
 import { metricsService } from '@/lib/services/metricsService';
 import type { FinancialEntry, FinancialType } from '@/lib/domain/models';
 import EntryForm from './financial/EntryForm';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Props {
   refresh: number;
@@ -134,10 +135,11 @@ export default function FinancialView({ refresh, onChanged }: Props) {
             </Button>
 
             {entries.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Icon size={32} className="mx-auto mb-2 opacity-60" />
-                <p className="text-sm font-display font-semibold">{meta.empty}</p>
-              </div>
+              <EmptyState
+                icon={<Icon size={22} />}
+                title={meta.empty}
+                description="Toque no botão acima para registrar o primeiro."
+              />
             ) : (
               <div className="card-premium overflow-hidden">
                 {grouped.map((group, gi) => (
