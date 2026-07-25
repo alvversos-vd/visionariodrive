@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import HistoryCharts from './HistoryCharts';
 import PeriodComparison from './PeriodComparison';
 import ShiftHistoryView from './ShiftHistoryView';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const WEEKDAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
