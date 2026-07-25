@@ -134,10 +134,11 @@ export default function FinancialView({ refresh, onChanged }: Props) {
             </Button>
 
             {entries.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Icon size={32} className="mx-auto mb-2 opacity-60" />
-                <p className="text-sm font-display font-semibold">{meta.empty}</p>
-              </div>
+              <EmptyState
+                icon={<Icon size={22} />}
+                title={meta.empty}
+                description="Toque no botão acima para registrar o primeiro."
+              />
             ) : (
               <div className="card-premium overflow-hidden">
                 {grouped.map((group, gi) => (
