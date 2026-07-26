@@ -70,13 +70,13 @@ export default function VehiclesView({ onChange, onClose, forceOnboarding }: Pro
                   <div className="min-w-0">
                     <p className="font-display font-bold text-sm flex items-center gap-1.5">
                       {TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}
-                      {isActive && <span className="text-[10px] font-display text-primary flex items-center gap-0.5"><Check size={10}/> Ativo</span>}
+                      {isActive && <span className="text-micro font-display text-primary flex items-center gap-0.5"><Check size={10}/> Ativo</span>}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {v.marca || ''} {v.modelo || ''} {v.ano ? `· ${v.ano}` : ''}
                       {v.placa ? ` · ${v.placa}` : ''}
                     </p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px] text-muted-foreground">
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-caption text-muted-foreground">
                       {v.km_por_litro && <span>⛽ {v.km_por_litro} km/L</span>}
                       {v.valor_combustivel_litro > 0 && <span>R$ {v.valor_combustivel_litro.toFixed(2)}/L</span>}
                       {v.custo_fixo_mensal > 0 && <span>📅 R$ {v.custo_fixo_mensal.toFixed(0)}/mês</span>}
@@ -84,11 +84,11 @@ export default function VehiclesView({ onChange, onClose, forceOnboarding }: Pro
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     {!isActive && (
-                      <button onClick={() => handleSetActive(v.veiculo_id)} className="text-[10px] px-2 py-1 rounded bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors">
+                      <button onClick={() => handleSetActive(v.veiculo_id)} className="text-micro px-2 py-1 rounded bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors">
                         Tornar ativo
                       </button>
                     )}
-                    <button onClick={() => handleDelete(v.veiculo_id)} className="text-[10px] px-2 py-1 rounded text-loss hover:bg-loss/10 flex items-center gap-1 justify-center">
+                    <button onClick={() => handleDelete(v.veiculo_id)} className="text-micro px-2 py-1 rounded text-loss hover:bg-loss/10 flex items-center gap-1 justify-center">
                       <Trash2 size={10} /> Excluir
                     </button>
                   </div>

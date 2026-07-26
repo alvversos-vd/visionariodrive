@@ -52,12 +52,12 @@ function PendingCard({
         </p>
         <div className="grid grid-cols-2 gap-2">
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Valor (R$)</span>
+            <span className="text-micro uppercase tracking-wider text-muted-foreground">Valor (R$)</span>
             <Input type="number" inputMode="decimal" step="any" min="0"
               value={value} onChange={e => setValue(e.target.value)} placeholder="0,00" className="h-9" />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Km</span>
+            <span className="text-micro uppercase tracking-wider text-muted-foreground">Km</span>
             <Input type="number" inputMode="decimal" step="any" min="0"
               value={km} onChange={e => setKm(e.target.value)} className="h-9" />
           </label>
@@ -76,7 +76,7 @@ function PendingCard({
         <p className="text-xs font-display font-semibold text-foreground">
           Corrida detectada automaticamente
         </p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
+        <p className="text-caption text-muted-foreground mt-0.5">
           {pending.distanceKm.toFixed(1)} km · {Math.round(pending.durationMin)} min
           <span className="ml-2 text-primary/80">· confiança {pending.confidence}%</span>
         </p>

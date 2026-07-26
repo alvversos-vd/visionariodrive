@@ -102,7 +102,7 @@ export default function Auth() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="font-display" onDoubleClick={enableGpsDiag} onContextMenu={(e) => { e.preventDefault(); enableGpsDiag(); }}>Visionario Drive</CardTitle>
-          <p className="text-[11px] text-muted-foreground -mt-1">Lucro real • Decisão rápida • Controle</p>
+          <p className="text-caption text-muted-foreground -mt-1">Lucro real • Decisão rápida • Controle</p>
           <CardDescription>
             {mode === 'login' ? 'Entre para ver seus dados.' : 'Crie sua conta gratuita.'}
           </CardDescription>
@@ -158,7 +158,7 @@ export default function Auth() {
               {mode === 'login' ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entrar'}
             </button>
           </form>
-          <div className="mt-5 pt-4 border-t flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="mt-5 pt-4 border-t flex flex-wrap justify-center gap-x-3 gap-y-1 text-caption text-muted-foreground">
             <Link to="/legal?tab=termos" className="hover:text-foreground hover:underline">Termos</Link>
             <Link to="/legal?tab=privacidade" className="hover:text-foreground hover:underline">Privacidade</Link>
             <Link to="/legal?tab=localizacao" className="hover:text-foreground hover:underline">Localização</Link>

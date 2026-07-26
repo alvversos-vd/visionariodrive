@@ -55,7 +55,7 @@ function Row({ label, weekVal, monthVal, pct, invertColors }: RowProps) {
       <div className="flex-1">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="text-sm font-display font-semibold text-foreground">
-          {fmt(weekVal)} <span className="text-[10px] text-muted-foreground font-normal">vs {fmt(monthVal)}</span>
+          {fmt(weekVal)} <span className="text-micro text-muted-foreground font-normal">vs {fmt(monthVal)}</span>
         </p>
       </div>
       <div className={`flex items-center gap-1 font-display font-bold text-sm ${color}`}>
@@ -94,7 +94,7 @@ export default function PeriodComparison({ entries }: Props) {
     <div className="bg-card border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="font-display font-semibold text-foreground text-sm">⚖️ 7 dias vs 30 dias</p>
-        <p className="text-[10px] text-muted-foreground">média/dia</p>
+        <p className="text-micro text-muted-foreground">média/dia</p>
       </div>
       {week.days === 0 || month.days === 0 ? (
         <p className="text-center text-sm text-muted-foreground py-4">Dados insuficientes para comparar.</p>

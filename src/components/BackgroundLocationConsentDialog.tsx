@@ -94,7 +94,7 @@ export default function BackgroundLocationConsentDialog({ open, onAccept, onDecl
               Continuar
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-micro text-muted-foreground text-center">
             Se recusar, o tracking ainda funciona enquanto o app está aberto na tela.
           </p>
         </div>

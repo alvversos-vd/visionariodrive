@@ -52,7 +52,7 @@ export default function Legal() {
           </button>
           <div>
             <p className="font-display font-bold leading-tight">Visionario Drive</p>
-            <p className="text-[11px] text-muted-foreground -mt-0.5">Documentos legais</p>
+            <p className="text-caption text-muted-foreground -mt-0.5">Documentos legais</p>
           </div>
         </div>
         <nav className="max-w-3xl mx-auto px-2 pb-2 flex gap-1 overflow-x-auto">
@@ -72,7 +72,7 @@ export default function Legal() {
 
       <main className="max-w-3xl mx-auto px-4 py-6 prose prose-sm dark:prose-invert max-w-none">
         {content}
-        <footer className="mt-10 pt-6 border-t text-[11px] text-muted-foreground space-y-1">
+        <footer className="mt-10 pt-6 border-t text-caption text-muted-foreground space-y-1">
           <p>Versão 1.0 · vigente desde 17/05/2026</p>
           <p>
             <Link to="/" className="underline">Voltar ao app</Link>

@@ -112,10 +112,18 @@ Estado geral: **muito saudável**. Onda 1 concluída — fundação pronta para 
 9. ✅ `font-black` removido.
 10. ✅ Checklist automática: `scripts/design-system-check.sh`.
 
-### Métrica de sucesso (checar na Onda 6)
+### Onda 6 — Consistência final ✅ (2026-07-26)
 
-- `text-[Npx]` só com N ≥ 32.
-- `rounded-3xl` = 0. (atingido nesta onda ✅)
-- `font-black` = 0. (atingido nesta onda ✅)
-- Overlays manuais com `bg-black/70` = 0. (atingido nesta onda ✅)
-- Cores hardcoded em componentes = 0. (atingido nesta onda ✅, Leaflet via CSS var)
+- 195 ocorrências de `text-[Npx]` migradas: `9/10px → .text-micro`, `11px → .text-caption`, `12px → text-xs`, `13/14px → text-sm`.
+- Whitelist final: `text-[Npx]` permitido apenas para N ≥ 15 (títulos/KPIs display).
+- `scripts/design-system-check.sh`: tipografia e hex promovidos de SOFT para **HARD**. Zero warnings.
+
+### Métrica de sucesso — final
+
+- `text-[Npx]` fora da whitelist = 0 ✅
+- `rounded-3xl` = 0 ✅
+- `font-black` = 0 ✅
+- Overlays manuais com `bg-black/70` = 0 ✅
+- Cores hardcoded em componentes = 0 ✅ (Leaflet via CSS var)
+
+**Sprint 7.5 · Fase B encerrada.** Design System sob governança automática (todos os checks HARD).

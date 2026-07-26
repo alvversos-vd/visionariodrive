@@ -45,26 +45,28 @@ hard "font-black proibido"                'font-black'
 hard "rounded-3xl / rounded-t-3xl"        'rounded-3xl|rounded-t-3xl'
 hard "bg-black/70 proibido"               'bg-black/70'
 
-# SOFT — pendências (viram HARD ao final da Onda 6).
-# Tipografia: permitidos apenas KPIs display grandes (≥32px).
+# HARD — promovidos ao fim da Onda 6.
+# Tipografia: permitidos apenas tamanhos ≥15px (títulos/KPIs display).
 tsize=$(rg -no 'text-\[[0-9]+px\]' "${SCOPE[@]}" 2>/dev/null \
-        | rg -v 'text-\[(3[2-9]|[4-9][0-9]|1[0-9]{2})px\]' || true)
+        | rg -v 'text-\[(1[5-9]|[2-9][0-9]|1[0-9]{2})px\]' || true)
 if [ -n "$tsize" ]; then
   n=$(printf '%s\n' "$tsize" | wc -l | tr -d ' ')
-  echo "⚠️  SOFT · text-[Npx] fora do padrão ($n ocorrências — migrar para .text-micro/.text-caption/.kpi-display)"
-  warn=1
+  echo "❌ HARD  · text-[Npx] fora do padrão ($n ocorrências — usar .text-micro/.text-caption/.kpi-display)"
+  echo "$tsize"
+  fail=1
 else
-  echo "✅ SOFT · text-[Npx] dentro da whitelist"
+  echo "✅ HARD  · text-[Npx] dentro da whitelist"
 fi
 
-# Cores hex — exceções documentadas ficam em src/components/ui/ ou tokens; app não deve ter nenhuma.
+# Cores hex — app não deve ter nenhuma (exceções ficam em tokens/ui).
 hex=$(rg -n '#[0-9A-Fa-f]{3,8}\b' "${SCOPE[@]}" 2>/dev/null || true)
 if [ -n "$hex" ]; then
   n=$(printf '%s\n' "$hex" | wc -l | tr -d ' ')
-  echo "⚠️  SOFT · Hex hardcoded ($n ocorrências — documentar ou migrar para token)"
-  warn=1
+  echo "❌ HARD  · Hex hardcoded ($n ocorrências — migrar para token)"
+  echo "$hex"
+  fail=1
 else
-  echo "✅ SOFT · Sem hex hardcoded"
+  echo "✅ HARD  · Sem hex hardcoded"
 fi
 
 echo "────────────────────────────────────────"

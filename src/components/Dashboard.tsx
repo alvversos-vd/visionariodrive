@@ -172,13 +172,13 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* HEADER — saudação humana, sem ruído */}
       <div className="px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{saudacaoHora}</p>
+          <p className="text-caption uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{saudacaoHora}</p>
           <p className="text-base font-display font-semibold text-foreground mt-0.5 leading-tight truncate">{displayName}</p>
-          <p className="text-[12px] text-muted-foreground mt-0.5 leading-snug">{heroSubtext}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{heroSubtext}</p>
         </div>
         <button
           onClick={toggleFocus}
-          className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-display font-semibold border transition-all press ${
+          className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-caption font-display font-semibold border transition-all press ${
             focus
               ? 'bg-gradient-brand text-primary-foreground border-transparent shadow-glow-sm'
               : 'bg-card/60 text-muted-foreground border-border hover:text-foreground hover:border-border'
@@ -210,7 +210,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             {/* Linha 1: status do turno */}
             <div className="relative flex items-center justify-between gap-3 mb-5">
               {activeShift ? (
-                <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-primary/10 border border-primary/40 text-[11px] font-display font-semibold text-primary">
+                <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-primary/10 border border-primary/40 text-caption font-display font-semibold text-primary">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-60 animate-ping" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
@@ -218,13 +218,13 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   Turno ativo · {shiftService.formatTempo(startedMin)}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-secondary/60 border border-border text-[11px] font-display font-semibold text-muted-foreground">
+                <span className="inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full bg-secondary/60 border border-border text-caption font-display font-semibold text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
                   Sem turno ativo
                 </span>
               )}
               {shiftTotals && shiftTotals.corridas_total > 0 && (
-                <span className="text-[11px] text-muted-foreground font-mono-num">
+                <span className="text-caption text-muted-foreground font-mono-num">
                   {shiftTotals.corridas_total} corrida{shiftTotals.corridas_total > 1 ? 's' : ''} · {fmt(shiftTotals.ganho_total)}
                 </span>
               )}
@@ -232,7 +232,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
             {/* Micro-UX Sprint 4: km do turno + tempo desde última corrida */}
             {activeShift && shiftTotals && (
-              <div className="relative -mt-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground font-mono-num">
+              <div className="relative -mt-3 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted-foreground font-mono-num">
                 <span>{shiftTotals.km_total.toFixed(1)} km no turno</span>
                 {activeShift.ultima_corrida_iso && (
                   <span>
@@ -247,7 +247,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
 
             {/* Linha 2: lucro real — KPI hero */}
-            <p className="relative text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
+            <p className="relative text-micro uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">Lucro real de hoje</p>
             <p className={`relative font-mono-num font-semibold mt-2 leading-none tracking-tight text-[44px] sm:text-[52px] ${
               profitNeg ? 'text-loss' : today && today.profit > 0 ? 'text-foreground' : 'text-foreground/70'
             }`}>
@@ -257,7 +257,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             {/* Linha 3: meta */}
             {goals.daily > 0 ? (
               <div className="relative mt-6">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-caption">
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground font-display font-semibold uppercase tracking-wider">
                     <Target size={11} className="text-primary" />
                     Meta · <span className="text-foreground font-mono-num normal-case tracking-normal">{fmt(goals.daily)}</span>
@@ -275,7 +275,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                   />
                 </div>
                 {today && today.profit < goals.daily && (
-                  <p className="mt-2 text-[11px] text-muted-foreground">
+                  <p className="mt-2 text-caption text-muted-foreground">
                     Faltam <span className="text-foreground font-mono-num font-semibold">{fmt(goals.daily - Math.max(0, today.profit))}</span> para a meta
                   </p>
                 )}
@@ -283,7 +283,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             ) : (
               <button
                 onClick={onGoToGoals}
-                className="relative mt-6 inline-flex items-center gap-1.5 text-[11px] font-display font-semibold text-primary hover:text-primary-glow transition-colors press"
+                className="relative mt-6 inline-flex items-center gap-1.5 text-caption font-display font-semibold text-primary hover:text-primary-glow transition-colors press"
               >
                 <Target size={12} /> Definir meta diária <ArrowRight size={10} />
               </button>
@@ -305,9 +305,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         <div className="space-y-3 animate-fade-in-up">
           <div className="relative rounded-2xl p-6 bg-card border border-primary/30 shadow-glow-sm text-center overflow-hidden">
             <div className="absolute -top-20 -left-20 w-48 h-48 rounded-full blur-3xl opacity-[0.12] bg-primary pointer-events-none" />
-            <p className="relative text-[10px] uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold inline-flex items-center justify-center gap-1.5"><Compass size={12} className="text-primary"/> Mínimo ideal por km</p>
+            <p className="relative text-micro uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold inline-flex items-center justify-center gap-1.5"><Compass size={12} className="text-primary"/> Mínimo ideal por km</p>
             <p className="relative text-[44px] font-mono-num font-semibold text-primary mt-2 leading-none">{fmt(minIdealKm)}</p>
-            <p className="relative text-[11px] text-muted-foreground mt-3">Aceite corridas acima de <span className="text-foreground font-mono-num">{fmt(minIdealKm)}</span>/km</p>
+            <p className="relative text-caption text-muted-foreground mt-3">Aceite corridas acima de <span className="text-foreground font-mono-num">{fmt(minIdealKm)}</span>/km</p>
           </div>
           <p className="text-center text-sm text-muted-foreground italic">
             Foco hoje, {displayName}. Decisões melhores, mais lucro.
@@ -334,7 +334,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-display font-semibold text-foreground leading-snug">{topAlert.title}</p>
-            {topAlert.hint && <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{topAlert.hint}</p>}
+            {topAlert.hint && <p className="text-caption text-muted-foreground leading-snug mt-0.5">{topAlert.hint}</p>}
           </div>
         </div>
       )}
@@ -367,7 +367,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               <Compass size={16} className="text-primary" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">Mínimo ideal por km</p>
+              <p className="text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">Mínimo ideal por km</p>
               <p className="text-sm text-foreground leading-snug mt-0.5">
                 Aceite acima de <span className="font-mono-num font-semibold text-primary">{fmt(minIdealKm)}</span>/km
               </p>
@@ -397,7 +397,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             tone === 'loss' ? 'border-loss/30' : tone === 'primary' ? 'border-primary/30' : 'border-border/70'
           }`}>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">{label}</p>
+              <p className="text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">{label}</p>
               <Icon size={14} className={tone === 'loss' ? 'text-loss/80' : tone === 'primary' ? 'text-primary' : 'text-muted-foreground'} />
             </div>
             <p className={`font-mono-num font-semibold text-xl leading-none tracking-tight ${
@@ -411,9 +411,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
         const sectionMetrics = today ? (
           <div key="metrics" className="space-y-3">
             <div className="px-1 flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Cockpit · Hoje</p>
+              <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Cockpit · Hoje</p>
               {today.hoursWorked > 0 && (
-                <p className="text-[10px] text-muted-foreground font-mono-num">{today.hoursWorked.toFixed(1)}h trabalhadas</p>
+                <p className="text-micro text-muted-foreground font-mono-num">{today.hoursWorked.toFixed(1)}h trabalhadas</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -425,11 +425,11 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
             <div className={`rounded-xl p-4 border shadow-elevated relative overflow-hidden ${objective === 'evitar_prejuizo' ? 'bg-primary/[0.05] border-primary/40' : 'bg-card border-border/70'}`}>
               <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-[0.10] bg-primary pointer-events-none" />
-              <p className="relative text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+              <p className="relative text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
                 <Target size={11} className="text-primary" /> Mínimo ideal por km
               </p>
               <p className="relative font-mono-num font-semibold text-3xl text-primary mt-2 leading-none">{fmt(minIdealKm)}</p>
-              <p className="relative text-[11px] text-muted-foreground mt-2">
+              <p className="relative text-caption text-muted-foreground mt-2">
                 Margem aplicada · <span className="font-mono-num">{((settings.profitMargin - 1) * 100).toFixed(0)}%</span>
               </p>
             </div>
@@ -438,18 +438,18 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               <div className="rounded-xl p-4 border border-loss/30 bg-loss/[0.06] space-y-3 relative overflow-hidden">
                 <span className="absolute inset-y-0 left-0 w-[2px] bg-loss" />
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.14em] text-loss/90 font-display font-semibold inline-flex items-center gap-1.5">
+                  <p className="text-micro uppercase tracking-[0.14em] text-loss/90 font-display font-semibold inline-flex items-center gap-1.5">
                     <Wallet size={11} /> Gastos extras de hoje
                   </p>
                   <p className="font-mono-num font-semibold text-2xl text-loss mt-1 leading-none">{fmt(expensesToday)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">Já incluídos no custo total e no lucro do dia</p>
+                  <p className="text-caption text-muted-foreground mt-1.5">Já incluídos no custo total e no lucro do dia</p>
                 </div>
                 <div className="space-y-1.5 pt-1">
                   {EXPENSE_CATEGORIES.filter(c => (expensesByCategory[c] ?? 0) > 0).map(c => {
                     const pct = ((expensesByCategory[c] ?? 0) / expensesToday) * 100;
                     return (
                       <div key={c}>
-                        <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center justify-between text-caption">
                           <span className="text-foreground">{c}</span>
                           <span className="font-display font-semibold text-foreground">
                             <span className="font-mono-num">{fmt((expensesByCategory[c] ?? 0))}</span>
@@ -474,8 +474,8 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Sparkles size={14} className="text-primary shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-primary font-display font-semibold">Bônus do dia</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">Já somado ao lucro líquido</p>
+                    <p className="text-micro uppercase tracking-[0.14em] text-primary font-display font-semibold">Bônus do dia</p>
+                    <p className="text-caption text-muted-foreground mt-0.5">Já somado ao lucro líquido</p>
                   </div>
                 </div>
                 <p className="font-mono-num font-semibold text-lg text-primary">{fmt(bonusToday)}</p>
@@ -485,13 +485,13 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
 
             {today.hoursWorked > 0 && settings.estimatedHours > today.hoursWorked && (
               <div className="rounded-xl p-4 border border-border/70 bg-card shadow-elevated">
-                <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+                <p className="text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
                   <TrendingUp size={11} className="text-info" /> Previsão para {settings.estimatedHours}h
                 </p>
                 <p className="font-mono-num font-semibold text-2xl text-info mt-2 leading-none">
                   {fmt((today.totalEarnings / today.hoursWorked) * settings.estimatedHours)}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1.5">
+                <p className="text-caption text-muted-foreground mt-1.5">
                   Ritmo atual · <span className="font-mono-num text-foreground">{fmt(today.totalEarnings / today.hoursWorked)}</span>/h
                 </p>
               </div>
@@ -506,7 +506,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
             <div className="mx-auto h-10 w-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
               <ArrowRight size={16} className="text-primary" />
             </div>
-            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold mt-3">Sem cálculo hoje</p>
+            <p className="text-caption uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold mt-3">Sem cálculo hoje</p>
             <p className="text-sm font-display font-semibold text-foreground mt-1">Registrar dia de trabalho</p>
           </button>
         );
@@ -538,16 +538,16 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* Performance highlights */}
       {entriesCount > 0 && (
         <div className="space-y-2 pt-2">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Desempenho</p>
+          <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Desempenho</p>
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
               <Flame size={16} className="mx-auto text-warning mb-1" />
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Sequência</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground font-display">Sequência</p>
               <p className="font-mono-num font-semibold text-foreground mt-0.5">{stats.streak}<span className="text-xs text-muted-foreground ml-0.5">d</span></p>
             </div>
             <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
               <Trophy size={16} className="mx-auto text-warning mb-1" />
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Recorde</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground font-display">Recorde</p>
               <p className="font-mono-num font-semibold text-primary text-sm mt-0.5">{fmt(stats.recordProfit)}</p>
             </div>
             <div className="bg-card rounded-xl p-3 border border-border/70 shadow-elevated text-center">
@@ -556,7 +556,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               ) : (
                 <TrendingUp size={16} className="mx-auto text-primary mb-1" />
               )}
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display">Semana</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground font-display">Semana</p>
               <p className={`font-mono-num font-semibold text-sm mt-0.5 ${stats.weekProfit >= 0 ? 'text-primary' : 'text-loss'}`}>
                 {fmt(stats.weekProfit)}
               </p>
@@ -568,7 +568,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       {/* PRO teasers — sempre visíveis (sem irritar) */}
       {!isPro && (
         <div className="space-y-2 pt-2">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Funções PRO</p>
+          <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold px-1">Funções PRO</p>
           <div className="grid grid-cols-3 gap-2">
             {[
               { icon: BarChart3, label: 'Relatórios' },
@@ -581,7 +581,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
                 className="bg-card rounded-xl p-3 border border-border/70 text-center relative hover:border-primary/50 transition-colors press"
               >
                 <t.icon size={16} className="mx-auto text-primary mb-1.5" />
-                <p className="text-[10px] font-display font-semibold text-foreground">{t.label}</p>
+                <p className="text-micro font-display font-semibold text-foreground">{t.label}</p>
                 <Lock size={9} className="absolute top-1.5 right-1.5 text-muted-foreground/70" />
               </button>
             ))}
@@ -601,7 +601,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           </div>
           <div className="relative flex-1 min-w-0">
             <p className="font-display font-semibold text-sm text-foreground">Pronto para lucrar de verdade?</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Veja exatamente onde está perdendo dinheiro.</p>
+            <p className="text-caption text-muted-foreground mt-0.5">Veja exatamente onde está perdendo dinheiro.</p>
           </div>
           <ArrowRight size={16} className="relative text-primary shrink-0" />
         </button>

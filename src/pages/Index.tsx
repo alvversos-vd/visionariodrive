@@ -140,7 +140,7 @@ export default function Index() {
             </div>
             <div>
               <h1 className="font-display text-[17px] font-bold text-foreground tracking-tight leading-none">{BRAND_NAME}</h1>
-              <p className="text-[10px] text-muted-foreground tracking-wide mt-1">{BRAND_TAGLINE}</p>
+              <p className="text-micro text-muted-foreground tracking-wide mt-1">{BRAND_TAGLINE}</p>
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
