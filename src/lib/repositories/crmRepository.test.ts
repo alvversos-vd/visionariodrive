@@ -65,18 +65,20 @@ describe('crmRepository.listProfiles', () => {
 });
 
 describe('crmRepository.listUserData', () => {
-  it('seleciona apenas colunas agregáveis (nada de PII em settings/goals)', async () => {
+  it('seleciona apenas colunas agregáveis (nada de PII em settings)', async () => {
     selectMock.mockResolvedValue({ data: [], error: null });
     fromMock.mockReturnValue({ select: selectMock });
     await crmRepository.listUserData();
     expect(fromMock).toHaveBeenCalledWith('user_data');
     const cols = String(selectMock.mock.calls[0][0]);
-    for (const c of ['user_id', 'entries', 'rides', 'rides_v2', 'shifts', 'updated_at']) {
+    // Sprint 8 — colunas agregáveis do CRM Intelligence (contagens, nunca PII).
+    for (const c of [
+      'user_id', 'entries', 'rides', 'rides_v2', 'shifts',
+      'vehicles_v2', 'financial', 'gamification', 'goals', 'created_at', 'updated_at',
+    ]) {
       expect(cols).toContain(c);
     }
     expect(cols).not.toContain('settings');
-    expect(cols).not.toContain('goals');
-    expect(cols).not.toContain('vehicles');
   });
 
   it('propaga erro do PostgREST', async () => {
