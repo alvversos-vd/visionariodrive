@@ -13,6 +13,11 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, 
 import { useCrm } from '@/hooks/useCrm';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  CrmEngagementPanel, CrmRetentionPanel, CrmFunnelPanel, CrmHeatmapPanel,
+  CrmFeatureUsagePanel, CrmCohortPanel, CrmHealthPanel, CrmAchievementsPanel,
+  CrmRevenuePanel, CrmAlertsPanel, CrmRoadmapPanel,
+} from '@/components/admin/CrmPanels';
 import { Navigate } from 'react-router-dom';
 
 function Kpi({ label, value, icon: Icon }: { label: string; value: string | number; icon: LucideIcon }) {
@@ -139,6 +144,18 @@ export default function AdminCRM() {
                 </div>
               </Card>
             </section>
+
+            <CrmAlertsPanel data={snapshot.analytics} />
+            <CrmRoadmapPanel data={snapshot.analytics} />
+            <CrmEngagementPanel data={snapshot.analytics} />
+            <CrmRetentionPanel data={snapshot.analytics} />
+            <CrmFunnelPanel data={snapshot.analytics} />
+            <CrmHeatmapPanel data={snapshot.analytics} />
+            <CrmFeatureUsagePanel data={snapshot.analytics} />
+            <CrmCohortPanel data={snapshot.analytics} />
+            <CrmAchievementsPanel data={snapshot.analytics} />
+            <CrmHealthPanel data={snapshot.analytics} />
+            <CrmRevenuePanel data={snapshot.analytics} />
 
             <p className="text-xs text-muted-foreground text-right">
               Snapshot: {new Date(snapshot.generatedAt).toLocaleString('pt-BR')}
