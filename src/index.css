@@ -137,7 +137,7 @@
   .hairline-t { box-shadow: inset 0 1px 0 hsl(var(--border)); }
   .hairline-b { box-shadow: inset 0 -1px 0 hsl(var(--border)); }
 
-  .text-label { @apply text-caption font-medium uppercase tracking-[0.08em] text-muted-foreground; }
+  .text-label { @apply text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground; }
   .text-kpi { @apply font-display font-semibold tracking-tight; font-variant-numeric: tabular-nums; }
 
   /* Sprint 7.5 Onda 1 — utilitários tipográficos aprovados */
