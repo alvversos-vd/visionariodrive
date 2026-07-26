@@ -1,9 +1,12 @@
 /**
  * CrmRepository — owner ÚNICO das leituras agregadas admin.
  *
- * Camadas: apenas crmService importa este arquivo. Componentes NUNCA.
- * Todas as leituras dependem de policy "Admins can view all …" no banco;
- * usuários sem role admin recebem 0 linhas (RLS filtra silenciosamente).
+ * Camadas: apenas crmService/crmAnalyticsService importam este arquivo.
+ * Componentes NUNCA. Todas as leituras dependem de policy "Admins can view all …"
+ * no banco; usuários sem role admin recebem 0 linhas (RLS filtra silenciosamente).
+ *
+ * Sprint 8 — colunas adicionais (vehicles_v2, financial, gamification, goals,
+ * created_at) para as análises derivadas do CRM Intelligence. Nenhuma tabela nova.
  */
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,6 +24,11 @@ export interface CrmUserDataRow {
   rides: unknown;
   rides_v2: unknown;
   shifts: unknown;
+  vehicles_v2: unknown;
+  financial: unknown;
+  gamification: unknown;
+  goals: unknown;
+  created_at: string;
   updated_at: string;
 }
 
@@ -36,7 +44,9 @@ export const crmRepository = {
   async listUserData(): Promise<CrmUserDataRow[]> {
     const { data, error } = await supabase
       .from('user_data')
-      .select('user_id, entries, rides, rides_v2, shifts, updated_at');
+      .select(
+        'user_id, entries, rides, rides_v2, shifts, vehicles_v2, financial, gamification, goals, created_at, updated_at',
+      );
     if (error) throw error;
     return (data ?? []) as CrmUserDataRow[];
   },
