@@ -58,8 +58,8 @@ function KpiTile({ icon, label, value }: { icon?: React.ReactNode; label: string
   return (
     <div className="surface-inset rounded-xl p-2.5 border border-border/40 text-center">
       {icon && <div className="text-muted-foreground mb-1 flex justify-center">{icon}</div>}
-      <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{label}</p>
-      <p className="font-display font-bold text-[13px] font-mono-num mt-0.5">{value}</p>
+      <p className="text-micro uppercase tracking-[0.12em] text-muted-foreground font-display font-semibold">{label}</p>
+      <p className="font-display font-bold text-sm font-mono-num mt-0.5">{value}</p>
     </div>
   );
 }
@@ -86,7 +86,7 @@ function AlertBanner({
   return (
     <Wrapper
       onClick={onClick}
-      className={`relative w-full overflow-hidden flex items-start gap-2.5 rounded-xl border p-3 text-[11px] text-left ${toneCls} ${onClick ? 'press transition-transform' : ''}`}
+      className={`relative w-full overflow-hidden flex items-start gap-2.5 rounded-xl border p-3 text-caption text-left ${toneCls} ${onClick ? 'press transition-transform' : ''}`}
     >
       <span className={`absolute inset-y-0 left-0 w-0.5 ${stripeCls}`} />
       <span className="mt-0.5 shrink-0">{icon}</span>
@@ -94,7 +94,7 @@ function AlertBanner({
         {title && <p className="font-display font-semibold leading-tight">{title}</p>}
         <p className="opacity-80 leading-relaxed mt-0.5">{body}</p>
       </div>
-      {cta && <span className="text-[10px] font-display font-semibold underline shrink-0 mt-0.5">{cta}</span>}
+      {cta && <span className="text-micro font-display font-semibold underline shrink-0 mt-0.5">{cta}</span>}
     </Wrapper>
   );
 }
@@ -574,13 +574,13 @@ export default function ShiftMode({ onChange }: Props) {
               <Trophy className="text-primary" size={18} />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno encerrado</p>
+              <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Turno encerrado</p>
               <h3 className="font-display font-bold text-base leading-tight">Resumo do turno</h3>
             </div>
           </div>
           <button onClick={() => setSummary(null)} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 press"><X size={18} /></button>
         </div>
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="text-caption text-muted-foreground leading-relaxed">
           {shiftService.formatOperationalDate(summary.data_operacional)} · {fmtHora(summary.inicio_turno)} → {fmtHora(summary.fim_turno)} · {shiftService.formatTempo(Math.max(0, t.tempo_online_minutos))}
           {v && ` · ${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}`}
           {summary.app_utilizado && ` · ${summary.app_utilizado}`}
@@ -590,7 +590,7 @@ export default function ShiftMode({ onChange }: Props) {
           <p className="relative text-label">Lucro do turno</p>
           <p className={`relative text-[44px] leading-none font-display font-bold font-mono-num mt-2 ${positivo ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
           {m.meta > 0 && (
-            <p className="relative text-[11px] text-muted-foreground font-display font-semibold mt-3 inline-flex items-center gap-1.5">
+            <p className="relative text-caption text-muted-foreground font-display font-semibold mt-3 inline-flex items-center gap-1.5">
               <Target size={11} className={m.atingida ? 'text-profit' : 'text-info'} />
               {m.atingida ? `Meta atingida · ${m.pct.toFixed(0)}%` : `${m.pct.toFixed(0)}% da meta diária`}
             </p>
@@ -604,7 +604,7 @@ export default function ShiftMode({ onChange }: Props) {
           <KpiTile label="Ganho" value={fmt(t.ganho_total)} />
           <KpiTile label="Custos" value={fmt(t.custo_total)} />
         </div>
-        <p className={`text-center text-[12px] font-display font-semibold ${positivo ? 'text-profit' : 'text-loss'}`}>
+        <p className={`text-center text-xs font-display font-semibold ${positivo ? 'text-profit' : 'text-loss'}`}>
           {positivo ? 'Bom trabalho hoje.' : 'Você pode melhorar amanhã.'}
         </p>
       </div>
@@ -629,7 +629,7 @@ export default function ShiftMode({ onChange }: Props) {
             <Play size={20} fill="currentColor" className="text-primary-foreground ml-0.5" />
           </span>
           <span className="relative flex flex-col items-start">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">Pronto para rodar</span>
+            <span className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-semibold">Pronto para rodar</span>
             <span className="text-[15px] tracking-tight">Iniciar turno</span>
           </span>
         </button>
@@ -640,7 +640,7 @@ export default function ShiftMode({ onChange }: Props) {
               {step === 'date' && (
                 <>
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Etapa 1 de 3</p>
+                    <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Etapa 1 de 3</p>
                     <h3 className="font-display font-bold text-base">Esse turno pertence a qual dia?</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">Detectamos que ainda é madrugada. Escolha a data operacional.</p>
@@ -656,7 +656,7 @@ export default function ShiftMode({ onChange }: Props) {
               {step === 'vehicle' && (
                 <>
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                    <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
                       <Car size={11} /> Etapa {new Date().getHours() < 5 ? '2' : '1'} de {new Date().getHours() < 5 ? '3' : '2'}
                     </p>
                     <h3 className="font-display font-bold text-base">Qual veículo será usado?</h3>
@@ -669,7 +669,7 @@ export default function ShiftMode({ onChange }: Props) {
                         className={`w-full text-left p-3 rounded-xl border press transition-colors ${pickedVehicleId === v.veiculo_id ? 'border-primary bg-primary/10 shadow-glow-sm' : 'border-border/60 surface-inset hover:border-border'}`}
                       >
                         <p className="font-display font-bold text-sm tracking-tight">{TIPO_LABEL[v.tipo_veiculo]} · {v.nome_veiculo}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                        <p className="text-caption text-muted-foreground mt-0.5">
                           {v.km_por_litro ? `${v.km_por_litro} km/L` : 'sem combustível'}
                           {v.custo_fixo_mensal > 0 ? ` · R$ ${v.custo_fixo_mensal.toFixed(0)}/mês` : ''}
                         </p>
@@ -697,7 +697,7 @@ export default function ShiftMode({ onChange }: Props) {
               {step === 'app' && (
                 <>
                   <div className="space-y-1">
-                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
+                    <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1.5">
                       <Smartphone size={11} /> Última etapa
                     </p>
                     <h3 className="font-display font-bold text-base">Qual app você vai usar?</h3>
@@ -726,7 +726,7 @@ export default function ShiftMode({ onChange }: Props) {
                 </>
               )}
 
-              <button onClick={() => setPickerOpen(false)} className="w-full text-[11px] text-muted-foreground hover:text-foreground py-1.5 font-display">Cancelar</button>
+              <button onClick={() => setPickerOpen(false)} className="w-full text-caption text-muted-foreground hover:text-foreground py-1.5 font-display">Cancelar</button>
 
             </div>
           </div>
@@ -800,10 +800,10 @@ export default function ShiftMode({ onChange }: Props) {
               <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold leading-none">
+              <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold leading-none">
                 {pausado ? 'Turno pausado' : 'Modo foco'}
               </p>
-              <p className="font-display font-bold text-[13px] font-mono-num leading-tight mt-0.5">{tempoLive}</p>
+              <p className="font-display font-bold text-sm font-mono-num leading-tight mt-0.5">{tempoLive}</p>
             </div>
           </div>
           <button onClick={() => setFocus(false)} aria-label="Sair do modo foco" className="p-2.5 rounded-xl surface-inset border border-border/60 text-foreground hover:bg-secondary/80 press">
@@ -825,7 +825,7 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
           {meta && meta.meta > 0 && (
             <div className="w-full max-w-sm">
-              <div className="flex justify-between text-[11px] mb-1.5">
+              <div className="flex justify-between text-caption mb-1.5">
                 <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta</span>
                 <span className="font-display font-bold font-mono-num">{meta.pct.toFixed(0)}%</span>
               </div>
@@ -841,10 +841,10 @@ export default function ShiftMode({ onChange }: Props) {
             <Plus size={20} strokeWidth={2.5} /> Registrar corrida
           </button>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={handlePause} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
+            <button onClick={handlePause} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm flex items-center justify-center gap-2 press">
               {pausado ? <><Play size={14} /> Retomar</> : <><Pause size={14} /> Pausar</>}
             </button>
-            <button onClick={handleEnd} className="h-12 rounded-xl bg-loss/15 border border-loss/40 text-loss font-display font-semibold text-[13px] flex items-center justify-center gap-2 press">
+            <button onClick={handleEnd} className="h-12 rounded-xl bg-loss/15 border border-loss/40 text-loss font-display font-semibold text-sm flex items-center justify-center gap-2 press">
               <Square size={14} /> Finalizar
             </button>
           </div>
@@ -874,17 +874,17 @@ export default function ShiftMode({ onChange }: Props) {
                 <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 animate-pulse-dot ${pausado ? 'bg-warning' : 'bg-profit'}`} />
                 <span className={`relative inline-flex h-2 w-2 rounded-full ${pausado ? 'bg-warning' : 'bg-profit'}`} />
               </span>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
+              <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
                 {pausado ? 'Turno pausado' : 'Turno ativo'}
               </p>
-              <span className="text-[10px] text-muted-foreground font-display font-mono-num">
+              <span className="text-micro text-muted-foreground font-display font-mono-num">
                 {fmtHora(shift.inicio_turno)} · {tempoLive}
               </span>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
+              <span className={`text-micro px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
                 {gpsBadge.icon} {gpsBadge.label}
               </span>
               {gapSec != null && (gps === 'tracking' || gps === 'background') && (
-                <span className="text-[9px] text-muted-foreground font-display font-mono-num">
+                <span className="text-micro text-muted-foreground font-display font-mono-num">
                   · {fmtGap(gapSec)}
                 </span>
               )}
@@ -897,7 +897,7 @@ export default function ShiftMode({ onChange }: Props) {
                 {fmt(t.lucro_total)}
               </p>
             </div>
-            <p className="text-[11px] text-muted-foreground truncate font-display">
+            <p className="text-caption text-muted-foreground truncate font-display">
               {veh ? `${TIPO_LABEL[veh.tipo_veiculo]} · ${veh.nome_veiculo}` : 'Sem veículo'}
               {shift.app_utilizado && ` · ${shift.app_utilizado}`}
             </p>
@@ -923,7 +923,7 @@ export default function ShiftMode({ onChange }: Props) {
         {/* Meta */}
         {meta && meta.meta > 0 && (
           <div className="relative">
-            <div className="flex items-center justify-between text-[11px] mb-1.5">
+            <div className="flex items-center justify-between text-caption mb-1.5">
               <span className="text-label inline-flex items-center gap-1"><Target size={10} /> Meta diária</span>
               <span className="font-display font-bold font-mono-num">
                 {meta.pct.toFixed(0)}% {meta.atingida ? '· atingida' : `· faltam ${fmt(meta.faltam)}`}
@@ -1000,7 +1000,7 @@ export default function ShiftMode({ onChange }: Props) {
         )}
 
         {/* Mensagem motivadora */}
-        <p className={`relative text-[11px] text-center font-display font-medium ${pausado ? 'text-warning' : lucroOk ? 'text-profit' : 'text-loss'}`}>
+        <p className={`relative text-caption text-center font-display font-medium ${pausado ? 'text-warning' : lucroOk ? 'text-profit' : 'text-loss'}`}>
           {pausado ? 'Turno pausado — toque em retomar para continuar.'
             : t.corridas_total === 0 ? 'Toque em registrar corrida para começar.'
             : lucroOk ? 'Você está indo bem.' : 'Atenção — seu lucro caiu.'}
@@ -1014,11 +1014,11 @@ export default function ShiftMode({ onChange }: Props) {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={async () => { if (await exportRouteGpx(shift)) toast.success('GPX exportado'); else toast('Rota muito curta'); }}
-                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar GPX</button>
               <button
                 onClick={async () => { if (await exportRouteKml(shift)) toast.success('KML exportado'); else toast('Rota muito curta'); }}
-                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1.5 press"
+                className="h-9 rounded-lg surface-inset border border-border/60 text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1.5 press"
               ><MapIcon size={12}/> Exportar KML</button>
             </div>
           </div>
@@ -1053,16 +1053,16 @@ export default function ShiftMode({ onChange }: Props) {
               {activeRides.slice(0, 5).map(rideModelToShiftRide).map(r => {
                 const dotCls = r.resultado === 'boa' ? 'bg-profit' : r.resultado === 'aceitavel' ? 'bg-warning' : 'bg-loss';
                 return (
-                  <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-[12px]">
+                  <div key={r.corrida_id} className="flex items-center gap-2 surface-inset border border-border/40 rounded-lg px-2.5 py-2 text-xs">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}`} />
                     <span className="font-display font-semibold font-mono-num">{fmt(r.valor)}</span>
-                    <span className="text-muted-foreground font-mono-num text-[11px]">
+                    <span className="text-muted-foreground font-mono-num text-caption">
                       {r.km.toFixed(1)} km
                     </span>
                     {r.edicoes && r.edicoes.length > 0 && (
-                      <span title="Corrida editada" className="text-[9px] text-warning">✎</span>
+                      <span title="Corrida editada" className="text-micro text-warning">✎</span>
                     )}
-                    <span className="font-display font-bold font-mono-num text-[11px] ml-auto">{fmt(r.valor_por_km)}/km</span>
+                    <span className="font-display font-bold font-mono-num text-caption ml-auto">{fmt(r.valor_por_km)}/km</span>
                     <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary press" title="Editar"><Pencil size={11} /></button>
                     <button onClick={() => handleDeleteRide(r)} className="text-muted-foreground hover:text-loss press" title="Remover"><X size={11} /></button>
                   </div>
@@ -1200,7 +1200,7 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
+            <label className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
             <div className="relative mt-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
               <input
@@ -1224,7 +1224,7 @@ export default function ShiftMode({ onChange }: Props) {
               placeholder={kmDesde > 0 ? `Auto (${kmDesde.toFixed(1)} km do GPS)` : 'Informe km manualmente'}
               className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
             />
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-micro text-muted-foreground">
               {kmDesde > 0
                 ? 'Deixe vazio para usar o km automático do GPS'
                 : (gps === 'denied' || gps === 'unavailable')
@@ -1276,12 +1276,12 @@ export default function ShiftMode({ onChange }: Props) {
             <h3 className="font-display font-bold text-base flex items-center gap-2"><Pencil size={16}/> Editar corrida</h3>
             <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Registrada em {fmtHora(editing.data_registro)} · Horário e ordem cronológica não serão alterados.
           </p>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
+            <label className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
             <div className="relative mt-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
               <input
@@ -1293,7 +1293,7 @@ export default function ShiftMode({ onChange }: Props) {
           </div>
 
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Km da corrida</label>
+            <label className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Km da corrida</label>
             <input
               type="number" inputMode="decimal" min={0}
               value={editKm} onChange={e => setEditKm(e.target.value)}
@@ -1319,9 +1319,9 @@ export default function ShiftMode({ onChange }: Props) {
 
           {editing.edicoes && editing.edicoes.length > 0 && (
             <div className="rounded-lg border bg-secondary/30 p-2 max-h-28 overflow-y-auto">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Histórico de edições</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1">Histórico de edições</p>
               {editing.edicoes.slice().reverse().map((e, i) => (
-                <p key={i} className="text-[10px] text-muted-foreground">
+                <p key={i} className="text-micro text-muted-foreground">
                   {fmtHora(e.data_edicao)} · {e.campo}: {e.valor_antigo} → {e.valor_novo}
                 </p>
               ))}

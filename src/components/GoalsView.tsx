@@ -88,7 +88,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
           </Button>
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
+          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
           <p className="text-2xl font-display font-bold mt-1 number-tabular">{fmt(goals.daily)}</p>
         </div>
         <div className="bg-gradient-to-br from-card to-secondary/30 rounded-2xl p-8 border border-border/60 shadow-premium">
@@ -98,7 +98,7 @@ export default function GoalsView({ refresh, onSaved }: Props) {
           </div>
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Faltam</p>
+          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Faltam</p>
           <p className="text-3xl font-display font-bold mt-1 number-tabular">{fmt(missing)}</p>
           {kmNeeded > 0 && (
             <p className="text-sm text-muted-foreground mt-2">≈ {kmNeeded.toFixed(0)} km no ritmo ideal</p>
@@ -124,19 +124,19 @@ export default function GoalsView({ refresh, onSaved }: Props) {
             }}
           >
             <div className="absolute inset-1.5 rounded-full bg-card flex flex-col items-center justify-center">
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Hoje</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground">Hoje</p>
               <p className="text-lg font-display font-bold number-tabular">{dailyProgress.toFixed(0)}%</p>
             </div>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1">
+            <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold flex items-center gap-1">
               <Target size={10}/> Meta diária
             </p>
             {goals.daily > 0 ? (
               <>
                 <p className="text-2xl font-display font-bold number-tabular leading-tight">{fmt(todayProfit)}</p>
-                <p className="text-[11px] text-muted-foreground number-tabular">de {fmt(goals.daily)}</p>
-                <p className={`text-[11px] font-display font-semibold mt-1 ${statusMsg.cls}`}>
+                <p className="text-caption text-muted-foreground number-tabular">de {fmt(goals.daily)}</p>
+                <p className={`text-caption font-display font-semibold mt-1 ${statusMsg.cls}`}>
                   {statusMsg.emoji} {statusMsg.label}
                 </p>
               </>
@@ -148,12 +148,12 @@ export default function GoalsView({ refresh, onSaved }: Props) {
         {goals.daily > 0 && missing > 0 && (
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="bg-card/70 border border-border/40 rounded-lg p-2.5">
-              <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Faltam</p>
+              <p className="text-micro uppercase tracking-wider text-muted-foreground">Faltam</p>
               <p className="font-display font-bold number-tabular">{fmt(missing)}</p>
             </div>
             {kmNeeded > 0 && (
               <div className="bg-card/70 border border-border/40 rounded-lg p-2.5">
-                <p className="text-[9px] uppercase tracking-wider text-muted-foreground">≈ Km ideais</p>
+                <p className="text-micro uppercase tracking-wider text-muted-foreground">≈ Km ideais</p>
                 <p className="font-display font-bold number-tabular">{kmNeeded.toFixed(0)} km</p>
               </div>
             )}
@@ -225,7 +225,7 @@ function ProgressBlock({
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1.5 number-tabular">
+          <p className="text-caption text-muted-foreground mt-1.5 number-tabular">
             <span className="font-bold text-foreground">{fmt(current)}</span> de {fmt(goal)}
           </p>
         </>

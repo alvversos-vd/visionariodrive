@@ -47,7 +47,7 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
   const all = [ALL, ...options];
   return (
     <div className="space-y-1.5">
-      <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-micro font-display font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {all.map(opt => {
           const active = value === opt;
@@ -309,17 +309,17 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-[10px] text-muted-foreground">Ganho</p>
+              <p className="text-micro text-muted-foreground">Ganho</p>
               <p className="font-display font-bold text-sm text-foreground">{fmt(stats.weekTotal)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Lucro</p>
+              <p className="text-micro text-muted-foreground">Lucro</p>
               <p className={`font-display font-bold text-sm ${stats.weekProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {fmt(stats.weekProfit)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Média/dia</p>
+              <p className="text-micro text-muted-foreground">Média/dia</p>
               <p className={`font-display font-bold text-sm ${stats.weekAvgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {fmt(stats.weekAvgProfit)}
               </p>
@@ -365,32 +365,32 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
           {breakdown.byVehicle.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">Por veículo</p>
+              <p className="text-micro font-display font-semibold text-muted-foreground uppercase tracking-wider">Por veículo</p>
               {breakdown.byVehicle.map(b => (
                 <div key={'v' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-display font-semibold text-foreground">🏍️ {b.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
+                    <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Ganho</p>
+                      <p className="text-micro text-muted-foreground uppercase">Ganho</p>
                       <p className="text-xs font-display font-bold text-foreground">{fmt(b.earnings)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
+                      <p className="text-micro text-muted-foreground uppercase">Custo</p>
                       <p className="text-xs font-display font-bold text-loss">{fmt(b.cost)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Lucro</p>
+                      <p className="text-micro text-muted-foreground uppercase">Lucro</p>
                       <p className={`text-xs font-display font-bold ${b.profit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.profit)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Méd/dia</p>
+                      <p className="text-micro text-muted-foreground uppercase">Méd/dia</p>
                       <p className={`text-xs font-display font-bold ${b.avgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.avgProfit)}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                  <p className="text-micro text-muted-foreground mt-1 text-right">
                     Lucro/km: <span className={b.profitPerKm >= 0 ? 'text-profit' : 'text-loss'}>{fmt(b.profitPerKm)}</span>
                   </p>
                 </div>
@@ -400,32 +400,32 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
           {breakdown.byRideType.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] font-display font-semibold text-muted-foreground uppercase tracking-wider">Por tipo de corrida</p>
+              <p className="text-micro font-display font-semibold text-muted-foreground uppercase tracking-wider">Por tipo de corrida</p>
               {breakdown.byRideType.map(b => (
                 <div key={'t' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-display font-semibold text-foreground">📦 {b.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
+                    <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Ganho</p>
+                      <p className="text-micro text-muted-foreground uppercase">Ganho</p>
                       <p className="text-xs font-display font-bold text-foreground">{fmt(b.earnings)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
+                      <p className="text-micro text-muted-foreground uppercase">Custo</p>
                       <p className="text-xs font-display font-bold text-loss">{fmt(b.cost)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Lucro</p>
+                      <p className="text-micro text-muted-foreground uppercase">Lucro</p>
                       <p className={`text-xs font-display font-bold ${b.profit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.profit)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase">Méd/dia</p>
+                      <p className="text-micro text-muted-foreground uppercase">Méd/dia</p>
                       <p className={`text-xs font-display font-bold ${b.avgProfit >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(b.avgProfit)}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                  <p className="text-micro text-muted-foreground mt-1 text-right">
                     Lucro/km: <span className={b.profitPerKm >= 0 ? 'text-profit' : 'text-loss'}>{fmt(b.profitPerKm)}</span>
                   </p>
                 </div>
@@ -525,7 +525,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Sparkles size={14} className="text-primary shrink-0" />
-                  <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                  <span className="text-micro font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
                     {weekday(b.date)}
                   </span>
                   <span className="text-sm font-medium text-muted-foreground">{fmtDate(b.date)}</span>
@@ -563,7 +563,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-base">{verdictEmoji}</span>
-                      <span className="text-[10px] font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
+                      <span className="text-micro font-semibold uppercase text-accent bg-accent/10 px-1.5 py-0.5 rounded">
                         {weekday(ride.date)}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground">{fmtDate(ride.date)}</span>
@@ -577,10 +577,10 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
                     {(ride.vehicleName || ride.rideType) && (
                       <div className="flex gap-1.5 mt-1.5 flex-wrap">
                         {ride.vehicleName && (
-                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {ride.vehicleName}</span>
+                          <span className="text-micro bg-secondary text-foreground px-1.5 py-0.5 rounded">🏍️ {ride.vehicleName}</span>
                         )}
                         {ride.rideType && (
-                          <span className="text-[10px] bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {ride.rideType}</span>
+                          <span className="text-micro bg-secondary text-foreground px-1.5 py-0.5 rounded">📦 {ride.rideType}</span>
                         )}
                       </div>
                     )}

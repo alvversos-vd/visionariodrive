@@ -72,7 +72,7 @@ export default function GpsConsentDialog({ open, onAccept, onDecline }: Props) {
           </ul>
 
           {isIOS && (
-            <div className="bg-secondary/40 rounded-lg p-3 text-[11px] text-muted-foreground">
+            <div className="bg-secondary/40 rounded-lg p-3 text-caption text-muted-foreground">
               <strong className="text-foreground">📱 iPhone:</strong> ao receber o pedido do sistema, escolha <strong>“Permitir uma vez”</strong> ou <strong>“Ao usar o app”</strong>.
             </div>
           )}
@@ -91,7 +91,7 @@ export default function GpsConsentDialog({ open, onAccept, onDecline }: Props) {
               Ativar GPS
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-micro text-muted-foreground text-center">
             Se recusar, o turno continua normalmente em modo manual — você informa o km de cada corrida.
           </p>
         </div>

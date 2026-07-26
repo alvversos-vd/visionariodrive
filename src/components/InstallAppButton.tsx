@@ -83,7 +83,7 @@ export default function InstallAppButton() {
     <>
       <button
         onClick={handleClick}
-        className="px-2.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-[11px] flex items-center gap-1.5 shadow-md hover:opacity-95 active:scale-95 transition"
+        className="px-2.5 py-2 rounded-xl bg-primary text-primary-foreground font-display font-semibold text-caption flex items-center gap-1.5 shadow-md hover:opacity-95 active:scale-95 transition"
         title="Instalar o app no celular"
         aria-label="Baixar app"
       >
@@ -105,7 +105,7 @@ export default function InstallAppButton() {
               <li>Role para baixo e toque em <strong>Adicionar à Tela de Início</strong>.</li>
               <li>Confirme em <strong>Adicionar</strong>. Pronto — o Visionario Drive vira um app.</li>
             </ol>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               No iOS a instalação só funciona pelo Safari. Em outros navegadores, abra esta página no Safari primeiro.
             </p>
             <div className="flex gap-2 pt-1">

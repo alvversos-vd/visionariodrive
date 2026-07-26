@@ -135,7 +135,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <p className="font-display font-semibold text-foreground">🚀 Análise Rápida</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Tempo real</p>
+          <p className="text-micro text-muted-foreground uppercase tracking-wider">Tempo real</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -206,15 +206,15 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
 
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-              <p className="text-[10px] text-muted-foreground">Custo/km</p>
+              <p className="text-micro text-muted-foreground">Custo/km</p>
               <p className="font-display font-bold text-sm text-foreground">{fmt(details.costPerKm)}</p>
             </div>
             <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-              <p className="text-[10px] text-muted-foreground">Mínimo/km</p>
+              <p className="text-micro text-muted-foreground">Mínimo/km</p>
               <p className="font-display font-bold text-sm text-primary">{fmt(details.minIdealKm)}</p>
             </div>
             <div className="bg-card rounded-lg p-3 border shadow-sm text-center">
-              <p className="text-[10px] text-muted-foreground">Corrida/km</p>
+              <p className="text-micro text-muted-foreground">Corrida/km</p>
               <p className={`font-display font-bold text-sm ${verdictConfig[verdict].text}`}>{fmt(details.ridePerKm)}</p>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
                     ? 'Boa escolha 👊 mas você pode aumentar ainda mais seu lucro'
                     : 'Você pode tomar decisões ainda melhores'}
                 </p>
-                <p className="text-[11px] text-primary font-display font-semibold flex items-center gap-1 mt-1">
+                <p className="text-caption text-primary font-display font-semibold flex items-center gap-1 mt-1">
                   <Sparkles size={11} /> Ver análise completa (PRO) <ArrowRight size={11} />
                 </p>
               </div>

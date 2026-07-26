@@ -124,7 +124,7 @@ export default function RegisterRideFab({ onChange }: Props) {
             </div>
 
             {/* Contexto herdado do turno — sempre visível */}
-            <div className="flex flex-wrap gap-1.5 text-[11px]">
+            <div className="flex flex-wrap gap-1.5 text-caption">
               {shift.app_utilizado && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/60 border text-muted-foreground">
                   <Smartphone size={11}/> {shift.app_utilizado}
@@ -144,7 +144,7 @@ export default function RegisterRideFab({ onChange }: Props) {
 
             {/* Valor — sempre */}
             <div>
-              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
+              <label className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Valor recebido</label>
               <div className="relative mt-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
                 <input
@@ -160,7 +160,7 @@ export default function RegisterRideFab({ onChange }: Props) {
             {smartMode ? (
               <div className="rounded-xl border border-profit/30 bg-profit/5 p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold flex items-center gap-1">
+                  <p className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold flex items-center gap-1">
                     <Navigation size={10}/> KM do GPS
                   </p>
                   <p className="font-display font-bold text-xl number-tabular text-profit">
@@ -170,7 +170,7 @@ export default function RegisterRideFab({ onChange }: Props) {
                 <button
                   type="button"
                   onClick={() => { setForceManual(true); setKm(kmAuto.toFixed(1)); }}
-                  className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-secondary/60"
+                  className="text-caption text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-secondary/60"
                 >
                   <Pencil size={11}/> ajustar
                 </button>
@@ -185,7 +185,7 @@ export default function RegisterRideFab({ onChange }: Props) {
                     <button
                       type="button"
                       onClick={() => { setForceManual(false); setKm(''); }}
-                      className="text-[10px] text-profit hover:underline inline-flex items-center gap-1"
+                      className="text-micro text-profit hover:underline inline-flex items-center gap-1"
                     >
                       <Zap size={10}/> usar GPS ({kmAuto.toFixed(1)} km)
                     </button>
@@ -198,7 +198,7 @@ export default function RegisterRideFab({ onChange }: Props) {
                   className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
                 />
                 {!gpsOk && (
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-micro text-muted-foreground">
                     GPS indisponível — informe o km manualmente.
                   </p>
                 )}
@@ -207,7 +207,7 @@ export default function RegisterRideFab({ onChange }: Props) {
 
             {/* Observação opcional */}
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-display font-semibold">
+              <label className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold">
                 Observação <span className="opacity-60 normal-case">(opcional)</span>
               </label>
               <input

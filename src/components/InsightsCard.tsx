@@ -35,11 +35,11 @@ export default function InsightsCard({ insights, showEmpty = true }: Props) {
         <div className="mx-auto h-9 w-9 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
           <Sparkles size={15} className="text-primary" />
         </div>
-        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground font-display font-semibold mt-3">
+        <p className="text-micro uppercase tracking-[0.16em] text-muted-foreground font-display font-semibold mt-3">
           Insights
         </p>
         <p className="text-sm text-foreground mt-1">Ainda coletando dados</p>
-        <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+        <p className="text-caption text-muted-foreground mt-1 leading-snug">
           Registre pelo menos 3 dias para receber sugestões personalizadas.
         </p>
       </div>
@@ -49,10 +49,10 @@ export default function InsightsCard({ insights, showEmpty = true }: Props) {
   return (
     <div className="space-y-2">
       <div className="px-1 flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+        <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
           <Sparkles size={11} className="text-primary" /> Insights
         </p>
-        <span className="text-[10px] text-muted-foreground font-mono-num">{insights.length}/3</span>
+        <span className="text-micro text-muted-foreground font-mono-num">{insights.length}/3</span>
       </div>
       <div className="space-y-2">
         {insights.map((it) => {
@@ -67,7 +67,7 @@ export default function InsightsCard({ insights, showEmpty = true }: Props) {
               <Icon size={16} className={`shrink-0 mt-0.5 ${tone.icon}`} />
               <div className="min-w-0 flex-1">
                 <p className={`text-xs font-display font-semibold ${tone.text} leading-snug`}>{it.title}</p>
-                <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{it.message}</p>
+                <p className="text-caption text-muted-foreground leading-snug mt-0.5">{it.message}</p>
               </div>
             </div>
           );

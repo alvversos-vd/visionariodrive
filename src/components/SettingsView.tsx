@@ -141,7 +141,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
               value={alertMaxCustoPct} onChange={e => setAlertMaxCustoPct(e.target.value)} className="h-11" />
           </div>
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Lembre-se de tocar em <em>Salvar configurações</em> acima para aplicar.
         </p>
       </div>
@@ -195,7 +195,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
             <ShieldOff size={14} className="mr-1.5" /> Redefinir permissão GPS
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Apagar rotas não remove suas corridas, ganhos nem km — apenas os pontos de localização.
           Para revogar a permissão do navegador, ajuste também nas configurações do site no Chrome/Safari.
         </p>

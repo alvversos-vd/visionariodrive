@@ -197,15 +197,15 @@ export default function ShiftHistoryView({ refresh }: Props) {
 
       {exportOpen && (
         <div className="bg-card border rounded-xl p-3 space-y-3 animate-slide-up">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-display font-semibold">Período do export</p>
+          <p className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Período do export</p>
           <div className="grid grid-cols-2 gap-2">
-            <label className="text-[11px] text-muted-foreground space-y-1">
+            <label className="text-caption text-muted-foreground space-y-1">
               <span>De</span>
               <input type="date" value={exportFrom} max={exportTo}
                 onChange={e => setExportFrom(e.target.value)}
                 className="w-full px-2 py-2 rounded-lg border bg-background text-xs" />
             </label>
-            <label className="text-[11px] text-muted-foreground space-y-1">
+            <label className="text-caption text-muted-foreground space-y-1">
               <span>Até</span>
               <input type="date" value={exportTo} min={exportFrom} max={todayIso}
                 onChange={e => setExportTo(e.target.value)}
@@ -220,7 +220,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
               <FileText size={13}/> PDF
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground">Exporta todos os turnos finalizados cuja data operacional cai no período selecionado.</p>
+          <p className="text-micro text-muted-foreground">Exporta todos os turnos finalizados cuja data operacional cai no período selecionado.</p>
         </div>
       )}
 
@@ -235,7 +235,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className={`flex-1 py-1.5 text-xs font-display font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {f.label}
-                <span className={`text-[10px] px-1.5 rounded-full number-tabular ${active ? 'bg-primary-foreground/20' : 'bg-background/60'}`}>{count}</span>
+                <span className={`text-micro px-1.5 rounded-full number-tabular ${active ? 'bg-primary-foreground/20' : 'bg-background/60'}`}>{count}</span>
               </button>
             );
           })}
@@ -243,18 +243,18 @@ export default function ShiftHistoryView({ refresh }: Props) {
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Car size={10}/> Veículo</p>
+            <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Car size={10}/> Veículo</p>
             <div className="flex gap-1 bg-secondary rounded-lg p-1">
               {tipoOptions.map(o => (
                 <button key={o.key} onClick={() => setVehicleFilter(o.key)}
-                  className={`flex-1 py-1 text-[11px] font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                  className={`flex-1 py-1 text-caption font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
                   {o.label}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Smartphone size={10}/> App</p>
+            <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Smartphone size={10}/> App</p>
             <select value={appFilter} onChange={e => setAppFilter(e.target.value)} className="w-full px-2 py-2 rounded-lg border bg-background text-xs">
               <option value="todos">Todos</option>
               {APPS.map(a => <option key={a} value={a}>{a}</option>)}
@@ -265,7 +265,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         {hasActiveFilter && (
           <button
             onClick={() => { setVehicleFilter('todos'); setAppFilter('todos'); }}
-            className="w-full text-[11px] font-display font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1"
+            className="w-full text-caption font-display font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1"
           >
             <X size={11}/> Limpar filtros
           </button>
@@ -276,24 +276,24 @@ export default function ShiftHistoryView({ refresh }: Props) {
       {filtered.length > 0 && (
         <div className="bg-gradient-to-br from-card to-secondary/40 border border-border/60 rounded-xl p-4 shadow-premium space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground">Resumo do período</p>
-            <span className="text-[10px] text-muted-foreground number-tabular">{filtered.length} turno{filtered.length === 1 ? '' : 's'} · {totals.corridas} corr</span>
+            <p className="text-micro uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground">Resumo do período</p>
+            <span className="text-micro text-muted-foreground number-tabular">{filtered.length} turno{filtered.length === 1 ? '' : 's'} · {totals.corridas} corr</span>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase">Lucro total</p>
+            <p className="text-micro text-muted-foreground uppercase">Lucro total</p>
             <p className={`font-display font-bold text-3xl number-tabular ${totals.lucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(totals.lucro)}</p>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-background/60 rounded-lg p-2 border border-border/40">
-              <p className="text-[9px] text-muted-foreground uppercase">Lucro/h</p>
+              <p className="text-micro text-muted-foreground uppercase">Lucro/h</p>
               <p className={`font-display font-bold text-sm number-tabular ${totals.lucroPorHora >= 0 ? 'text-foreground' : 'text-loss'}`}>{fmt(totals.lucroPorHora)}</p>
             </div>
             <div className="bg-background/60 rounded-lg p-2 border border-border/40">
-              <p className="text-[9px] text-muted-foreground uppercase">Lucro/km</p>
+              <p className="text-micro text-muted-foreground uppercase">Lucro/km</p>
               <p className={`font-display font-bold text-sm number-tabular ${totals.lucroPorKm >= 0 ? 'text-foreground' : 'text-loss'}`}>{fmt(totals.lucroPorKm)}</p>
             </div>
             <div className="bg-background/60 rounded-lg p-2 border border-border/40">
-              <p className="text-[9px] text-muted-foreground uppercase">Lucro/turno</p>
+              <p className="text-micro text-muted-foreground uppercase">Lucro/turno</p>
               <p className={`font-display font-bold text-sm number-tabular ${totals.lucroPorTurno >= 0 ? 'text-foreground' : 'text-loss'}`}>{fmt(totals.lucroPorTurno)}</p>
             </div>
           </div>
@@ -304,16 +304,16 @@ export default function ShiftHistoryView({ refresh }: Props) {
         <div className="grid grid-cols-2 gap-2">
           {insights.bestApp && (
             <div className="bg-card border rounded-lg p-3">
-              <p className="text-[10px] text-muted-foreground uppercase flex items-center gap-1"><Award size={10}/> Melhor app</p>
+              <p className="text-micro text-muted-foreground uppercase flex items-center gap-1"><Award size={10}/> Melhor app</p>
               <p className="font-display font-bold text-sm">{insights.bestApp.app}</p>
-              <p className="text-[11px] text-profit number-tabular">{fmt(insights.bestApp.mediaLucro)}/turno</p>
+              <p className="text-caption text-profit number-tabular">{fmt(insights.bestApp.mediaLucro)}/turno</p>
             </div>
           )}
           {insights.bestVeh && (
             <div className="bg-card border rounded-lg p-3">
-              <p className="text-[10px] text-muted-foreground uppercase flex items-center gap-1"><Award size={10}/> Melhor veículo</p>
+              <p className="text-micro text-muted-foreground uppercase flex items-center gap-1"><Award size={10}/> Melhor veículo</p>
               <p className="font-display font-bold text-sm truncate">{insights.bestVeh.nome}</p>
-              <p className="text-[11px] text-profit number-tabular">{fmt(insights.bestVeh.lucroPorKm)}/km</p>
+              <p className="text-caption text-profit number-tabular">{fmt(insights.bestVeh.lucroPorKm)}/km</p>
             </div>
           )}
         </div>
@@ -354,8 +354,8 @@ export default function ShiftHistoryView({ refresh }: Props) {
               return (
                 <div key={label} className="space-y-2">
                   <div className="flex items-center justify-between px-1">
-                    <p className="text-[10px] uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground">{label} · {groups[label].length}</p>
-                    <p className={`text-[11px] font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
+                    <p className="text-micro uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground">{label} · {groups[label].length}</p>
+                    <p className={`text-caption font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
                   {groups[label].map(s => {
                     const t = shiftService.getTotals(s);
@@ -371,9 +371,9 @@ export default function ShiftHistoryView({ refresh }: Props) {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <p className="font-display font-bold text-sm">{shiftService.formatOperationalDate(s.data_operacional)}</p>
-                              <span className={`text-[10px] font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
+                              <span className={`text-micro font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate">
+                            <p className="text-caption text-muted-foreground truncate">
                               {v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : 'Sem veículo'}
                               {s.app_utilizado && ` · ${s.app_utilizado}`}
                             </p>
@@ -388,15 +388,15 @@ export default function ShiftHistoryView({ refresh }: Props) {
                           <div className="border-t border-border/60 p-3 space-y-2 bg-secondary/20">
                             <div className="grid grid-cols-3 gap-2">
                               <div className="bg-card rounded-lg p-2 border border-border/40">
-                                <p className="text-[9px] text-muted-foreground uppercase flex items-center gap-1"><TrendingUp size={9}/> Lucro/h</p>
+                                <p className="text-micro text-muted-foreground uppercase flex items-center gap-1"><TrendingUp size={9}/> Lucro/h</p>
                                 <p className={`font-display font-bold text-xs number-tabular ${lucroHora >= 0 ? 'text-foreground' : 'text-loss'}`}>{fmt(lucroHora)}</p>
                               </div>
                               <div className="bg-card rounded-lg p-2 border border-border/40">
-                                <p className="text-[9px] text-muted-foreground uppercase">Média/km</p>
+                                <p className="text-micro text-muted-foreground uppercase">Média/km</p>
                                 <p className="font-display font-bold text-xs number-tabular">{fmt(t.media_por_km)}</p>
                               </div>
                               <div className="bg-card rounded-lg p-2 border border-border/40">
-                                <p className="text-[9px] text-muted-foreground uppercase">Média/corrida</p>
+                                <p className="text-micro text-muted-foreground uppercase">Média/corrida</p>
                                 <p className="font-display font-bold text-xs number-tabular">{fmt(t.media_por_corrida)}</p>
                               </div>
                             </div>
@@ -415,18 +415,18 @@ export default function ShiftHistoryView({ refresh }: Props) {
                             )}
                             {(s.rota?.length ?? 0) > 1 && (
                               <div className="pt-1 space-y-1.5">
-                                <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                <p className="text-micro uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                   <MapIcon size={10}/> Rota ({s.rota!.length} pontos)
                                 </p>
                                 <div className="grid grid-cols-3 gap-1.5">
                                   <button
                                     onClick={async () => { if (await exportRouteGpx(s)) toast.success('GPX exportado'); else toast('Rota vazia'); }}
-                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> GPX</button>
                                   
                                   <button
                                     onClick={async () => { if (await exportRouteKml(s)) toast.success('KML exportado'); else toast('Rota vazia'); }}
-                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-[11px] font-display font-semibold flex items-center justify-center gap-1"
+                                    className="px-2 py-1.5 rounded bg-secondary text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1"
                                   ><Download size={11}/> KML</button>
                                   <button
                                     onClick={() => {
@@ -435,10 +435,10 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                         setOpenId(null);
                                       }
                                     }}
-                                    className="px-2 py-1.5 rounded bg-loss/10 text-loss text-[11px] font-display font-semibold flex items-center justify-center gap-1 border border-loss/30"
+                                    className="px-2 py-1.5 rounded bg-loss/10 text-loss text-caption font-display font-semibold flex items-center justify-center gap-1 border border-loss/30"
                                   ><Trash2 size={11}/> Apagar</button>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground">Abra GPX/KML no Google Earth, Maps ou Strava.</p>
+                                <p className="text-micro text-muted-foreground">Abra GPX/KML no Google Earth, Maps ou Strava.</p>
                               </div>
                             )}
                           </div>

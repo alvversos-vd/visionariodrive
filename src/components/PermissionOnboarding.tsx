@@ -182,7 +182,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
+            <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">
               {meta.eyebrow}
             </p>
             <h2 className="font-display font-bold text-[15px] truncate leading-tight">{meta.title}</h2>
@@ -360,7 +360,7 @@ function Step({
             {ok ? <Check size={26} className="text-profit" strokeWidth={2.5} /> : icon}
           </div>
           <div className="min-w-0 pt-0.5">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold mb-1">
+            <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold mb-1">
               {eyebrow}
             </p>
             <h3 className="font-display font-bold text-[17px] leading-tight tracking-tight">{title}</h3>
@@ -450,8 +450,8 @@ function BulletRow({ icon, title, desc }: { icon: React.ReactNode; title: string
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-display font-semibold text-[13px] leading-tight">{title}</p>
-        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">{desc}</p>
+        <p className="font-display font-semibold text-sm leading-tight">{title}</p>
+        <p className="text-caption text-muted-foreground leading-tight mt-0.5">{desc}</p>
       </div>
     </div>
   );
@@ -464,7 +464,7 @@ function StatusPill({ ok, okLabel, pendingLabel }: { ok: boolean; okLabel: strin
       : 'bg-warning/10 border-warning/30 text-warning'}`}
     >
       <span className={`w-2 h-2 rounded-full shrink-0 ${ok ? 'bg-profit' : 'bg-warning animate-pulse-dot'}`} />
-      <span className="font-display font-semibold text-[12px] tracking-tight">
+      <span className="font-display font-semibold text-xs tracking-tight">
         {ok ? okLabel : pendingLabel}
       </span>
     </div>
@@ -480,7 +480,7 @@ function PrimaryButton({
       disabled={disabled}
       className="
         w-full h-12 rounded-xl bg-brand-gradient text-primary-foreground
-        font-display font-bold text-[14px] tracking-tight
+        font-display font-bold text-sm tracking-tight
         flex items-center justify-center gap-2
         shadow-glow-sm press
         disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none
@@ -499,7 +499,7 @@ function SecondaryButton({ children, onClick }: { children: React.ReactNode; onC
       onClick={onClick}
       className="
         w-full h-11 rounded-xl surface-inset border border-border/60
-        font-display font-semibold text-[13px] text-foreground
+        font-display font-semibold text-sm text-foreground
         flex items-center justify-center gap-2
         hover:bg-secondary/80 press transition-colors
       "
@@ -516,7 +516,7 @@ function GhostButton({ children, onClick }: { children: React.ReactNode; onClick
       onClick={onClick}
       className="
         w-full h-10 rounded-lg
-        font-display font-medium text-[12px] text-muted-foreground
+        font-display font-medium text-xs text-muted-foreground
         hover:text-foreground hover:bg-secondary/40 press transition-colors
       "
     >
@@ -540,7 +540,7 @@ function Progress({ current, total }: { current: number; total: number }) {
           />
         ))}
       </div>
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-2 text-center font-display font-semibold">
+      <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground mt-2 text-center font-display font-semibold">
         Passo {current + 1} de {total}
       </p>
     </div>

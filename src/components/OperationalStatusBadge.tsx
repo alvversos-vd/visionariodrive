@@ -37,7 +37,7 @@ export default function OperationalStatusBadge({ compact = false }: Props) {
       <button
         type="button"
         onClick={auto ? undefined : openOnboarding}
-        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-display font-semibold ${
+        className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-micro font-display font-semibold ${
           auto ? 'bg-profit/15 text-profit' : 'bg-accent/15 text-accent hover:bg-accent/25 transition-colors'
         }`}
       >
@@ -66,7 +66,7 @@ export default function OperationalStatusBadge({ compact = false }: Props) {
           <p className={`font-display font-semibold text-sm ${auto ? 'text-profit' : 'text-accent'}`}>
             {auto ? '🟢 Automação ativa' : '🟡 Modo manual'}
           </p>
-          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+          <p className="text-caption text-muted-foreground leading-tight mt-0.5">
             {auto
               ? 'GPS, km e tempo registrados automaticamente.'
               : d.reasons[0] ?? 'Ative o rastreamento automático para registrar quilometragem sem digitar.'}
@@ -74,7 +74,7 @@ export default function OperationalStatusBadge({ compact = false }: Props) {
         </div>
       </div>
       {!auto && (
-        <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-display font-semibold text-accent">
+        <span className="shrink-0 inline-flex items-center gap-1 text-caption font-display font-semibold text-accent">
           Configurar <ChevronRight size={12} />
         </span>
       )}
