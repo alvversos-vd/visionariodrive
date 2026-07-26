@@ -9,6 +9,7 @@
  */
 import { crmRepository } from '../repositories/crmRepository';
 import { eventBus } from '../eventBus';
+import { crmAnalyticsService, type CrmAnalytics } from './crmAnalyticsService';
 
 export interface CrmKpis {
   totalUsers: number;
@@ -43,6 +44,8 @@ export interface CrmSnapshot {
   kpis: CrmKpis;
   series30d: CrmSeriesPoint[];
   hourly24h: { hour: number; rides: number }[];
+  /** Sprint 8 — CRM Intelligence (derivado, sem I/O adicional). */
+  analytics: CrmAnalytics;
 }
 
 const DAY = 86_400_000;
@@ -175,6 +178,7 @@ export const crmService = {
       kpis,
       series30d,
       hourly24h: hourly.map((rides, hour) => ({ hour, rides })),
+      analytics: crmAnalyticsService.build(profiles, userData, now.getTime()),
     };
 
     eventBus.emit('crm:changed');
