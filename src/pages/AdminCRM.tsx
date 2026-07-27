@@ -149,7 +149,15 @@ export default function AdminCRM() {
               </Card>
             </section>
 
+            <CrmProductHealthPanel data={snapshot.intelligence} />
             <CrmAlertsPanel data={snapshot.analytics} />
+            <CrmRecommendationsPanel data={snapshot.intelligence} />
+            <CrmChurnPanel data={snapshot.intelligence} />
+            <CrmDriverScorePanel data={snapshot.intelligence} />
+            <CrmSegmentsPanel data={snapshot.intelligence} />
+            <CrmAdoptionPanel data={snapshot.intelligence} />
+            <CrmJourneyPanel data={snapshot.intelligence} />
+            <CrmExperimentsPanel data={snapshot.intelligence} />
             <CrmRoadmapPanel data={snapshot.analytics} />
             <CrmEngagementPanel data={snapshot.analytics} />
             <CrmRetentionPanel data={snapshot.analytics} />
