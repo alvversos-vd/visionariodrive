@@ -18,6 +18,10 @@ import {
   CrmFeatureUsagePanel, CrmCohortPanel, CrmHealthPanel, CrmAchievementsPanel,
   CrmRevenuePanel, CrmAlertsPanel, CrmRoadmapPanel,
 } from '@/components/admin/CrmPanels';
+import {
+  CrmProductHealthPanel, CrmDriverScorePanel, CrmChurnPanel, CrmSegmentsPanel,
+  CrmRecommendationsPanel, CrmAdoptionPanel, CrmExperimentsPanel, CrmJourneyPanel,
+} from '@/components/admin/CrmIntelligencePanels';
 import { Navigate } from 'react-router-dom';
 
 function Kpi({ label, value, icon: Icon }: { label: string; value: string | number; icon: LucideIcon }) {
