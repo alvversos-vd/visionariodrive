@@ -182,6 +182,7 @@ export const crmService = {
       series30d,
       hourly24h: hourly.map((rides, hour) => ({ hour, rides })),
       analytics: crmAnalyticsService.build(profiles, userData, now.getTime()),
+      intelligence: crmIntelligenceService.build(profiles, userData, now.getTime()),
     };
 
     eventBus.emit('crm:changed');
