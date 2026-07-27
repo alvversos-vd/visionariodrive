@@ -151,7 +151,7 @@ function round(n: number, digits = 0): number {
   const f = 10 ** digits;
   return Math.round(n * f) / f;
 }
-/** Alias determinístico, sem PII: "Motorista #a1b2". */
+/** Alias determinístico, sem PII: prefixo curto do id do usuário. */
 function aliasOf(userId: string): string {
   return `Motorista #${userId.replace(/-/g, '').slice(0, 4)}`;
 }
