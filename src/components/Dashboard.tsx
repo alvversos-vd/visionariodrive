@@ -17,7 +17,10 @@ import InsightsCard from './InsightsCard';
 // Sprint 3: única leitura autorizada — encapsula goals/settings/snapshot/turno/insights.
 import { useDashboard } from '@/hooks/useDashboard';
 import { shiftService } from '@/lib/services/shiftService';
-import { getObjectiveConfig, Objective } from '@/lib/objectives';
+import { haptics } from '@/lib/haptics';
+import { useSessionMode } from './session/SessionModeContext';
+import SessionDashboard from './session/SessionDashboard';
+
 
 interface Props {
   refresh: number;
