@@ -11,6 +11,9 @@ import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
 import { achievementService } from '@/lib/services/achievementService';
 import { BRAND_ICON_URL, BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
+import { SessionModeProvider, useSessionMode } from '@/components/session/SessionModeContext';
+import SessionOverlays from '@/components/session/SessionOverlays';
+
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
 // Cada view carrega apenas quando o usuário navegar até ela.
@@ -37,11 +40,21 @@ type Tab = 'home' | 'input' | 'ride' | 'goals' | 'financial' | 'history' | 'stra
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
 export default function Index() {
+  return (
+    <SessionModeProvider>
+      <IndexInner />
+    </SessionModeProvider>
+  );
+}
+
+function IndexInner() {
   const [tab, setTab] = useState<Tab>('home');
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
   const { isPro, dataVersion } = useAuth();
+  const { sessionMode } = useSessionMode();
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboardingCompleted());
+
 
   useEffect(() => {
     setRefresh(p => p + 1);
@@ -74,16 +87,20 @@ export default function Index() {
 
   // Sprint 7.5 Onda 2 — navegação "que respira": underline desliza, ícone sobe 2px,
   // label ganha peso, glow médio aparece. Sincronizado em 180ms.
-  const tabClass = (active: boolean) =>
-    `group relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-caption font-display tracking-wide rounded-md min-w-0 flex-1 press overflow-hidden transition-colors duration-[180ms] ${
+  // Sprint 7.5 Onda 2 — navegação "que respira": underline desliza, ícone sobe 2px,
+  // label ganha peso, glow médio aparece. Sincronizado em 180ms.
+  // Sprint 10 — em Sessão Visionária, abas secundárias perdem destaque (só visual).
+  const tabClass = (active: boolean, dimmed = false) =>
+    `group relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-caption font-display tracking-wide rounded-md min-w-0 flex-1 press overflow-hidden transition-all duration-[180ms] ${
       active
         ? 'text-primary font-bold'
-        : 'text-muted-foreground font-semibold hover:text-foreground'
+        : `text-muted-foreground font-semibold hover:text-foreground ${dimmed ? 'opacity-40' : ''}`
     } after:content-[""] after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:rounded-full after:transition-all after:duration-[180ms] after:ease-out ${
       active
-        ? 'after:w-8 after:bg-primary after:shadow-[0_0_10px_hsl(var(--primary)/0.65)]'
+        ? `after:w-8 after:bg-primary ${dimmed ? '' : 'after:shadow-[0_0_10px_hsl(var(--primary)/0.65)]'}`
         : 'after:w-0 after:bg-transparent'
     }`;
+
 
   const iconClass = (active: boolean) =>
     `transition-transform duration-[180ms] ease-out ${active ? '-translate-y-0.5' : 'translate-y-0'}`;
@@ -167,10 +184,12 @@ export default function Index() {
         <nav className="flex bg-card/60 border border-border/60 rounded-xl p-1 gap-0.5">
           {tabs.map(t => {
             const active = tab === t.key;
+            const dimmed = sessionMode && t.key !== 'home';
             return (
               <button
                 key={t.key}
-                className={tabClass(active)}
+                className={tabClass(active, dimmed)}
+
                 onClick={() => {
                   setTab(t.key);
                   if (t.key !== 'input') setResult(null);
@@ -189,7 +208,9 @@ export default function Index() {
         <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
+      <SessionOverlays refresh={refresh} />
       {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
+
     </div>
   );
 }

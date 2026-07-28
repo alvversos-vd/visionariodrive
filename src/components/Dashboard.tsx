@@ -17,7 +17,11 @@ import InsightsCard from './InsightsCard';
 // Sprint 3: única leitura autorizada — encapsula goals/settings/snapshot/turno/insights.
 import { useDashboard } from '@/hooks/useDashboard';
 import { shiftService } from '@/lib/services/shiftService';
+import { haptics } from '@/lib/haptics';
+import { useSessionMode } from './session/SessionModeContext';
+import SessionDashboard from './session/SessionDashboard';
 import { getObjectiveConfig, Objective } from '@/lib/objectives';
+
 
 interface Props {
   refresh: number;
@@ -33,6 +37,8 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
+  const { sessionMode, openWelcome } = useSessionMode();
+
 
   // ÚNICA fonte financeira do Dashboard — hook encapsula Services e reage
   // a rides:changed / financial:changed / shift:changed via eventBus.
@@ -167,6 +173,9 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
       : `Comece bem o dia, ${displayName}`
     : `Bora começar, ${displayName}`;
 
+  // Sessão Visionária — apenas troca de apresentação (Sprint 10).
+  if (sessionMode) return <SessionDashboard refresh={refresh} />;
+
   return (
     <div className="space-y-4 animate-slide-up">
       {/* HEADER — saudação humana, sem ruído */}
@@ -189,6 +198,22 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
           <Focus size={12} /> {focus ? 'Foco ativo' : 'Foco'}
         </button>
       </div>
+
+      {/* CTA — Sessão Visionária (experiência opcional, sempre manual) */}
+      <button
+        onClick={() => { haptics.medium(); openWelcome(); }}
+        className="w-full card-highlight p-4 flex items-center gap-3 text-left press"
+      >
+        <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+          <Sparkles size={16} className="text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-sm font-bold text-foreground leading-tight">Sessão Visionária</p>
+          <p className="text-caption text-muted-foreground mt-0.5 leading-snug">Foco total no seu turno</p>
+        </div>
+        <ArrowRight size={16} className="text-primary shrink-0" />
+      </button>
+
 
       {/* HERO PREMIUM — Lucro real + Status turno + Meta diária */}
       {(() => {
