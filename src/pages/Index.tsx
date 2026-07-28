@@ -11,6 +11,9 @@ import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
 import { achievementService } from '@/lib/services/achievementService';
 import { BRAND_ICON_URL, BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
+import { SessionModeProvider, useSessionMode } from '@/components/session/SessionModeContext';
+import SessionOverlays from '@/components/session/SessionOverlays';
+
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
 // Cada view carrega apenas quando o usuário navegar até ela.
