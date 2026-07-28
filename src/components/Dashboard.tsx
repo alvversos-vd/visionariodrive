@@ -20,6 +20,7 @@ import { shiftService } from '@/lib/services/shiftService';
 import { haptics } from '@/lib/haptics';
 import { useSessionMode } from './session/SessionModeContext';
 import SessionDashboard from './session/SessionDashboard';
+import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 
 interface Props {
