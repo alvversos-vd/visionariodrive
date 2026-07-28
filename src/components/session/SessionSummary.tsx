@@ -89,8 +89,8 @@ export default function SessionSummary({ data, lucroOntem, onClose }: Props) {
               const a = catalog.find(c => c.id === u.id);
               return (
                 <div key={u.id} className="flex items-center gap-2.5">
-                  <span className={`h-2 w-2 rounded-full ${a ? 'bg-primary' : 'bg-muted-foreground'}`} />
-                  <p className="text-sm text-foreground">{a?.title ?? u.id}</p>
+                  <span className="text-base leading-none">{a?.icon ?? '★'}</span>
+                  <p className="text-sm text-foreground">{a?.name ?? u.id}</p>
                 </div>
               );
             })}
