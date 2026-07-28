@@ -208,7 +208,9 @@ function IndexInner() {
         <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
+      <SessionOverlays refresh={refresh} />
       {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
+
     </div>
   );
 }
