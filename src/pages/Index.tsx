@@ -37,11 +37,21 @@ type Tab = 'home' | 'input' | 'ride' | 'goals' | 'financial' | 'history' | 'stra
 const PRO_TABS: Tab[] = ['history', 'strategy'];
 
 export default function Index() {
+  return (
+    <SessionModeProvider>
+      <IndexInner />
+    </SessionModeProvider>
+  );
+}
+
+function IndexInner() {
   const [tab, setTab] = useState<Tab>('home');
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
   const { isPro, dataVersion } = useAuth();
+  const { sessionMode } = useSessionMode();
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboardingCompleted());
+
 
   useEffect(() => {
     setRefresh(p => p + 1);
