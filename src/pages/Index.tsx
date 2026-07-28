@@ -184,10 +184,12 @@ function IndexInner() {
         <nav className="flex bg-card/60 border border-border/60 rounded-xl p-1 gap-0.5">
           {tabs.map(t => {
             const active = tab === t.key;
+            const dimmed = sessionMode && t.key !== 'home';
             return (
               <button
                 key={t.key}
-                className={tabClass(active)}
+                className={tabClass(active, dimmed)}
+
                 onClick={() => {
                   setTab(t.key);
                   if (t.key !== 'input') setResult(null);
