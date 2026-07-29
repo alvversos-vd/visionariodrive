@@ -37,7 +37,7 @@ function fmt(v: number) {
 export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
-  const { sessionMode, openWelcome } = useSessionMode();
+  const { sessionMode } = useSessionMode();
 
 
   // ÚNICA fonte financeira do Dashboard — hook encapsula Services e reage
