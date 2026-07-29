@@ -7,42 +7,32 @@ import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Sparkles, EyeOff, Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+import { Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+import SessionEntryCard from '@/components/session/SessionEntryCard';
 
 interface Props {
   refresh: number;
   onSaved: () => void;
+  /** Leva o usuário ao Dashboard quando a sessão já está ativa. */
+  onEnterSession?: () => void;
 }
+
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-const MOTIVATIONAL = [
-  'Foco até bater a meta 🎯',
-  'Você está no controle 💪',
-  'Cada corrida é um passo 🚀',
-  'Disciplina vence talento 🔥',
-  'Resultado é consequência 📈',
-];
 
-export default function GoalsView({ refresh, onSaved }: Props) {
+
+
+export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
   const entries = useMemo(() => { void refresh; return rideService.listEntries(); }, [refresh]);
   const settings = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
   const initialGoals = useMemo(() => { void refresh; return goalsService.get(); }, [refresh]);
   const [goals, setGoals] = useState<Goals>(initialGoals);
-  const [focusMode, setFocusMode] = useState(false);
-  const [phrase, setPhrase] = useState(MOTIVATIONAL[0]);
 
   useEffect(() => setGoals(initialGoals), [initialGoals]);
 
-  useEffect(() => {
-    if (!focusMode) return;
-    const id = setInterval(() => {
-      setPhrase(MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]);
-    }, 4000);
-    return () => clearInterval(id);
-  }, [focusMode]);
 
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
   const today = stats.todayEntry;
@@ -79,35 +69,8 @@ export default function GoalsView({ refresh, onSaved }: Props) {
     onSaved();
   };
 
-  if (focusMode) {
-    return (
-      <div className="space-y-6 animate-fade-in text-center py-6">
-        <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => setFocusMode(false)} className="gap-1.5">
-            <EyeOff size={14} /> Sair do Modo Foco
-          </Button>
-        </div>
-        <div>
-          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
-          <p className="text-2xl font-display font-bold mt-1 number-tabular">{fmt(goals.daily)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-card to-secondary/30 rounded-2xl p-8 border border-border/60 shadow-premium">
-          <p className={`text-7xl font-display font-bold number-tabular ${dailyProgress >= 100 ? 'text-profit' : 'text-primary'}`}>{dailyProgress.toFixed(0)}%</p>
-          <div className="w-full bg-secondary/60 rounded-full h-3 overflow-hidden mt-5">
-            <div className={`h-full transition-all duration-700 ${dailyProgress >= 100 ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${dailyProgress}%` }} />
-          </div>
-        </div>
-        <div>
-          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Faltam</p>
-          <p className="text-3xl font-display font-bold mt-1 number-tabular">{fmt(missing)}</p>
-          {kmNeeded > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">≈ {kmNeeded.toFixed(0)} km no ritmo ideal</p>
-          )}
-        </div>
-        <p className="text-base font-display font-semibold text-primary mt-6 animate-pulse-dot">{phrase}</p>
-      </div>
-    );
-  }
+
+
 
   const ringDeg = Math.min(360, dailyProgress * 3.6);
   const ringColor = dailyProgress >= 100 ? 'hsl(var(--profit))' : dailyProgress >= 70 ? 'hsl(var(--accent))' : 'hsl(var(--primary))';
@@ -161,13 +124,8 @@ export default function GoalsView({ refresh, onSaved }: Props) {
         )}
       </div>
 
-      <Button
-        onClick={() => setFocusMode(true)}
-        size="lg"
-        className="w-full h-12 font-display font-semibold gap-2 bg-info-gradient text-info-foreground hover:opacity-90 shadow-premium"
-      >
-        <Sparkles size={18} /> Modo Visionário
-      </Button>
+      <SessionEntryCard refresh={refresh} onEnter={onEnterSession} />
+
 
       {/* Semana e mês */}
       <div className="grid grid-cols-1 gap-3">
