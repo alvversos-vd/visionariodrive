@@ -127,7 +127,7 @@ function IndexInner() {
       case 'ride':
         return <RideAnalyzer refresh={refresh} onGoToUpgrade={() => setTab('upgrade')} />;
       case 'goals':
-        return <GoalsView refresh={refresh} onSaved={triggerRefresh} />;
+        return <GoalsView refresh={refresh} onSaved={triggerRefresh} onEnterSession={() => setTab('home')} />;
       case 'financial':
         return <FinancialView refresh={refresh} onChanged={triggerRefresh} />;
       case 'strategy':
