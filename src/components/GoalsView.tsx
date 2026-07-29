@@ -30,23 +30,14 @@ const MOTIVATIONAL = [
   'Resultado é consequência 📈',
 ];
 
-export default function GoalsView({ refresh, onSaved }: Props) {
+export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
   const entries = useMemo(() => { void refresh; return rideService.listEntries(); }, [refresh]);
   const settings = useMemo(() => { void refresh; return settingsService.get(); }, [refresh]);
   const initialGoals = useMemo(() => { void refresh; return goalsService.get(); }, [refresh]);
   const [goals, setGoals] = useState<Goals>(initialGoals);
-  const [focusMode, setFocusMode] = useState(false);
-  const [phrase, setPhrase] = useState(MOTIVATIONAL[0]);
 
   useEffect(() => setGoals(initialGoals), [initialGoals]);
 
-  useEffect(() => {
-    if (!focusMode) return;
-    const id = setInterval(() => {
-      setPhrase(MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)]);
-    }, 4000);
-    return () => clearInterval(id);
-  }, [focusMode]);
 
   const stats = useMemo(() => metricsService.statsFor(entries, goals.daily), [entries, goals.daily]);
   const today = stats.todayEntry;
