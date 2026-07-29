@@ -1,5 +1,5 @@
 /**
- * SessionCompanion — Sprint 10.
+ * SessionCompanion — Sprint 10.1.
  * Mensagem ocasional de acompanhamento. Seleção simples sobre dados existentes.
  */
 import { useEffect, useState } from 'react';
@@ -15,14 +15,13 @@ interface Props {
 export function selectCompanionMessage(p: Props): string | null {
   const { minutos, lucro, metaDaily, corridas } = p;
   if (metaDaily > 0 && lucro >= metaDaily) {
-    return 'Meta concluída. Agora tudo acima disso é lucro.';
+    return 'Sua meta foi concluída. Todo lucro adicional agora representa ganho acima do planejado.';
   }
   if (minutos >= 180) {
-    const horas = Math.floor(minutos / 60);
-    return `Você já trabalha há ${horas} horas. Considere uma pequena pausa.`;
+    return 'Você já dirige há bastante tempo. Considere uma pequena pausa.';
   }
   if (corridas >= 5) {
-    return 'Excelente ritmo. Continue assim.';
+    return 'Ritmo constante até aqui.';
   }
   return null;
 }
