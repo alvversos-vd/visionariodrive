@@ -83,35 +83,8 @@ export default function GoalsView({ refresh, onSaved }: Props) {
     onSaved();
   };
 
-  if (focusMode) {
-    return (
-      <div className="space-y-6 animate-fade-in text-center py-6">
-        <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={() => setFocusMode(false)} className="gap-1.5">
-            <EyeOff size={14} /> Sair do Modo Foco
-          </Button>
-        </div>
-        <div>
-          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Meta diária</p>
-          <p className="text-2xl font-display font-bold mt-1 number-tabular">{fmt(goals.daily)}</p>
-        </div>
-        <div className="bg-gradient-to-br from-card to-secondary/30 rounded-2xl p-8 border border-border/60 shadow-premium">
-          <p className={`text-7xl font-display font-bold number-tabular ${dailyProgress >= 100 ? 'text-profit' : 'text-primary'}`}>{dailyProgress.toFixed(0)}%</p>
-          <div className="w-full bg-secondary/60 rounded-full h-3 overflow-hidden mt-5">
-            <div className={`h-full transition-all duration-700 ${dailyProgress >= 100 ? 'bg-profit-gradient' : 'bg-info-gradient'}`} style={{ width: `${dailyProgress}%` }} />
-          </div>
-        </div>
-        <div>
-          <p className="text-micro text-muted-foreground uppercase tracking-[0.2em]">Faltam</p>
-          <p className="text-3xl font-display font-bold mt-1 number-tabular">{fmt(missing)}</p>
-          {kmNeeded > 0 && (
-            <p className="text-sm text-muted-foreground mt-2">≈ {kmNeeded.toFixed(0)} km no ritmo ideal</p>
-          )}
-        </div>
-        <p className="text-base font-display font-semibold text-primary mt-6 animate-pulse-dot">{phrase}</p>
-      </div>
-    );
-  }
+
+
 
   const ringDeg = Math.min(360, dailyProgress * 3.6);
   const ringColor = dailyProgress >= 100 ? 'hsl(var(--profit))' : dailyProgress >= 70 ? 'hsl(var(--accent))' : 'hsl(var(--primary))';
