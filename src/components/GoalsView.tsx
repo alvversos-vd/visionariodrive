@@ -7,12 +7,16 @@ import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Sparkles, EyeOff, Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+import { Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+import SessionEntryCard from '@/components/session/SessionEntryCard';
 
 interface Props {
   refresh: number;
   onSaved: () => void;
+  /** Leva o usuário ao Dashboard quando a sessão já está ativa. */
+  onEnterSession?: () => void;
 }
+
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
