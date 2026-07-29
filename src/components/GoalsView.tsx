@@ -22,13 +22,8 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-const MOTIVATIONAL = [
-  'Foco até bater a meta 🎯',
-  'Você está no controle 💪',
-  'Cada corrida é um passo 🚀',
-  'Disciplina vence talento 🔥',
-  'Resultado é consequência 📈',
-];
+
+
 
 export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
   const entries = useMemo(() => { void refresh; return rideService.listEntries(); }, [refresh]);
