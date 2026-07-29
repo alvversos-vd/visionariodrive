@@ -1,12 +1,12 @@
 /**
- * SessionDashboard — Sprint 10.
+ * SessionDashboard — Sprint 10.1 (HUD Operacional).
  *
  * Substitui APENAS o conteúdo visual do Dashboard enquanto a Sessão
  * Visionária está ativa. Zero regra de negócio: consome os mesmos hooks
  * públicos (useDashboard / useDayMetrics) já usados pelo modo normal.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Route, Navigation, Flag } from 'lucide-react';
+import { Route, Navigation, Flag, Banknote, Gauge } from 'lucide-react';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useDayMetrics } from '@/hooks/useMetrics';
 import { haptics } from '@/lib/haptics';
@@ -19,6 +19,21 @@ import SessionCompanion from './SessionCompanion';
 interface Props { refresh: number }
 
 const YESTERDAY = new Date(Date.now() - 86_400_000);
+
+function fmt(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="card-premium p-4">
+      <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
+        {icon} {label}
+      </p>
+      <p className="kpi-display font-mono-num text-foreground text-2xl mt-2">{value}</p>
+    </div>
+  );
+}
 
 export default function SessionDashboard({ refresh }: Props) {
   const { goals, snapshot, activeShift, shiftTotals } = useDashboard(refresh);
@@ -41,6 +56,7 @@ export default function SessionDashboard({ refresh }: Props) {
   const metaPct = metaDaily > 0 ? Math.min(100, (lucro / metaDaily) * 100) : 0;
   const corridas = shiftTotals?.corridas_total ?? 0;
   const km = shiftTotals?.km_total ?? snapshot.today.km;
+  const porHora = snapshot.today.profitPerHour;
 
   // Encerramento visual: quando o turno deixa de existir, mostra o resumo.
   const hadShift = useRef(false);
@@ -59,21 +75,11 @@ export default function SessionDashboard({ refresh }: Props) {
       <SessionHero minutos={minutos} lucro={lucro} metaPct={metaPct} ativo={!!activeShift} />
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="card-premium p-4">
-          <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
-            <Route size={11} className="text-primary" /> KM
-          </p>
-          <p className="kpi-display font-mono-num text-foreground text-2xl mt-2">{km.toFixed(1)}</p>
-        </div>
-        <div className="card-premium p-4">
-          <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
-            <Navigation size={11} className="text-primary" /> Corridas
-          </p>
-          <p className="kpi-display font-mono-num text-foreground text-2xl mt-2">{corridas}</p>
-        </div>
+        <Kpi icon={<Banknote size={11} className="text-primary" />} label="Lucro" value={fmt(lucro)} />
+        <Kpi icon={<Route size={11} className="text-primary" />} label="KM" value={km.toFixed(1)} />
+        <Kpi icon={<Navigation size={11} className="text-primary" />} label="Corridas" value={String(corridas)} />
+        <Kpi icon={<Gauge size={11} className="text-primary" />} label="R$/hora" value={porHora > 0 ? fmt(porHora) : '—'} />
       </div>
-
-      <SessionMetaCard lucro={lucro} metaDaily={metaDaily} metaPct={metaPct} />
 
       <SessionInsightCard
         lucro={lucro}
@@ -83,6 +89,8 @@ export default function SessionDashboard({ refresh }: Props) {
         mediaSemana={snapshot.stats.weekAvgProfit}
         mediaPorCorrida={shiftTotals?.media_por_corrida ?? 0}
       />
+
+      <SessionMetaCard lucro={lucro} metaDaily={metaDaily} metaPct={metaPct} />
 
       <SessionCompanion minutos={minutos} lucro={lucro} metaDaily={metaDaily} corridas={corridas} />
 

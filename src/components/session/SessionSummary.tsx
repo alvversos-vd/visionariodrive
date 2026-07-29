@@ -1,5 +1,5 @@
 /**
- * SessionSummary — Sprint 10.
+ * SessionSummary — Sprint 10.1 (encerramento cinematográfico).
  * Resumo premium exibido ao encerrar a Sessão Visionária. Só apresentação.
  */
 import { useMemo } from 'react';
@@ -22,11 +22,14 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Row({ label, value, delay, neon }: { label: string; value: string; delay: number; neon?: boolean }) {
   return (
-    <div className="card-premium p-4">
+    <div
+      className="card-premium p-4 flex items-center justify-between gap-3 animate-fade-in-up"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'backwards' }}
+    >
       <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">{label}</p>
-      <p className="kpi-display font-mono-num text-foreground text-2xl mt-2">{value}</p>
+      <p className={`kpi-display font-mono-num text-2xl ${neon ? 'text-neon' : 'text-foreground'}`}>{value}</p>
     </div>
   );
 }
@@ -47,36 +50,30 @@ export default function SessionSummary({ data, lucroOntem, onClose }: Props) {
   const comparativo = lucroOntem > 0
     ? data.lucro > lucroOntem
       ? 'Hoje você trabalhou melhor que ontem.'
-      : 'Excelente trabalho hoje.'
-    : 'Excelente trabalho hoje.';
+      : 'Excelente trabalho.'
+    : 'Excelente trabalho.';
 
   return (
     <SessionLayout>
-      <div className="flex-1 space-y-5">
-        <div className="text-center space-y-1.5 pt-4">
+      <div className="flex-1 space-y-4">
+        <div className="text-center space-y-1.5 pt-6 animate-fade-in-up">
           <p className="text-micro uppercase tracking-[0.28em] text-primary font-display font-semibold">
             Sessão Visionária
           </p>
-          <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">Sessão Finalizada</h2>
+          <h2 className="font-display text-3xl font-bold text-foreground tracking-tight">MISSÃO CONCLUÍDA</h2>
         </div>
 
-        <div className="card-highlight p-6 text-center animate-fade-in-up">
-          <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold">Lucro da sessão</p>
-          <p className="kpi-display font-mono-num text-neon text-4xl mt-2">{fmt(lucro)}</p>
+        <div className="space-y-3 pt-2">
+          <Row label="Tempo" value={formatDuracao(data.minutos)} delay={60} />
+          <Row label="Corridas" value={String(Math.round(corridas))} delay={120} />
+          <Row label="KM" value={km.toFixed(1)} delay={180} />
+          <Row label="Lucro" value={fmt(lucro)} delay={240} neon />
           {data.metaDaily > 0 && (
-            <p className="text-caption text-muted-foreground mt-3">
-              Meta <span className="text-foreground font-mono-num">{Math.round(pct)}%</span> de {fmt(data.metaDaily)}
-            </p>
+            <Row label="Meta" value={`${Math.round(pct)}%`} delay={300} />
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Kpi label="Tempo" value={formatDuracao(data.minutos)} />
-          <Kpi label="Corridas" value={String(Math.round(corridas))} />
-          <Kpi label="KM" value={km.toFixed(1)} />
-        </div>
-
-        <div className="card-glass p-4">
+        <div className="card-glass p-4 animate-fade-in-up">
           <p className="text-sm text-foreground leading-snug">{comparativo}</p>
         </div>
 
@@ -97,9 +94,10 @@ export default function SessionSummary({ data, lucroOntem, onClose }: Props) {
           </div>
         )}
 
-        <p className="text-center text-sm text-muted-foreground pt-2">
-          Até amanhã. Descanse.
-        </p>
+        <div className="text-center pt-2 space-y-1">
+          <p className="text-sm text-foreground">Sessão encerrada.</p>
+          <p className="text-caption text-muted-foreground">Descanse. Até a próxima.</p>
+        </div>
       </div>
 
       <button
