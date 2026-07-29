@@ -161,13 +161,8 @@ export default function GoalsView({ refresh, onSaved }: Props) {
         )}
       </div>
 
-      <Button
-        onClick={() => setFocusMode(true)}
-        size="lg"
-        className="w-full h-12 font-display font-semibold gap-2 bg-info-gradient text-info-foreground hover:opacity-90 shadow-premium"
-      >
-        <Sparkles size={18} /> Modo Visionário
-      </Button>
+      <SessionEntryCard refresh={refresh} onEnter={onEnterSession} />
+
 
       {/* Semana e mês */}
       <div className="grid grid-cols-1 gap-3">
