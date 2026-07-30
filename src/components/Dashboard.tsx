@@ -25,7 +25,6 @@ import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 interface Props {
   refresh: number;
-  onGoToInput: () => void;
   onGoToGoals: () => void;
   onGoToUpgrade: () => void;
 }
@@ -34,7 +33,7 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
+export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
   const { sessionMode } = useSessionMode();
