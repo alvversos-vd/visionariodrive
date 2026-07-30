@@ -6,6 +6,7 @@ import { rideService } from '@/lib/services/rideService';
 import { verdictToResultado } from '@/lib/adapters/rideAdapters';
 import { getVehicleById } from '@/lib/vehicles';
 import { useActiveShift } from '@/hooks/useShift';
+import { useBusVersion } from '@/hooks/useBusVersion';
 
 interface Props { onChange?: () => void }
 
