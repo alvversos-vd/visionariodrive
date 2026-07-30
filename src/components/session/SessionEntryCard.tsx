@@ -4,7 +4,7 @@
  * lê o turno ativo via hook público e a fase visual via SessionModeContext.
  */
 import { ArrowRight, Check } from 'lucide-react';
-import { BRAND_ICON_URL } from '@/assets/branding/logo';
+import BrandMark from '@/components/brand/BrandMark';
 import { haptics } from '@/lib/haptics';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useSessionMode } from './SessionModeContext';
@@ -50,15 +50,7 @@ export default function SessionEntryCard({ refresh, onEnter }: Props) {
         />
 
         <div className="relative flex items-start gap-3.5">
-          <div className="relative shrink-0">
-            <div aria-hidden className="absolute inset-0 rounded-xl blur-lg bg-primary/40" />
-            <img
-              src={BRAND_ICON_URL}
-              alt=""
-              draggable={false}
-              className="relative h-11 w-11 rounded-xl select-none"
-            />
-          </div>
+          <BrandMark size="md" glow="soft" />
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
