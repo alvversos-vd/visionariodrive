@@ -45,6 +45,15 @@ export default function RegisterRideFab({ onChange }: Props) {
     return () => clearInterval(i);
   }, [open]);
 
+  // Sprint 10.3 — Quick Action "Registrar corrida" da notificação persistente.
+  // Abre exatamente o mesmo modal manual (valor + km). Zero fluxo paralelo.
+  const notifRegister = useBusVersion('notification:register');
+  useEffect(() => {
+    if (notifRegister > 0) setOpen(true);
+  }, [notifRegister]);
+
+
+
   const vehicle = useMemo(
     () => (shift?.veiculo_id ? getVehicleById(shift.veiculo_id) : null),
     [shift?.veiculo_id]
