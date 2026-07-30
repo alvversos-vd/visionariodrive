@@ -10,7 +10,8 @@ import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIc
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
 import { achievementService } from '@/lib/services/achievementService';
-import { BRAND_ICON_URL, BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
+import { BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
+import BrandMark from '@/components/brand/BrandMark';
 import { SessionModeProvider, useSessionMode } from '@/components/session/SessionModeContext';
 import SessionOverlays from '@/components/session/SessionOverlays';
 
