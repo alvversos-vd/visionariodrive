@@ -143,24 +143,16 @@ function IndexInner() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      <header className="bg-hero border-b border-border/60 px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
-        <div className="container max-w-lg mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-xl blur-md bg-primary/30" />
-              <img
-                src={BRAND_ICON_URL}
-                alt=""
-                className="relative h-9 w-9 rounded-xl select-none"
-                draggable={false}
-              />
-            </div>
-            <div>
-              <h1 className="font-display text-[17px] font-bold text-foreground tracking-tight leading-none">{BRAND_NAME}</h1>
-              <p className="text-micro text-muted-foreground tracking-wide mt-1">{BRAND_TAGLINE}</p>
+      <header className="bg-hero border-b border-border/60 px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-5">
+        <div className="container max-w-lg mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 min-w-0">
+            <BrandMark size="sm" glow="soft" />
+            <div className="min-w-0">
+              <h1 className="font-display text-[17px] font-semibold text-foreground tracking-[-0.03em] leading-none truncate">{BRAND_NAME}</h1>
+              <p className="text-micro text-muted-foreground uppercase tracking-[0.12em] mt-1.5 truncate">{BRAND_TAGLINE}</p>
             </div>
           </div>
-          <div className="flex gap-1.5 items-center">
+          <div className="flex gap-2 items-center shrink-0">
             <InstallAppButton />
             <button
               onClick={() => setTab('profile')}
