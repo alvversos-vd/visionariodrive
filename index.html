@@ -14,18 +14,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Visionario" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <style>
       html,body{background:#000;}
-      #vd-splash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#000;transition:opacity .45s ease}
+      #vd-splash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;background:#000;transition:opacity .45s ease;font-family:'Space Grotesk',system-ui,sans-serif}
       #vd-splash.hide{opacity:0;pointer-events:none}
-      #vd-splash .glow{position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.35),transparent 65%);filter:blur(24px);animation:vdpulse 2s ease-in-out infinite}
-      #vd-splash img{position:relative;width:112px;height:112px;border-radius:28px;animation:vdin .6s cubic-bezier(.22,1,.36,1) both}
-      @keyframes vdin{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
-      @keyframes vdpulse{0%,100%{opacity:.55;transform:scale(.95)}50%{opacity:.85;transform:scale(1.05)}}
-      @media (prefers-reduced-motion:reduce){#vd-splash img,#vd-splash .glow{animation:none}}
+      #vd-splash .mark{position:relative;display:flex;align-items:center;justify-content:center;animation:vdin .6s cubic-bezier(.22,1,.36,1) both}
+      #vd-splash .glow{position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.18),transparent 68%);filter:blur(20px)}
+      #vd-splash img{position:relative;width:112px;height:112px;border-radius:50%;box-shadow:0 0 0 1px rgba(245,247,250,.10)}
+      #vd-splash .name{margin:20px 0 0;font-size:22px;font-weight:600;letter-spacing:-.03em;color:#f2f5f7}
+      #vd-splash .tag{margin:8px 0 0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8d96a3;font-family:Inter,system-ui,sans-serif}
+      #vd-splash .bar{width:96px;height:1px;border-radius:2px;background:#1c2027;overflow:hidden}
+      #vd-splash .bar i{display:block;width:50%;height:100%;background:rgba(74,222,128,.7);animation:vdload 1.4s ease-in-out infinite}
+      @keyframes vdin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+      @keyframes vdload{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+      @media (prefers-reduced-motion:reduce){#vd-splash .mark,#vd-splash .bar i{animation:none}}
     </style>
 
     <meta name="format-detection" content="telephone=no" />
@@ -43,8 +49,12 @@
 
   <body>
     <div id="vd-splash" aria-hidden="true">
-      <div class="glow"></div>
-      <img src="/icon-512.png" alt="" draggable="false" />
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+        <span class="mark"><span class="glow"></span><img src="/icon-512.png" alt="" draggable="false" /></span>
+        <p class="name">Visionário Drive</p>
+        <p class="tag">Lucro real • Decisão rápida • Controle absoluto</p>
+      </div>
+      <div class="bar"><i></i></div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
