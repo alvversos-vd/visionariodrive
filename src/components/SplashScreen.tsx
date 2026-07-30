@@ -1,18 +1,16 @@
 /**
- * SplashScreen — Sprint 7.5.
- * Overlay AMOLED com logo oficial (glow neon + fade+scale).
- * Desmonta imediatamente após hidratação; sem delay artificial.
- * Zero regra de negócio — apenas apresentação.
+ * SplashScreen — Sprint 10.5.
+ * Abertura premium AMOLED: símbolo → nome → tagline → loading minimalista.
+ * Desmonta imediatamente após hidratação; zero regra de negócio.
  */
 import { useEffect, useState } from 'react';
-import { BRAND_ICON_URL } from '@/assets/branding/logo';
+import BrandLockup from '@/components/brand/BrandLockup';
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(true);
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    // Aguarda 1 frame pós-hidratação e inicia fade-out.
     const raf = requestAnimationFrame(() => {
       const t = window.setTimeout(() => setFading(true), 350);
       return () => window.clearTimeout(t);
@@ -31,19 +29,14 @@ export default function SplashScreen() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-background transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-10 bg-background transition-opacity duration-500 ${
         fading ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       style={{ WebkitBackfaceVisibility: 'hidden' }}
     >
-      <div className="relative">
-        <div className="absolute inset-0 rounded-2xl blur-3xl opacity-60 bg-primary/40 animate-pulse-glow" />
-        <img
-          src={BRAND_ICON_URL}
-          alt=""
-          className="relative w-28 h-28 rounded-2xl animate-splash-in select-none"
-          draggable={false}
-        />
+      <BrandLockup size="lg" className="animate-splash-in" />
+      <div className="h-px w-24 overflow-hidden rounded-full bg-border">
+        <div className="h-full w-1/2 animate-pulse-dot rounded-full bg-primary/70" />
       </div>
     </div>
   );
