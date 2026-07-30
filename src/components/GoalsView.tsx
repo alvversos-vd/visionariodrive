@@ -77,6 +77,9 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      {/* Sessão Visionária — porta de entrada da aba Performance */}
+      <SessionEntryCard refresh={refresh} onEnter={onEnterSession} />
+
       {/* Hero diário com anel de progresso */}
       <div className="relative overflow-hidden rounded-2xl bg-hero border border-border/60 p-5 shadow-premium">
         <div className="flex items-center gap-4">
@@ -124,7 +127,8 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
         )}
       </div>
 
-      <SessionEntryCard refresh={refresh} onEnter={onEnterSession} />
+
+
 
 
       {/* Semana e mês */}

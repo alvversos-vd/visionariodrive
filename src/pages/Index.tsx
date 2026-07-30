@@ -119,7 +119,7 @@ function IndexInner() {
 
     switch (tab) {
       case 'home':
-        return <Dashboard refresh={refresh} onGoToInput={() => setTab('input')} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
+        return <Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
       case 'upgrade':
         return <UpgradeView onDismiss={() => setTab('home')} />;
       case 'input':

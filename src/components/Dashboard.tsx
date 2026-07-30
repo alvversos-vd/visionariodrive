@@ -25,7 +25,6 @@ import { getObjectiveConfig, Objective } from '@/lib/objectives';
 
 interface Props {
   refresh: number;
-  onGoToInput: () => void;
   onGoToGoals: () => void;
   onGoToUpgrade: () => void;
 }
@@ -34,7 +33,7 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpgrade }: Props) {
+export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props) {
   const { profile, isPro } = useAuth();
   const displayName = getDisplayName(profile);
   const { sessionMode } = useSessionMode();
@@ -510,19 +509,7 @@ export default function Dashboard({ refresh, onGoToInput, onGoToGoals, onGoToUpg
               </div>
             )}
           </div>
-        ) : (
-          <button
-            key="metrics-empty"
-            onClick={onGoToInput}
-            className="group w-full bg-card/40 rounded-xl p-6 border border-dashed border-border hover:border-primary/60 hover:bg-card transition-all text-center press"
-          >
-            <div className="mx-auto h-10 w-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-              <ArrowRight size={16} className="text-primary" />
-            </div>
-            <p className="text-caption uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold mt-3">Sem cálculo hoje</p>
-            <p className="text-sm font-display font-semibold text-foreground mt-1">Registrar dia de trabalho</p>
-          </button>
-        );
+        ) : null;
 
         // Ordem dos blocos (hero já está fixo no topo da tela)
         const orderMap: Record<Objective, string[]> = {
