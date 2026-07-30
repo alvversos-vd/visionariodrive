@@ -127,7 +127,8 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
         )}
       </div>
 
-      <SessionEntryCard refresh={refresh} onEnter={onEnterSession} />
+
+
 
 
       {/* Semana e mês */}
