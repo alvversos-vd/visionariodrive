@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { ArrowRight, Check, Minus, Clock, Target, Car } from 'lucide-react';
-import { BRAND_ICON_URL } from '@/assets/branding/logo';
+import BrandMark from '@/components/brand/BrandMark';
 import { haptics } from '@/lib/haptics';
 import { vehicleService } from '@/lib/services/vehicleService';
 import { getBackgroundPermissionStatus } from '@/lib/bgPermission';
@@ -73,15 +73,7 @@ export default function SessionWelcome({ metaDaily, lucroPorHora = 0, onStart, o
   return (
     <SessionLayout>
       <div className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-6">
-        <div className="relative animate-count-up">
-          <div aria-hidden className="absolute inset-0 rounded-2xl blur-2xl bg-primary/30 animate-pulse-glow" />
-          <img
-            src={BRAND_ICON_URL}
-            alt=""
-            draggable={false}
-            className="relative h-20 w-20 rounded-2xl select-none"
-          />
-        </div>
+        <BrandMark size="lg" glow="soft" className="animate-count-up" />
 
         <div className="space-y-2">
           <p className="text-micro uppercase tracking-[0.28em] text-primary font-display font-semibold">

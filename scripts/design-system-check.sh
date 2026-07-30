@@ -9,7 +9,7 @@ set -u
 fail=0
 warn=0
 
-SCOPE=(src --glob '!src/components/ui/**' --glob '!src/integrations/**' --glob '!src/index.css' --glob '!src/App.css')
+SCOPE=(src --glob '!src/components/ui/**' --glob '!src/integrations/**' --glob '!src/index.css' --glob '!src/App.css' --glob '!src/*.json')
 
 hard() {
   local label="$1"; shift

@@ -18,7 +18,8 @@ import AchievementToast from "./components/gamification/AchievementToast.tsx";
 import LevelUpModal from "./components/gamification/LevelUpModal.tsx";
 import GamificationBoot from "./components/gamification/GamificationBoot.tsx";
 import NotificationActionsBoot from "./components/native/NotificationActionsBoot.tsx";
-import { BRAND_ICON_URL, BRAND_NAME } from "@/assets/branding/logo";
+import { BRAND_NAME } from "@/assets/branding/logo";
+import BrandMark from "@/components/brand/BrandMark";
 import { useEffect } from "react";
 
 
@@ -27,16 +28,8 @@ const queryClient = new QueryClient();
 function FullScreenLoader({ label }: { label: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
-      <div className="relative">
-        <div className="absolute inset-0 rounded-2xl blur-2xl bg-primary/30 animate-pulse-glow" />
-        <img
-          src={BRAND_ICON_URL}
-          alt=""
-          className="relative w-20 h-20 rounded-2xl animate-splash-in select-none"
-          draggable={false}
-        />
-      </div>
-      <p className="font-display text-lg font-bold text-foreground tracking-tight">{BRAND_NAME}</p>
+      <BrandMark size="lg" glow="soft" className="animate-splash-in" />
+      <p className="font-display text-lg font-semibold text-foreground tracking-[-0.03em]">{BRAND_NAME}</p>
       <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Loader2 className="animate-spin" size={16} />
         <span>{label}</span>

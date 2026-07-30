@@ -138,7 +138,7 @@ public class QuickActionsForegroundService extends Service {
                 : currentContent;
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_menu_directions)
+                .setSmallIcon(R.drawable.ic_stat_visionario)
                 .setContentTitle(currentTitle)
                 .setContentText(autoVisible ? autoLabel : currentContent)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(bodyText))
