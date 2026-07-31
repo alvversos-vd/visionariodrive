@@ -15,7 +15,7 @@
  *    visibilitychange, retorno de Settings, force-manual toggle, refresh).
  */
 
-import { getBackgroundPermissionStatus, type BackgroundPermissionStatus } from './bgPermission';
+import { getBackgroundPermissionStatus, getVisionarioPermissionsPlugin, type BackgroundPermissionStatus } from './bgPermission';
 
 export type TrackingMode = 'automatic' | 'manual';
 
