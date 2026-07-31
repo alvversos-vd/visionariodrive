@@ -55,6 +55,15 @@ function fallbackStatus(): BackgroundPermissionStatus {
 
 let cachedPlugin: VisionarioPermissionsPlugin | null | undefined;
 
+/**
+ * Instância ÚNICA e cacheada do plugin nativo `VisionarioPermissions`.
+ * Registrada apenas no Android — evita registro duplicado e exceções
+ * "not implemented on web" em PWA/desktop.
+ */
+export async function getVisionarioPermissionsPlugin<T = VisionarioPermissionsPlugin>(): Promise<T | null> {
+  return (await plugin()) as unknown as T | null;
+}
+
 async function plugin(): Promise<VisionarioPermissionsPlugin | null> {
   if (cachedPlugin !== undefined) return cachedPlugin;
   try {
