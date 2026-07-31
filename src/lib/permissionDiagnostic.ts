@@ -15,7 +15,7 @@
  *    visibilitychange, retorno de Settings, force-manual toggle, refresh).
  */
 
-import { getBackgroundPermissionStatus, type BackgroundPermissionStatus } from './bgPermission';
+import { getBackgroundPermissionStatus, getVisionarioPermissionsPlugin, type BackgroundPermissionStatus } from './bgPermission';
 
 export type TrackingMode = 'automatic' | 'manual';
 
@@ -44,17 +44,9 @@ type NativePermPlugin = {
   requestIgnoreBatteryOptimization?: () => Promise<{ requested: boolean; disabled?: boolean }>;
 };
 
-let cachedNativePlugin: NativePermPlugin | null | undefined;
-
+/** Reusa a instância única/cacheada registrada em bgPermission (somente Android). */
 async function nativePlugin(): Promise<NativePermPlugin | null> {
-  if (cachedNativePlugin !== undefined) return cachedNativePlugin;
-  try {
-    const { Capacitor, registerPlugin } = await import('@capacitor/core');
-    cachedNativePlugin = Capacitor.getPlatform() === 'android'
-      ? registerPlugin<NativePermPlugin>('VisionarioPermissions')
-      : null;
-  } catch { cachedNativePlugin = null; }
-  return cachedNativePlugin;
+  return getVisionarioPermissionsPlugin<NativePermPlugin>();
 }
 
 
