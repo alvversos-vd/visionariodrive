@@ -53,14 +53,23 @@ function fallbackStatus(): BackgroundPermissionStatus {
   };
 }
 
+let cachedPlugin: VisionarioPermissionsPlugin | null | undefined;
+
 async function plugin(): Promise<VisionarioPermissionsPlugin | null> {
+  if (cachedPlugin !== undefined) return cachedPlugin;
   try {
-    const { registerPlugin } = await import('@capacitor/core');
-    return registerPlugin<VisionarioPermissionsPlugin>('VisionarioPermissions');
+    const { Capacitor, registerPlugin } = await import('@capacitor/core');
+    // Plugin existe apenas no container nativo Android; em web/PWA o
+    // registerPlugin geraria rejeição "not implemented on web".
+    cachedPlugin = Capacitor.getPlatform() === 'android'
+      ? registerPlugin<VisionarioPermissionsPlugin>('VisionarioPermissions')
+      : null;
   } catch {
-    return null;
+    cachedPlugin = null;
   }
+  return cachedPlugin;
 }
+
 
 async function withForegroundFallback(base: BackgroundPermissionStatus): Promise<BackgroundPermissionStatus> {
   if (!base.native) return base;
