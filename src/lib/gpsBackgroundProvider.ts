@@ -98,9 +98,9 @@ export class BackgroundGpsProvider implements GpsProvider {
       try {
         if (stopped) return;
 
-        const id = await BackgroundGeolocation.addWatcher(
+        await BackgroundGeolocation.start(
           watcherOptions,
-          (location?: BgLocation, error?: { code?: string; message?: string }) => {
+          (location?: BgLocation, error?: CallbackError) => {
             if (error) {
                
               console.error('[BackgroundGpsProvider] callback error', error);
