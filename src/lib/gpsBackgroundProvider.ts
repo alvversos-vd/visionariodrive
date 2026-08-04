@@ -52,7 +52,7 @@ export class BackgroundGpsProvider implements GpsProvider {
   }
 
   watch({ onFix, onError }: GpsWatchOptions): GpsWatchHandle {
-    let watcherId: string | null = null;
+    let started = false;
     let stopped = false;
     let fixCount = 0;
     let firstFixAt: number | null = null;
