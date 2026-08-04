@@ -14,26 +14,14 @@
  * Não acopla nada do plugin fora deste arquivo.
  */
 
-import { registerPlugin } from '@capacitor/core';
-import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
+// Capacitor 8: plugin oficial mantido `@capgo/background-geolocation`
+// (sucessor do `@capacitor-community/background-geolocation`, mesmo autor,
+// mesmo nome nativo "BackgroundGeolocation"). API: start()/stop().
+import { BackgroundGeolocation } from '@capgo/background-geolocation';
+import type { Location as BgLocation, CallbackError } from '@capgo/background-geolocation';
 import type { GpsProvider, GpsWatchHandle, GpsWatchOptions } from './gpsService';
 import { gpsTelemetry } from './gpsTelemetry';
 import { markBgAlwaysVerified } from './bgPermission';
-
-// Plugin nativo sem entry-point JS — registramos via Capacitor core.
-const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
-
-interface BgLocation {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  altitude?: number | null;
-  altitudeAccuracy?: number | null;
-  simulated?: boolean;
-  speed?: number | null;
-  bearing?: number | null;
-  time?: number | null;
-}
 
 type BatteryManager = {
   level: number; // 0..1
@@ -64,7 +52,7 @@ export class BackgroundGpsProvider implements GpsProvider {
   }
 
   watch({ onFix, onError }: GpsWatchOptions): GpsWatchHandle {
-    let watcherId: string | null = null;
+    let started = false;
     let stopped = false;
     let fixCount = 0;
     let firstFixAt: number | null = null;
@@ -110,9 +98,9 @@ export class BackgroundGpsProvider implements GpsProvider {
       try {
         if (stopped) return;
 
-        const id = await BackgroundGeolocation.addWatcher(
+        await BackgroundGeolocation.start(
           watcherOptions,
-          (location?: BgLocation, error?: { code?: string; message?: string }) => {
+          (location?: BgLocation, error?: CallbackError) => {
             if (error) {
                
               console.error('[BackgroundGpsProvider] callback error', error);
@@ -168,16 +156,16 @@ export class BackgroundGpsProvider implements GpsProvider {
         );
 
         if (stopped) {
-          BackgroundGeolocation.removeWatcher({ id }).catch(() => { /* noop */ });
+          BackgroundGeolocation.stop().catch(() => { /* noop */ });
           return;
         }
 
-        watcherId = id;
+        started = true;
          
-        console.info('[BackgroundGpsProvider] addWatcher iniciado com sucesso', { id });
+        console.info('[BackgroundGpsProvider] start() iniciado com sucesso');
         try {
-          gpsTelemetry.event('bg_watcher_added', { id });
-          gpsTelemetry.event('bg_watcher_started', { id, provider: 'background' });
+          gpsTelemetry.event('bg_watcher_added', { provider: 'background' });
+          gpsTelemetry.event('bg_watcher_started', { provider: 'background' });
         } catch { /* noop */ }
       } catch (e) {
          
@@ -220,10 +208,10 @@ export class BackgroundGpsProvider implements GpsProvider {
           } catch { /* noop */ }
         })();
 
-        if (watcherId) {
-          BackgroundGeolocation.removeWatcher({ id: watcherId }).catch(() => { /* noop */ });
-          try { gpsTelemetry.event('bg_watcher_removed', { id: watcherId }); } catch { /* noop */ }
-          watcherId = null;
+        if (started) {
+          BackgroundGeolocation.stop().catch(() => { /* noop */ });
+          try { gpsTelemetry.event('bg_watcher_removed', { provider: 'background' }); } catch { /* noop */ }
+          started = false;
         }
       },
     };
