@@ -14,26 +14,14 @@
  * Não acopla nada do plugin fora deste arquivo.
  */
 
-import { registerPlugin } from '@capacitor/core';
-import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
+// Capacitor 8: plugin oficial mantido `@capgo/background-geolocation`
+// (sucessor do `@capacitor-community/background-geolocation`, mesmo autor,
+// mesmo nome nativo "BackgroundGeolocation"). API: start()/stop().
+import { BackgroundGeolocation } from '@capgo/background-geolocation';
+import type { Location as BgLocation, CallbackError } from '@capgo/background-geolocation';
 import type { GpsProvider, GpsWatchHandle, GpsWatchOptions } from './gpsService';
 import { gpsTelemetry } from './gpsTelemetry';
 import { markBgAlwaysVerified } from './bgPermission';
-
-// Plugin nativo sem entry-point JS — registramos via Capacitor core.
-const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
-
-interface BgLocation {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  altitude?: number | null;
-  altitudeAccuracy?: number | null;
-  simulated?: boolean;
-  speed?: number | null;
-  bearing?: number | null;
-  time?: number | null;
-}
 
 type BatteryManager = {
   level: number; // 0..1
