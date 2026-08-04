@@ -156,16 +156,16 @@ export class BackgroundGpsProvider implements GpsProvider {
         );
 
         if (stopped) {
-          BackgroundGeolocation.removeWatcher({ id }).catch(() => { /* noop */ });
+          BackgroundGeolocation.stop().catch(() => { /* noop */ });
           return;
         }
 
-        watcherId = id;
+        started = true;
          
-        console.info('[BackgroundGpsProvider] addWatcher iniciado com sucesso', { id });
+        console.info('[BackgroundGpsProvider] start() iniciado com sucesso');
         try {
-          gpsTelemetry.event('bg_watcher_added', { id });
-          gpsTelemetry.event('bg_watcher_started', { id, provider: 'background' });
+          gpsTelemetry.event('bg_watcher_added', { provider: 'background' });
+          gpsTelemetry.event('bg_watcher_started', { provider: 'background' });
         } catch { /* noop */ }
       } catch (e) {
          
