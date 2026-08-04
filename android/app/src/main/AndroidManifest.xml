@@ -50,10 +50,21 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <!-- Sprint 10.4.6: tipo `specialUse`. Este serviço NÃO acessa GPS
+             (o tracking é do BackgroundGeolocation). Declará-lo como
+             `location` exigia permissão de localização concedida para
+             startForeground(), causando SecurityException e morte do
+             processo antes do Bridge. -->
         <service
             android:name=".QuickActionsForegroundService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:stopWithTask="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Notificação operacional persistente do turno com ações rápidas (registrar corrida, finalizar turno)" />
+        </service>
+
 
         <receiver
             android:name=".QuickActionsReceiver"
