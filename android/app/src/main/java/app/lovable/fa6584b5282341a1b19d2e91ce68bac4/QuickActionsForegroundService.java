@@ -7,10 +7,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.ServiceCompat;
 
 /**
  * QuickActionsForegroundService — Sprint 7 · Checkpoint 3.
@@ -48,6 +50,7 @@ public class QuickActionsForegroundService extends Service {
     private String currentContent = "Aguardando dados do turno";
     private boolean undoVisible = false;
     private String undoLabel = "Desfazer";
+    private boolean isForeground = false;
     private boolean autoVisible = false;
     private String autoLabel = "Corrida detectada";
 
@@ -59,43 +62,80 @@ public class QuickActionsForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String action = intent != null ? intent.getAction() : null;
-
-        if (intent != null) {
-            String t = intent.getStringExtra(EXTRA_TITLE);
-            String c = intent.getStringExtra(EXTRA_CONTENT);
-            if (t != null && !t.isEmpty()) currentTitle = t;
-            if (c != null && !c.isEmpty()) currentContent = c;
-            if (intent.hasExtra(EXTRA_UNDO_VISIBLE)) {
-                undoVisible = intent.getBooleanExtra(EXTRA_UNDO_VISIBLE, false);
-            }
-            String lbl = intent.getStringExtra(EXTRA_UNDO_LABEL);
-            if (lbl != null && !lbl.isEmpty()) undoLabel = lbl;
-            if (intent.hasExtra(EXTRA_AUTO_VISIBLE)) {
-                autoVisible = intent.getBooleanExtra(EXTRA_AUTO_VISIBLE, false);
-            }
-            String alb = intent.getStringExtra(EXTRA_AUTO_LABEL);
-            if (alb != null && !alb.isEmpty()) autoLabel = alb;
+        // Sprint 10.4.6 — proteção de boot.
+        // Um restart do sistema (START_STICKY / crash / update) reentrega o
+        // Service com intent == null e o app em background. Nesse cenário o
+        // Android 14+ recusa startForeground() e mata o processo ANTES do
+        // Bridge Capacitor iniciar. O turno é sempre restaurado pelo JS,
+        // então aqui apenas encerramos o serviço órfão.
+        if (intent == null) {
+            stopForegroundCompat();
+            stopSelf();
+            return START_NOT_STICKY;
         }
+
+        String action = intent.getAction();
+
+        String t = intent.getStringExtra(EXTRA_TITLE);
+        String c = intent.getStringExtra(EXTRA_CONTENT);
+        if (t != null && !t.isEmpty()) currentTitle = t;
+        if (c != null && !c.isEmpty()) currentContent = c;
+        if (intent.hasExtra(EXTRA_UNDO_VISIBLE)) {
+            undoVisible = intent.getBooleanExtra(EXTRA_UNDO_VISIBLE, false);
+        }
+        String lbl = intent.getStringExtra(EXTRA_UNDO_LABEL);
+        if (lbl != null && !lbl.isEmpty()) undoLabel = lbl;
+        if (intent.hasExtra(EXTRA_AUTO_VISIBLE)) {
+            autoVisible = intent.getBooleanExtra(EXTRA_AUTO_VISIBLE, false);
+        }
+        String alb = intent.getStringExtra(EXTRA_AUTO_LABEL);
+        if (alb != null && !alb.isEmpty()) autoLabel = alb;
 
         if (ACTION_STOP.equals(action)) {
             undoVisible = false;
             autoVisible = false;
-            stopForeground(true);
+            stopForegroundCompat();
             stopSelf();
             return START_NOT_STICKY;
         }
 
         Notification n = buildNotification();
 
-        if (ACTION_UPDATE.equals(action)) {
+        if (ACTION_UPDATE.equals(action) && isForeground) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (nm != null) nm.notify(NOTIFICATION_ID, n);
+            try {
+                if (nm != null) nm.notify(NOTIFICATION_ID, n);
+            } catch (Exception ignored) { /* notificações desativadas */ }
         } else {
-            startForeground(NOTIFICATION_ID, n);
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ServiceCompat.startForeground(
+                            this,
+                            NOTIFICATION_ID,
+                            n,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                    );
+                } else {
+                    startForeground(NOTIFICATION_ID, n);
+                }
+                isForeground = true;
+            } catch (Exception e) {
+                // Ex.: ForegroundServiceStartNotAllowedException / SecurityException.
+                // Nunca propagar: derrubaria o processo do app.
+                isForeground = false;
+                stopSelf();
+                return START_NOT_STICKY;
+            }
         }
 
-        return START_STICKY;
+        return START_NOT_STICKY;
+    }
+
+    private void stopForegroundCompat() {
+        isForeground = false;
+        try {
+            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        } catch (Exception ignored) { /* noop */ }
     }
 
     @Override
