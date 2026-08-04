@@ -208,10 +208,10 @@ export class BackgroundGpsProvider implements GpsProvider {
           } catch { /* noop */ }
         })();
 
-        if (watcherId) {
-          BackgroundGeolocation.removeWatcher({ id: watcherId }).catch(() => { /* noop */ });
-          try { gpsTelemetry.event('bg_watcher_removed', { id: watcherId }); } catch { /* noop */ }
-          watcherId = null;
+        if (started) {
+          BackgroundGeolocation.stop().catch(() => { /* noop */ });
+          try { gpsTelemetry.event('bg_watcher_removed', { provider: 'background' }); } catch { /* noop */ }
+          started = false;
         }
       },
     };
