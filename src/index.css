@@ -266,11 +266,17 @@
 .animate-fade-in-up { animation: fade-in-up 240ms ease-out both; }
 
 @keyframes splash-in {
-  0% { opacity: 0; transform: scale(0.82); }
+  0% { opacity: 0; transform: scale(0.9) translateZ(0); }
   60% { opacity: 1; }
-  100% { opacity: 1; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1) translateZ(0); }
 }
-.animate-splash-in { animation: splash-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-splash-in {
+  animation: splash-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+}
 
 /* Sprint 7.5 Onda 1 — microinterações premium */
 @keyframes count-up {
