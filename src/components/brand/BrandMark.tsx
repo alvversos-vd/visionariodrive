@@ -30,7 +30,8 @@ export default function BrandMark({ size = 'md', glow = 'soft', className = '' }
       {glow !== 'none' && (
         <span
           aria-hidden
-          className={`absolute -inset-1 rounded-full bg-primary/15 blur-lg ${glow === 'pulse' ? 'animate-pulse-glow' : ''}`}
+          className={`pointer-events-none absolute -inset-1 rounded-full bg-primary/10 blur-md ${glow === 'pulse' ? 'animate-pulse-glow' : ''}`}
+          style={{ transform: 'translateZ(0)' }}
         />
       )}
       <span className="brand-ring relative inline-flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-background">
@@ -38,7 +39,8 @@ export default function BrandMark({ size = 'md', glow = 'soft', className = '' }
           src={BRAND_ICON_URL}
           alt=""
           draggable={false}
-          decoding="async"
+          decoding="sync"
+          loading="eager"
           className="h-full w-full select-none rounded-full object-contain"
         />
       </span>
