@@ -62,6 +62,18 @@ public class QuickActionsForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Sprint 10.4.7 — blindagem total: nenhuma falha deste serviço pode
+        // derrubar o processo antes do Bridge Capacitor.
+        try {
+            return handleStartCommand(intent);
+        } catch (Throwable t) {
+            try { stopForegroundCompat(); } catch (Throwable ignored) { /* noop */ }
+            try { stopSelf(); } catch (Throwable ignored) { /* noop */ }
+            return START_NOT_STICKY;
+        }
+    }
+
+    private int handleStartCommand(Intent intent) {
         // Sprint 10.4.6 — proteção de boot.
         // Um restart do sistema (START_STICKY / crash / update) reentrega o
         // Service com intent == null e o app em background. Nesse cenário o
