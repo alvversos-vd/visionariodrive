@@ -57,7 +57,7 @@ public class QuickActionsForegroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        ensureChannel();
+        try { ensureChannel(); } catch (Throwable ignored) { /* noop */ }
     }
 
     @Override
