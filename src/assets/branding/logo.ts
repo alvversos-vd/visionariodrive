@@ -1,9 +1,10 @@
 /**
  * Visionario Drive — Branding fonte única.
- * Todas as telas devem consumir estes exports; NUNCA duplicar logos.
+ * O ícone é importado como asset local (bundled pelo Vite) para funcionar
+ * offline e dentro do APK Android/WebView. NUNCA duplicar logos.
  */
-import iconAsset from './icon.png.asset.json';
+import iconPng from './icon.png';
 
-export const BRAND_ICON_URL = iconAsset.url;
+export const BRAND_ICON_URL: string = iconPng;
 export const BRAND_NAME = 'Visionario Drive';
 export const BRAND_TAGLINE = 'Lucro real • Decisão rápida • Controle absoluto';
