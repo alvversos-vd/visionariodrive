@@ -82,7 +82,7 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         Context ctx = getContext();
         Intent i = new Intent(ctx, QuickActionsForegroundService.class);
         i.setAction(QuickActionsForegroundService.ACTION_STOP);
-        try { ctx.startService(i); } catch (IllegalStateException ignored) {}
+        try { ctx.startService(i); } catch (Throwable ignored) {}
         JSObject r = new JSObject();
         r.put("stopped", true);
         call.resolve(r);
@@ -171,6 +171,6 @@ public class VisionarioQuickActionsPlugin extends Plugin {
             } else {
                 ctx.startService(i);
             }
-        } catch (IllegalStateException ignored) {}
+        } catch (Throwable ignored) {}
     }
 }

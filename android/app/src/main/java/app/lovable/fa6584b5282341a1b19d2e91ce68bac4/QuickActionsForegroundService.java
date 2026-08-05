@@ -57,11 +57,23 @@ public class QuickActionsForegroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        ensureChannel();
+        try { ensureChannel(); } catch (Throwable ignored) { /* noop */ }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Sprint 10.4.7 — blindagem total: nenhuma falha deste serviço pode
+        // derrubar o processo antes do Bridge Capacitor.
+        try {
+            return handleStartCommand(intent);
+        } catch (Throwable t) {
+            try { stopForegroundCompat(); } catch (Throwable ignored) { /* noop */ }
+            try { stopSelf(); } catch (Throwable ignored) { /* noop */ }
+            return START_NOT_STICKY;
+        }
+    }
+
+    private int handleStartCommand(Intent intent) {
         // Sprint 10.4.6 — proteção de boot.
         // Um restart do sistema (START_STICKY / crash / update) reentrega o
         // Service com intent == null e o app em background. Nesse cenário o
@@ -105,10 +117,15 @@ public class QuickActionsForegroundService extends Service {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             try {
                 if (nm != null) nm.notify(NOTIFICATION_ID, n);
-            } catch (Exception ignored) { /* notificações desativadas */ }
+            } catch (Throwable ignored) { /* notificações desativadas */ }
         } else {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Sprint 10.4.7 — NUNCA usar FOREGROUND_SERVICE_TYPE_LOCATION aqui.
+                // Este serviço não acessa GPS. Em Android 14+ (API 34) usamos
+                // SPECIAL_USE, declarado no manifest. Em APIs anteriores o tipo
+                // `specialUse` não existe: startForeground() sem tipo é o único
+                // caminho válido (passar um tipo não declarado → SecurityException).
+                if (Build.VERSION.SDK_INT >= 34) {
                     ServiceCompat.startForeground(
                             this,
                             NOTIFICATION_ID,
@@ -119,14 +136,16 @@ public class QuickActionsForegroundService extends Service {
                     startForeground(NOTIFICATION_ID, n);
                 }
                 isForeground = true;
-            } catch (Exception e) {
-                // Ex.: ForegroundServiceStartNotAllowedException / SecurityException.
-                // Nunca propagar: derrubaria o processo do app.
+            } catch (Throwable e) {
+                // Ex.: SecurityException / ForegroundServiceStartNotAllowedException.
+                // Nunca propagar: derrubaria o processo do app antes do Bridge.
                 isForeground = false;
+                try { stopForegroundCompat(); } catch (Throwable ignored) { /* noop */ }
                 stopSelf();
                 return START_NOT_STICKY;
             }
         }
+
 
         return START_NOT_STICKY;
     }
