@@ -221,3 +221,27 @@ describe('NotificationActionService · CP3', () => {
     expect(telemetry.notificationCounters().notification_open).toBe(1);
   });
 });
+
+describe('parseQuickRideInput (Sprint 10.4.8)', () => {
+  it('extrai valor, km e observação', () => {
+    expect(parseQuickRideInput('18,50 6,2 centro rápido')).toEqual({
+      value: 18.5, km: 6.2, notes: 'centro rápido',
+    });
+  });
+
+  it('aceita prefixo R$ e sufixo km', () => {
+    expect(parseQuickRideInput('R$25.00 8km')).toEqual({
+      value: 25, km: 8, notes: undefined,
+    });
+  });
+
+  it('sem km → km nulo (usa GPS do turno)', () => {
+    expect(parseQuickRideInput('12,90')).toEqual({
+      value: 12.9, km: null, notes: undefined,
+    });
+  });
+
+  it('texto sem números → valor nulo', () => {
+    expect(parseQuickRideInput('teste').value).toBeNull();
+  });
+});
