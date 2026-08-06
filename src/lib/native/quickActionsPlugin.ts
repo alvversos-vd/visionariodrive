@@ -17,6 +17,8 @@ export type QuickActionType =
 
 export interface QuickActionEvent {
   type: QuickActionType;
+  /** Texto digitado no RemoteInput do botão "Registrar corrida" (Sprint 10.4.8). */
+  raw?: string;
   payload?: Record<string, unknown>;
 }
 
@@ -43,6 +45,8 @@ export interface QuickActionsPlugin {
   hideAutoRideCandidate(): Promise<void>;
   showUndo(options: UndoOptions): Promise<void>;
   hideUndo(): Promise<void>;
+  /** Toast nativo curto — feedback sem abrir o app. */
+  showToast(options: { message: string }): Promise<void>;
   addListener(
     eventName: 'action',
     listener: (event: QuickActionEvent) => void,
@@ -59,6 +63,7 @@ const webStub: QuickActionsPlugin = {
   hideAutoRideCandidate: noop,
   showUndo: noop,
   hideUndo: noop,
+  showToast: noop,
   addListener: async () => ({ remove: async () => undefined }) as PluginListenerHandle,
 };
 
