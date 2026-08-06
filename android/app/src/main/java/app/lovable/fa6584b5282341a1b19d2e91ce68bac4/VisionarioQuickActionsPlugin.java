@@ -28,12 +28,15 @@ public class VisionarioQuickActionsPlugin extends Plugin {
     private static WeakReference<VisionarioQuickActionsPlugin> INSTANCE = new WeakReference<>(null);
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static final java.util.List<JSObject> PENDING = new java.util.ArrayList<>();
+
     private final Runnable hideUndoRunnable = () -> pushUndoState(false, null);
 
     @Override
     public void load() {
         super.load();
         INSTANCE = new WeakReference<>(this);
+        flushPending();
     }
 
     @Override
@@ -44,14 +47,45 @@ public class VisionarioQuickActionsPlugin extends Plugin {
     }
 
     /** Chamado pelo QuickActionsReceiver. */
-    static void dispatchAction(String action) {
-        VisionarioQuickActionsPlugin p = INSTANCE.get();
-        if (p == null) return;
+    static void dispatchAction(String action, String raw) {
         String type = mapAction(action);
         if (type == null) return;
         JSObject payload = new JSObject();
         payload.put("type", type);
+        if (raw != null && !raw.isEmpty()) payload.put("raw", raw);
+
+        VisionarioQuickActionsPlugin p = INSTANCE.get();
+        if (p == null) {
+            // Bridge ainda não carregado (processo reiniciado pelo FGS).
+            // Fila em memória — sem storage paralelo. Entregue em load().
+            synchronized (PENDING) { PENDING.add(payload); }
+            return;
+        }
         p.notifyListeners("action", payload);
+    }
+
+    private void flushPending() {
+        java.util.List<JSObject> copy;
+        synchronized (PENDING) {
+            if (PENDING.isEmpty()) return;
+            copy = new java.util.ArrayList<>(PENDING);
+            PENDING.clear();
+        }
+        for (JSObject payload : copy) notifyListeners("action", payload);
+    }
+
+    /** Toast nativo curto — feedback sem abrir o app (Sprint 10.4.8). */
+    @PluginMethod
+    public void showToast(PluginCall call) {
+        final String message = call.getString("message");
+        final Context ctx = getContext();
+        if (ctx != null && message != null && !message.isEmpty()) {
+            mainHandler.post(() ->
+                    android.widget.Toast.makeText(ctx, message, android.widget.Toast.LENGTH_SHORT).show());
+        }
+        JSObject r = new JSObject();
+        r.put("shown", true);
+        call.resolve(r);
     }
 
     private static String mapAction(String androidAction) {
