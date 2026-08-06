@@ -3,16 +3,23 @@ package app.lovable.fa6584b5282341a1b19d2e91ce68bac4;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+
+import androidx.core.app.RemoteInput;
 
 /**
- * QuickActionsReceiver — Sprint 7 · Checkpoint 3.
+ * QuickActionsReceiver — Sprint 10.4.8.
  *
  * Traduz cliques dos botões da notificação em chamadas ao
  * VisionarioQuickActionsPlugin. Zero regra de negócio.
  *
- * Para ações que exigem UI React (Registrar, Editar corrida detectada),
- * também traz a MainActivity para o topo — o restante da lógica ocorre
- * no JS via EventBus.
+ * "Registrar corrida" usa RemoteInput: o formulário rápido acontece
+ * DENTRO da central de notificações. Nenhuma Activity é aberta — o
+ * motorista continua no Uber/99/iFood. O texto digitado é entregue ao
+ * pipeline oficial (NotificationActionService → RideService).
+ *
+ * Só "Editar corrida detectada" continua trazendo o app ao topo, pois
+ * exige o BottomSheet React existente.
  */
 public class QuickActionsReceiver extends BroadcastReceiver {
 
@@ -28,11 +35,37 @@ public class QuickActionsReceiver extends BroadcastReceiver {
         String action = intent != null ? intent.getAction() : null;
         if (action == null) return;
 
-        if (ACTION_REGISTER.equals(action) || ACTION_EDIT_AUTO.equals(action)) {
+        if (ACTION_REGISTER.equals(action)) {
+            String raw = readRemoteInput(intent);
+            if (raw != null && !raw.trim().isEmpty()) {
+                // Registro inline — sem abrir o app.
+                VisionarioQuickActionsPlugin.dispatchAction(action, raw.trim());
+                return;
+            }
+            // Sem texto (device sem suporte a inline reply): fallback para o
+            // modal React oficial, trazendo o app ao topo.
+            bringAppToFront(context);
+            VisionarioQuickActionsPlugin.dispatchAction(action, null);
+            return;
+        }
+
+        if (ACTION_EDIT_AUTO.equals(action)) {
             bringAppToFront(context);
         }
 
-        VisionarioQuickActionsPlugin.dispatchAction(action);
+        VisionarioQuickActionsPlugin.dispatchAction(action, null);
+    }
+
+    private String readRemoteInput(Intent intent) {
+        try {
+            Bundle results = RemoteInput.getResultsFromIntent(intent);
+            if (results == null) return null;
+            CharSequence cs = results.getCharSequence(
+                    QuickActionsForegroundService.EXTRA_QUICK_INPUT);
+            return cs != null ? cs.toString() : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private void bringAppToFront(Context context) {

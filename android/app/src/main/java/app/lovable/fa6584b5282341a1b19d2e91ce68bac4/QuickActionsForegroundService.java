@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
 import androidx.core.app.ServiceCompat;
 
 /**
@@ -45,6 +46,8 @@ public class QuickActionsForegroundService extends Service {
     public static final String EXTRA_UNDO_LABEL = "extra_undo_label";
     public static final String EXTRA_AUTO_VISIBLE = "extra_auto_visible";
     public static final String EXTRA_AUTO_LABEL = "extra_auto_label";
+    /** Chave do RemoteInput do botão "Registrar corrida" (Sprint 10.4.8). */
+    public static final String EXTRA_QUICK_INPUT = "quick_ride_input";
 
     private String currentTitle = "Turno em andamento";
     private String currentContent = "Aguardando dados do turno";
@@ -177,10 +180,22 @@ public class QuickActionsForegroundService extends Service {
     }
 
     private PendingIntent broadcastPI(String action, int requestCode) {
+        return broadcastPI(action, requestCode, false);
+    }
+
+    /**
+     * @param mutable true para PendingIntents que recebem RemoteInput
+     *                (Android exige MUTABLE para preencher os resultados).
+     */
+    private PendingIntent broadcastPI(String action, int requestCode, boolean mutable) {
         Intent i = new Intent(this, QuickActionsReceiver.class);
         i.setAction(action);
         i.setPackage(getPackageName());
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (mutable) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
+            return PendingIntent.getBroadcast(this, requestCode, i, flags);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
         return PendingIntent.getBroadcast(this, requestCode, i, flags);
     }
@@ -223,15 +238,30 @@ public class QuickActionsForegroundService extends Service {
                     broadcastPI(QuickActionsReceiver.ACTION_DISCARD_AUTO, 12)
             );
         } else {
-            b.addAction(
+            // Sprint 10.4.8 — "Registrar" abre o input inline da própria
+            // notificação (RemoteInput). Nenhuma Activity é aberta: o motorista
+            // continua no Uber/99/iFood. O texto vai para o pipeline oficial
+            // (NotificationActionService → RideService → RideRepository).
+            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_QUICK_INPUT)
+                    .setLabel("Valor · Km · Obs — ex: 18,50 6,2 centro")
+                    .build();
+
+            NotificationCompat.Action registerAction = new NotificationCompat.Action.Builder(
                     android.R.drawable.ic_input_add,
-                    "Registrar",
-                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1)
-            ).addAction(
+                    "Registrar corrida",
+                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1, true)
+            )
+                    .addRemoteInput(remoteInput)
+                    .setAllowGeneratedReplies(false)
+                    .setShowsUserInterface(false)
+                    .build();
+
+            b.addAction(registerAction).addAction(
                     android.R.drawable.ic_media_pause,
                     "Finalizar",
                     broadcastPI(QuickActionsReceiver.ACTION_FINISH, 2)
             );
+
             if (undoVisible) {
                 b.addAction(
                         android.R.drawable.ic_menu_revert,
