@@ -88,3 +88,30 @@ Toda gravação ocorre **exclusivamente** dentro do
 - `rg "recordNotification" android/` → vazio (telemetria só em TS).
 - `rg "confirmPending|discardPending" src/lib/services/notificationActionService.ts` → chamadas idênticas às do `AutoRideToast`.
 - Suíte `notificationActionService.test.ts` cobre confirm/edit/discard/undo/register/finish + auto-show/hide + telemetria.
+
+## Adendo — Sprint 10.4.8 (Quick Register inline)
+
+`Registrar corrida` deixou de abrir a MainActivity. A ação agora carrega
+um **RemoteInput** (`quick_ride_input`), então o formulário rápido
+acontece dentro da central de notificações — o motorista permanece no
+Uber/99/iFood.
+
+```text
+Notificação (RemoteInput) → QuickActionsReceiver
+   → VisionarioQuickActionsPlugin.dispatchAction(action, raw)
+   → NotificationActionService.handleInlineRegister
+   → parseQuickRideInput (adapter de entrada, sem regra de negócio)
+   → rideService.registerShiftRide  ← MESMO fluxo do RegisterRideFab
+   → RideRepository → CloudSync
+   → EventBus (rides:changed / rides:manual-registered / shift:changed)
+   → Dashboard, Histórico, Turno e Notificação atualizam
+```
+
+- Sem storage paralelo. Único desvio: fila **em memória** no plugin
+  (`PENDING`) quando o Bridge ainda não carregou; drenada em `load()`.
+- `PendingIntent` da ação Registrar é MUTABLE (exigência do RemoteInput);
+  as demais permanecem IMMUTABLE.
+- Feedback via `showToast` nativo (Toast Android), pois nenhuma UI web
+  está visível.
+- Fallback: device sem inline reply → comportamento anterior
+  (`notification:register` + modal React).
