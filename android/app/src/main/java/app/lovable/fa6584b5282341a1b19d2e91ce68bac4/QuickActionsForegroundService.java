@@ -177,10 +177,22 @@ public class QuickActionsForegroundService extends Service {
     }
 
     private PendingIntent broadcastPI(String action, int requestCode) {
+        return broadcastPI(action, requestCode, false);
+    }
+
+    /**
+     * @param mutable true para PendingIntents que recebem RemoteInput
+     *                (Android exige MUTABLE para preencher os resultados).
+     */
+    private PendingIntent broadcastPI(String action, int requestCode, boolean mutable) {
         Intent i = new Intent(this, QuickActionsReceiver.class);
         i.setAction(action);
         i.setPackage(getPackageName());
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (mutable) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) flags |= PendingIntent.FLAG_MUTABLE;
+            return PendingIntent.getBroadcast(this, requestCode, i, flags);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
         return PendingIntent.getBroadcast(this, requestCode, i, flags);
     }
