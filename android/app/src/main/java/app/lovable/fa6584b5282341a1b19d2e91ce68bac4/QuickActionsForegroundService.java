@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.RemoteInput;
 import androidx.core.app.ServiceCompat;
 
 /**
@@ -45,6 +46,8 @@ public class QuickActionsForegroundService extends Service {
     public static final String EXTRA_UNDO_LABEL = "extra_undo_label";
     public static final String EXTRA_AUTO_VISIBLE = "extra_auto_visible";
     public static final String EXTRA_AUTO_LABEL = "extra_auto_label";
+    /** Chave do RemoteInput do botão "Registrar corrida" (Sprint 10.4.8). */
+    public static final String EXTRA_QUICK_INPUT = "quick_ride_input";
 
     private String currentTitle = "Turno em andamento";
     private String currentContent = "Aguardando dados do turno";
