@@ -66,6 +66,35 @@ function buildAutoLabel(p: PendingRide): string {
  *  nativo (o timer de 10s vive no plugin Android). */
 const UNDO_ARM_WINDOW_MS = 90_000;
 
+/**
+ * Sprint 10.4.8 — parser do RemoteInput da notificação.
+ * Adapter de ENTRADA puro: converte o texto digitado na central de
+ * notificações em campos. Nenhuma regra de negócio aqui — validação e
+ * persistência continuam exclusivamente no RideService.
+ *
+ * Formatos aceitos: "18,50 6,2 centro" · "R$18,50 6.2km" · "18,50" (km do GPS).
+ */
+export function parseQuickRideInput(raw: string): {
+  value: number | null; km: number | null; notes?: string;
+} {
+  const tokens = raw.trim().split(/[\s;,|]*\s+/).filter(Boolean);
+  const nums: number[] = [];
+  const rest: string[] = [];
+  for (const tk of tokens) {
+    if (nums.length < 2) {
+      const cleaned = tk.replace(/r\$/i, '').replace(/km$/i, '').replace(',', '.');
+      const n = Number.parseFloat(cleaned);
+      if (Number.isFinite(n) && /^[\d.,]/.test(cleaned)) { nums.push(n); continue; }
+    }
+    rest.push(tk);
+  }
+  return {
+    value: nums.length > 0 ? nums[0] : null,
+    km: nums.length > 1 ? nums[1] : null,
+    notes: rest.join(' ').trim() || undefined,
+  };
+}
+
 class NotificationActionServiceImpl {
   private attached = false;
   private busUnsubs: Unsub[] = [];
@@ -182,10 +211,59 @@ class NotificationActionServiceImpl {
     }
   }
 
+  // ─── Registro inline pela notificação (Sprint 10.4.8) ─────────────
+  /**
+   * Entrada alternativa para o MESMO fluxo oficial de registro manual
+   * (`rideService.registerShiftRide`). Nenhuma persistência, cálculo ou
+   * validação vive aqui — apenas tradução texto → parâmetros do Service.
+   */
+  private async handleInlineRegister(raw: string): Promise<void> {
+    const active = shiftService.getActive();
+    if (!active) {
+      await this.toast('Nenhum turno ativo');
+      return;
+    }
+    const parsed = parseQuickRideInput(raw);
+    const kmAuto = active.km_desde_ultima_corrida || 0;
+    const useAuto = parsed.km === null && active.gps_status === 'ok' && kmAuto > 0;
+    const km = parsed.km ?? (useAuto ? kmAuto : 0);
+    if (!parsed.value || parsed.value <= 0 || !km || km <= 0) {
+      await this.toast('Formato inválido. Ex: 18,50 6,2 centro');
+      return;
+    }
+
+    this.undoArmedUntil = Date.now() + UNDO_ARM_WINDOW_MS;
+    let ride: ReturnType<typeof rideService.registerShiftRide> = null;
+    try {
+      ride = rideService.registerShiftRide({
+        shiftId: active.turno_id,
+        value: parsed.value,
+        km,
+        kmOrigin: useAuto ? 'auto' : 'manual',
+        observacao: parsed.notes,
+      });
+    } catch { ride = null; }
+
+    if (!ride) {
+      this.undoArmedUntil = 0;
+      await this.toast('Não foi possível salvar a corrida');
+      return;
+    }
+    telemetry.recordNotification('notification_register');
+    await this.toast(`✔ Corrida registrada · ${BRL.format(ride.value)} · ${ride.km.toFixed(1)} km`);
+  }
+
+  private async toast(message: string): Promise<void> {
+    try { await quickActionsPlugin.showToast({ message }); } catch { /* noop */ }
+  }
+
   // ─── Ações vindas do plugin (transporte → Services) ───────────────
   private async onPluginAction(event: QuickActionEvent): Promise<void> {
     switch (event.type) {
       case 'register': {
+        const raw = typeof event.raw === 'string' ? event.raw.trim() : '';
+        if (raw) { await this.handleInlineRegister(raw); return; }
+        // Sem RemoteInput (device sem inline reply) → modal React oficial.
         this.undoArmedUntil = Date.now() + UNDO_ARM_WINDOW_MS;
         telemetry.recordNotification('notification_register');
         eventBus.emit('notification:register');
@@ -235,6 +313,6 @@ function latestRide() {
 
 export const notificationActionService = new NotificationActionServiceImpl();
 
-export const _notificationActionInternals = { buildContent, formatDuration, buildAutoLabel };
+export const _notificationActionInternals = { buildContent, formatDuration, buildAutoLabel, parseQuickRideInput };
 
 export const notificationActionAvailable = isQuickActionsNative;
