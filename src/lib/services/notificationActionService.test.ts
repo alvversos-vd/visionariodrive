@@ -71,7 +71,7 @@ vi.mock('./shiftService', () => ({
 
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
-import { notificationActionService } from './notificationActionService';
+import { notificationActionService, parseQuickRideInput } from './notificationActionService';
 import type { QuickActionEvent } from '../native/quickActionsPlugin';
 
 type ActionListener = (e: QuickActionEvent) => void;
