@@ -235,15 +235,30 @@ public class QuickActionsForegroundService extends Service {
                     broadcastPI(QuickActionsReceiver.ACTION_DISCARD_AUTO, 12)
             );
         } else {
-            b.addAction(
+            // Sprint 10.4.8 — "Registrar" abre o input inline da própria
+            // notificação (RemoteInput). Nenhuma Activity é aberta: o motorista
+            // continua no Uber/99/iFood. O texto vai para o pipeline oficial
+            // (NotificationActionService → RideService → RideRepository).
+            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_QUICK_INPUT)
+                    .setLabel("Valor · Km · Obs — ex: 18,50 6,2 centro")
+                    .build();
+
+            NotificationCompat.Action registerAction = new NotificationCompat.Action.Builder(
                     android.R.drawable.ic_input_add,
-                    "Registrar",
-                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1)
-            ).addAction(
+                    "Registrar corrida",
+                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1, true)
+            )
+                    .addRemoteInput(remoteInput)
+                    .setAllowGeneratedReplies(false)
+                    .setShowsUserInterface(false)
+                    .build();
+
+            b.addAction(registerAction).addAction(
                     android.R.drawable.ic_media_pause,
                     "Finalizar",
                     broadcastPI(QuickActionsReceiver.ACTION_FINISH, 2)
             );
+
             if (undoVisible) {
                 b.addAction(
                         android.R.drawable.ic_menu_revert,
