@@ -116,6 +116,14 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
     );
   }
 
+  // Sprint 10.4.9 — merge determinístico do domínio canônico de corridas.
+  // ANTES: a hidratação SOBRESCREVIA `vd-rides` com o payload do cloud →
+  // qualquer corrida registrada offline (ou ainda no outbox) era perdida.
+  // AGORA: união por id, tombstones vencem sempre, desempate por `updatedAt`.
+  if (key === 'vd-rides') {
+    return mergeRidesPayload(readLocal('vd-rides'), incoming, tomb.rides);
+  }
+
   if (key === GAMIFICATION_KEY) {
     // Merge determinístico: XP nunca reduz, conquistas nunca somem,
     // stats sempre pelo máximo. Eventos/telemetria são emitidos pelo caller
