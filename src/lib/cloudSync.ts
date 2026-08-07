@@ -80,6 +80,55 @@ function stripLegacyRides<T>(s: T): T {
   return s;
 }
 
+/**
+ * Merge determinístico de `vd-rides` (Sprint 10.4.9).
+ *
+ * Regras, nesta ordem:
+ *  1. Tombstone vence tudo — corrida apagada nunca renasce.
+ *  2. União por `id` — corrida que existe só em um lado é preservada.
+ *  3. Conflito no mesmo `id` → vence o maior `updatedAt` (fallback `date`);
+ *     empate → vence o LOCAL (device que está com o usuário na mão).
+ *
+ * Exportado para teste; usado por hydrate, realtime e push.
+ */
+export function mergeRidesPayload(
+  localRaw: unknown,
+  incomingRaw: unknown,
+  tombstonedIds: string[] = [],
+): { schemaVersion: number; rides: RideLike[] } {
+  const dead = new Set(tombstonedIds);
+  const local = extractRides(localRaw).filter(r => !dead.has(r.id));
+  const incoming = extractRides(incomingRaw).filter(r => !dead.has(r.id));
+
+  const byId = new Map<string, RideLike>();
+  for (const r of local) byId.set(r.id, r);
+  for (const r of incoming) {
+    const mine = byId.get(r.id);
+    if (!mine) { byId.set(r.id, r); continue; }
+    if (stamp(r) > stamp(mine)) byId.set(r.id, r);
+  }
+  return { schemaVersion: 1, rides: Array.from(byId.values()) };
+}
+
+interface RideLike { id: string; date?: string; updatedAt?: string }
+
+function extractRides(raw: unknown): RideLike[] {
+  if (Array.isArray(raw)) return raw.filter(isRideLike);
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { rides?: unknown[] }).rides)) {
+    return ((raw as { rides: unknown[] }).rides).filter(isRideLike);
+  }
+  return [];
+}
+
+function isRideLike(r: unknown): r is RideLike {
+  return !!r && typeof r === 'object' && typeof (r as RideLike).id === 'string';
+}
+
+function stamp(r: RideLike): number {
+  const t = Date.parse(r.updatedAt ?? r.date ?? '');
+  return Number.isFinite(t) ? t : 0;
+}
+
 function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
   const tomb = getTombstones();
 
