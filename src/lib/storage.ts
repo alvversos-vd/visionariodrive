@@ -44,6 +44,8 @@ export const APP_STORAGE_KEYS: string[] = [
   'vd-permission-onboarding-v1',
   'vd-tracking-force-manual-v1',
   TOMBSTONES_KEY,
+  // Sprint 10.4.9 — fila durável de sincronização
+  'vd-outbox',
 ];
 
 export function saveEntry(entry: DailyEntry): void {
