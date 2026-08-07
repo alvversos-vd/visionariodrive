@@ -35,13 +35,19 @@ type LocalKey = keyof typeof KEY_MAP;
 const LOCAL_KEYS = Object.keys(KEY_MAP) as LocalKey[];
 
 let currentUserId: string | null = null;
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let hydrating = false;
 let listenersBound = false;
+let outboxConfigured = false;
 
 export function setSyncUser(userId: string | null) {
   currentUserId = userId;
-  if (userId && !listenersBound) bindLifecycleListeners();
+  if (!userId) { outbox.reset(); outboxConfigured = false; return; }
+  if (!listenersBound) bindLifecycleListeners();
+  if (!outboxConfigured) {
+    outboxConfigured = true;
+    // Sprint 10.4.9 — todo push passa pelo outbox durável (retry + backoff).
+    outbox.configure(() => pushToCloud());
+  }
 }
 
 function readLocal(key: LocalKey): unknown {
