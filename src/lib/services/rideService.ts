@@ -99,7 +99,20 @@ export interface RegisterShiftRideInput {
   km: number;
   kmOrigin?: 'auto' | 'manual';
   observacao?: string;
+  /**
+   * Sprint 10.4.9 — chave de idempotência da captura. Toda interface de
+   * entrada (formulário, notificação, quick form, GPS) DEVE enviar uma.
+   * Duas chamadas com a mesma chave produzem exatamente UMA corrida.
+   */
+  clientRequestId?: string;
 }
+
+/**
+ * Janela de deduplicação heurística (ms) para capturas sem
+ * `clientRequestId`: mesma dupla valor+km no mesmo turno dentro da janela é
+ * tratada como reenvio (double-tap, replay de broadcast Android).
+ */
+const DEDUPE_WINDOW_MS = 20_000;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 function inRange(iso: string, from?: Date, to?: Date): boolean {
