@@ -12,6 +12,11 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import android.content.SharedPreferences;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.lang.ref.WeakReference;
 
 /**
@@ -37,6 +42,7 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         super.load();
         INSTANCE = new WeakReference<>(this);
         flushPending();
+        flushPersisted();
     }
 
     @Override
@@ -44,6 +50,74 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         mainHandler.removeCallbacks(hideUndoRunnable);
         if (INSTANCE.get() == this) INSTANCE = new WeakReference<>(null);
         super.handleOnDestroy();
+    }
+
+    /** Fila durável (sobrevive à morte do processo) para payloads do Quick Form. */
+    private static final String PREFS = "visionario_quick_actions";
+    private static final String KEY_QUEUE = "pending_forms";
+
+    /**
+     * Sprint 10.5 (ADR-015) — payload do Quick Form nativo.
+     *
+     * Transporte puro: a Activity coleta, o plugin transporta, o
+     * NotificationActionService interpreta (`kmSource` → `kmOrigin`) e o
+     * RideService persiste. Nenhuma regra de negócio aqui.
+     */
+    static void dispatchQuickForm(
+            Context appContext,
+            double value,
+            double km,
+            String kmSource,
+            String clientRequestId,
+            String notes
+    ) {
+        JSObject form = new JSObject();
+        form.put("contractVersion", 1);
+        form.put("value", value);
+        form.put("km", km);
+        form.put("kmSource", kmSource);
+        form.put("clientRequestId", clientRequestId);
+        if (notes != null && !notes.isEmpty()) form.put("notes", notes);
+
+        JSObject payload = new JSObject();
+        payload.put("type", "register");
+        payload.put("form", form);
+
+        VisionarioQuickActionsPlugin p = INSTANCE.get();
+        if (p == null) {
+            // Bridge ainda não carregado: persiste a INTENÇÃO em disco para que
+            // nenhuma corrida se perca se o processo morrer antes do flush.
+            persistPending(appContext, payload);
+            return;
+        }
+        p.notifyListeners("action", payload);
+    }
+
+    private static void persistPending(Context ctx, JSObject payload) {
+        if (ctx == null) return;
+        try {
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            JSONArray arr = new JSONArray(prefs.getString(KEY_QUEUE, "[]"));
+            arr.put(new JSONObject(payload.toString()));
+            prefs.edit().putString(KEY_QUEUE, arr.toString()).apply();
+        } catch (Throwable ignored) { }
+    }
+
+    private void flushPersisted() {
+        Context ctx = getContext();
+        if (ctx == null) return;
+        try {
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            String raw = prefs.getString(KEY_QUEUE, "[]");
+            if ("[]".equals(raw)) return;
+            prefs.edit().remove(KEY_QUEUE).apply();
+            JSONArray arr = new JSONArray(raw);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.optJSONObject(i);
+                if (o == null) continue;
+                notifyListeners("action", JSObject.fromJSONObject(o));
+            }
+        } catch (Throwable ignored) { }
     }
 
     /** Chamado pelo QuickActionsReceiver. */

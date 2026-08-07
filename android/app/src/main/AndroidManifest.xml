@@ -40,6 +40,22 @@
 
         </activity>
 
+        <!-- Sprint 10.5 (ADR-015) — Quick Form nativo.
+             taskAffinity="" + excludeFromRecents + noHistory: abre como janela
+             isolada sobre o app atual do motorista, nunca traz a MainActivity
+             ao topo e não aparece nos recentes. exported=false: só a própria
+             notificação pode abri-la. -->
+        <activity
+            android:name=".QuickRideActivity"
+            android:exported="false"
+            android:theme="@style/QuickRideDialogTheme"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleInstance"
+            android:documentLaunchMode="never"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

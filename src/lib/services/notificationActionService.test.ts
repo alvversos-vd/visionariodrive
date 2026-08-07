@@ -27,6 +27,8 @@ const h = vi.hoisted(() => ({
   discardPending: vi.fn(),
   getPending: vi.fn(),
   undoLastRide: vi.fn(),
+  registerShiftRide: vi.fn(),
+  showToast: vi.fn(async (_o: { message: string }) => undefined),
   rideList: vi.fn(() => [] as unknown[]),
   endAtomic: vi.fn(async () => null),
   getActive: vi.fn(),
@@ -48,7 +50,7 @@ vi.mock('../native/quickActionsPlugin', () => ({
     start: h.start, stop: h.stop, updateContent: h.updateContent,
     showAutoRideCandidate: h.showAutoRideCandidate,
     hideAutoRideCandidate: h.hideAutoRideCandidate,
-    showUndo: h.showUndo, hideUndo: h.hideUndo,
+    showUndo: h.showUndo, hideUndo: h.hideUndo, showToast: h.showToast,
     addListener: h.addListener,
   },
 }));
@@ -62,7 +64,11 @@ vi.mock('./rideDetectionService', () => ({
 }));
 
 vi.mock('./rideService', () => ({
-  rideService: { undoLastRide: h.undoLastRide, list: h.rideList },
+  rideService: {
+    undoLastRide: h.undoLastRide,
+    list: h.rideList,
+    registerShiftRide: h.registerShiftRide,
+  },
 }));
 
 vi.mock('./shiftService', () => ({
@@ -71,7 +77,7 @@ vi.mock('./shiftService', () => ({
 
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
-import { notificationActionService, parseQuickRideInput } from './notificationActionService';
+import { notificationActionService, parseQuickRideInput, toKmOrigin } from './notificationActionService';
 import type { QuickActionEvent } from '../native/quickActionsPlugin';
 
 type ActionListener = (e: QuickActionEvent) => void;
@@ -85,6 +91,7 @@ beforeEach(() => {
     return { remove: async () => undefined };
   });
   getPending.mockReturnValue(null);
+  h.registerShiftRide.mockReturnValue({ id: 'r1', value: 18.5, km: 6.2 });
   getActive.mockReturnValue(null);
   rideList.mockReturnValue([]);
   localStorage.clear();
@@ -126,6 +133,7 @@ describe('NotificationActionService · CP3', () => {
     expect(showAutoRideCandidate).toHaveBeenCalledTimes(1);
 
     getPending.mockReturnValue(null);
+  h.registerShiftRide.mockReturnValue({ id: 'r1', value: 18.5, km: 6.2 });
     eventBus.emit('detection:changed');
     await Promise.resolve();
 
@@ -243,5 +251,66 @@ describe('parseQuickRideInput (Sprint 10.4.8)', () => {
 
   it('texto sem números → valor nulo', () => {
     expect(parseQuickRideInput('teste').value).toBeNull();
+  });
+});
+
+describe('Quick Form nativo · Sprint 10.5 (ADR-015)', () => {
+  it('traduz kmSource → kmOrigin sem a Activity conhecer o domínio', () => {
+    expect(toKmOrigin('user')).toBe('manual');
+    expect(toKmOrigin('prefilled')).toBe('auto');
+  });
+
+  it('register com form persiste pelo pipeline oficial (rideService)', async () => {
+    getActive.mockReturnValue({ turno_id: 't1' });
+    await notificationActionService.attach();
+
+    capturedListener?.({
+      type: 'register',
+      form: {
+        contractVersion: 1, value: 18.5, km: 6.2,
+        kmSource: 'user', clientRequestId: 'quickform:abc', notes: 'centro',
+      },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(h.registerShiftRide).toHaveBeenCalledWith(expect.objectContaining({
+      shiftId: 't1', value: 18.5, km: 6.2,
+      kmOrigin: 'manual', observacao: 'centro', clientRequestId: 'quickform:abc',
+    }));
+    expect(h.showToast).toHaveBeenCalled();
+  });
+
+  it('form com KM pré-preenchido (futuro PRO) vira kmOrigin auto', async () => {
+    getActive.mockReturnValue({ turno_id: 't1' });
+    await notificationActionService.attach();
+
+    capturedListener?.({
+      type: 'register',
+      form: {
+        contractVersion: 1, value: 22, km: 8.4,
+        kmSource: 'prefilled', clientRequestId: 'quickform:def',
+      },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(h.registerShiftRide).toHaveBeenCalledWith(
+      expect.objectContaining({ kmOrigin: 'auto' }),
+    );
+  });
+
+  it('form inválido não chama o RideService', async () => {
+    getActive.mockReturnValue({ turno_id: 't1' });
+    await notificationActionService.attach();
+
+    capturedListener?.({
+      type: 'register',
+      form: { contractVersion: 1, value: 0, km: 0, kmSource: 'user', clientRequestId: 'x' },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(h.registerShiftRide).not.toHaveBeenCalled();
   });
 });

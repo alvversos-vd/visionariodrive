@@ -12,7 +12,6 @@ import android.os.Build;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.RemoteInput;
 import androidx.core.app.ServiceCompat;
 
 /**
@@ -200,6 +199,16 @@ public class QuickActionsForegroundService extends Service {
         return PendingIntent.getBroadcast(this, requestCode, i, flags);
     }
 
+    /** PendingIntent que abre o Quick Form nativo (Sprint 10.5 · ADR-015). */
+    private PendingIntent quickFormPI() {
+        Intent i = new Intent(this, QuickRideActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_HISTORY
+                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+        return PendingIntent.getActivity(this, 4, i, flags);
+    }
+
     private Notification buildNotification() {
         Intent openApp = new Intent(this, MainActivity.class);
         openApp.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -238,22 +247,18 @@ public class QuickActionsForegroundService extends Service {
                     broadcastPI(QuickActionsReceiver.ACTION_DISCARD_AUTO, 12)
             );
         } else {
-            // Sprint 10.4.8 — "Registrar" abre o input inline da própria
-            // notificação (RemoteInput). Nenhuma Activity é aberta: o motorista
-            // continua no Uber/99/iFood. O texto vai para o pipeline oficial
-            // (NotificationActionService → RideService → RideRepository).
-            RemoteInput remoteInput = new RemoteInput.Builder(EXTRA_QUICK_INPUT)
-                    .setLabel("Valor · Km · Obs — ex: 18,50 6,2 centro")
-                    .build();
-
+            // Sprint 10.5 (ADR-015) — "Registrar" abre o Quick Form nativo
+            // (QuickRideActivity): janela flutuante sobre o app de entrega em
+            // uso. A MainActivity NUNCA é aberta. A Activity apenas coleta e
+            // devolve o contrato { value, km, kmSource, clientRequestId } ao
+            // pipeline oficial (Plugin → NotificationActionService →
+            // RideService → RideRepository → Outbox → CloudSync → EventBus).
             NotificationCompat.Action registerAction = new NotificationCompat.Action.Builder(
                     android.R.drawable.ic_input_add,
                     "Registrar corrida",
-                    broadcastPI(QuickActionsReceiver.ACTION_REGISTER, 1, true)
+                    quickFormPI()
             )
-                    .addRemoteInput(remoteInput)
-                    .setAllowGeneratedReplies(false)
-                    .setShowsUserInterface(false)
+                    .setShowsUserInterface(true)
                     .build();
 
             b.addAction(registerAction).addAction(

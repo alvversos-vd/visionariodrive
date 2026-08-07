@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sprint 10.5 — Quick Form nativo (ADR-015).
+  Coleta pura: Valor, KM e Observação. Nenhuma referência a GPS.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/quick_ride_bg"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Registrar corrida"
+        android:textColor="#FFFFFF"
+        android:textSize="19sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Turno em andamento"
+        android:textColor="#22E06B"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/quick_ride_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:hint="Valor recebido (R$)"
+        android:textColorHint="#7A7A7A"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:inputType="numberDecimal"
+        android:imeOptions="actionNext"
+        android:importantForAutofill="no"
+        android:background="@drawable/quick_ride_field"
+        android:padding="14dp" />
+
+    <EditText
+        android:id="@+id/quick_ride_km"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="KM rodados"
+        android:textColorHint="#7A7A7A"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:inputType="numberDecimal"
+        android:imeOptions="actionNext"
+        android:importantForAutofill="no"
+        android:background="@drawable/quick_ride_field"
+        android:padding="14dp" />
+
+    <EditText
+        android:id="@+id/quick_ride_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:hint="Observação (opcional)"
+        android:textColorHint="#7A7A7A"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:inputType="textCapSentences"
+        android:maxLines="1"
+        android:imeOptions="actionDone"
+        android:importantForAutofill="no"
+        android:background="@drawable/quick_ride_field"
+        android:padding="14dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/quick_ride_cancel"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="52dp"
+            android:text="Cancelar"
+            android:textColor="#B5B5B5"
+            android:textAllCaps="false"
+            android:background="@drawable/quick_ride_field" />
+
+        <Space
+            android:layout_width="10dp"
+            android:layout_height="1dp" />
+
+        <Button
+            android:id="@+id/quick_ride_save"
+            android:layout_width="0dp"
+            android:layout_weight="1.4"
+            android:layout_height="52dp"
+            android:text="Salvar"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:background="@drawable/quick_ride_primary" />
+    </LinearLayout>
+</LinearLayout>
