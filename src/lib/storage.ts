@@ -28,6 +28,8 @@ export const APP_STORAGE_KEYS: string[] = [
   'vd-financial',
   'lucro-delivery-shifts',
   'lucro-delivery-vehicles-v2',
+  // Fase 2.4 — domínio canônico de corridas (SSOT)
+  'vd-rides',
   // Sprint 6.2.5 — payload unificado de gamificação (XP + Conquistas + Stats)
   'vd-gamification',
   // estado local não-sincronizado
@@ -42,6 +44,8 @@ export const APP_STORAGE_KEYS: string[] = [
   'vd-permission-onboarding-v1',
   'vd-tracking-force-manual-v1',
   TOMBSTONES_KEY,
+  // Sprint 10.4.9 — fila durável de sincronização
+  'vd-outbox',
 ];
 
 export function saveEntry(entry: DailyEntry): void {

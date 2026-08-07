@@ -6,6 +6,10 @@
  * Persistido em localStorage (single-source-of-truth no device que apagou).
  * Não é sincronizado para o cloud — o push imediato após delete já garante
  * que o cloud reflita o estado correto na maioria dos cenários.
+ *
+ * Sprint 10.4.9 — adiciona `rides` (RideModel.id) para blindar o merge
+ * de `vd-rides`: uma corrida apagada localmente nunca renasce por payload
+ * atrasado vindo do cloud ou de outro device.
  */
 
 const KEY = 'lucro-delivery-tombstones';
@@ -13,11 +17,13 @@ const KEY = 'lucro-delivery-tombstones';
 export interface Tombstones {
   entries: string[]; // ids de DailyEntry apagados
   shifts: string[];  // turno_ids apagados
+  rides: string[];   // RideModel.id apagados (Sprint 10.4.9)
 }
 
-const EMPTY: Tombstones = { entries: [], shifts: [] };
+const EMPTY: Tombstones = { entries: [], shifts: [], rides: [] };
 
 export function getTombstones(): Tombstones {
+  if (typeof localStorage === 'undefined') return { ...EMPTY };
   const raw = localStorage.getItem(KEY);
   if (!raw) return { ...EMPTY };
   try {
@@ -25,6 +31,7 @@ export function getTombstones(): Tombstones {
     return {
       entries: Array.isArray(t.entries) ? t.entries : [],
       shifts: Array.isArray(t.shifts) ? t.shifts : [],
+      rides: Array.isArray(t.rides) ? t.rides : [],
     };
   } catch {
     return { ...EMPTY };
@@ -51,6 +58,20 @@ export function tombstoneShift(turno_id: string) {
   }
 }
 
+/** Sprint 10.4.9 — marca um RideModel como apagado definitivamente. */
+export function tombstoneRide(id: string) {
+  if (!id) return;
+  const t = getTombstones();
+  if (!t.rides.includes(id)) {
+    t.rides.push(id);
+    save(t);
+  }
+}
+
+export function isRideTombstoned(id: string): boolean {
+  return getTombstones().rides.includes(id);
+}
+
 export function clearTombstones() {
   localStorage.removeItem(KEY);
 }
@@ -62,6 +83,7 @@ export function filterByTombstones<T extends { id?: string; turno_id?: string; s
   const t = getTombstones();
   return list.filter(item => {
     if (item.id && t.entries.includes(item.id)) return false;
+    if (item.id && t.rides.includes(item.id)) return false;
     if (item.turno_id && t.shifts.includes(item.turno_id)) return false;
     if (item.shiftId && t.shifts.includes(item.shiftId)) return false;
     return true;

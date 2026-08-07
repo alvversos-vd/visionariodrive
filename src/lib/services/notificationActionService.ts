@@ -74,6 +74,18 @@ const UNDO_ARM_WINDOW_MS = 90_000;
  *
  * Formatos aceitos: "18,50 6,2 centro" · "R$18,50 6.2km" · "18,50" (km do GPS).
  */
+/**
+ * Chave de idempotência determinística para capturas nativas sem requestId
+ * próprio: mesmo turno + mesmo texto dentro da mesma janela de 30s =
+ * mesma intenção (replay de broadcast, double-tap no botão).
+ */
+function buildRequestId(shiftId: string, raw: string): string {
+  const bucket = Math.floor(Date.now() / 30_000);
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  return `notif:${shiftId}:${bucket}:${hash}`;
+}
+
 export function parseQuickRideInput(raw: string): {
   value: number | null; km: number | null; notes?: string;
 } {
@@ -216,8 +228,11 @@ class NotificationActionServiceImpl {
    * Entrada alternativa para o MESMO fluxo oficial de registro manual
    * (`rideService.registerShiftRide`). Nenhuma persistência, cálculo ou
    * validação vive aqui — apenas tradução texto → parâmetros do Service.
+   *
+   * Sprint 10.4.9: envia `clientRequestId` para que replay de broadcast
+   * nativo (Android redeliver / fila PENDING do plugin) jamais duplique.
    */
-  private async handleInlineRegister(raw: string): Promise<void> {
+  private async handleInlineRegister(raw: string, requestId?: string): Promise<void> {
     const active = shiftService.getActive();
     if (!active) {
       await this.toast('Nenhum turno ativo');
@@ -241,6 +256,7 @@ class NotificationActionServiceImpl {
         km,
         kmOrigin: useAuto ? 'auto' : 'manual',
         observacao: parsed.notes,
+        clientRequestId: requestId ?? buildRequestId(active.turno_id, raw),
       });
     } catch { ride = null; }
 
@@ -262,7 +278,7 @@ class NotificationActionServiceImpl {
     switch (event.type) {
       case 'register': {
         const raw = typeof event.raw === 'string' ? event.raw.trim() : '';
-        if (raw) { await this.handleInlineRegister(raw); return; }
+        if (raw) { await this.handleInlineRegister(raw, event.requestId); return; }
         // Sem RemoteInput (device sem inline reply) → modal React oficial.
         this.undoArmedUntil = Date.now() + UNDO_ARM_WINDOW_MS;
         telemetry.recordNotification('notification_register');

@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTombstones, filterByTombstones } from './tombstones';
 import { eventBus } from './eventBus';
 import { telemetry } from './telemetry';
+import { outbox } from './outbox';
 import {
   GAMIFICATION_KEY,
   emptyGamification,
@@ -34,13 +35,19 @@ type LocalKey = keyof typeof KEY_MAP;
 const LOCAL_KEYS = Object.keys(KEY_MAP) as LocalKey[];
 
 let currentUserId: string | null = null;
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let hydrating = false;
 let listenersBound = false;
+let outboxConfigured = false;
 
 export function setSyncUser(userId: string | null) {
   currentUserId = userId;
-  if (userId && !listenersBound) bindLifecycleListeners();
+  if (!userId) { outbox.reset(); outboxConfigured = false; return; }
+  if (!listenersBound) bindLifecycleListeners();
+  if (!outboxConfigured) {
+    outboxConfigured = true;
+    // Sprint 10.4.9 — todo push passa pelo outbox durável (retry + backoff).
+    outbox.configure(() => pushToCloud());
+  }
 }
 
 function readLocal(key: LocalKey): unknown {
@@ -71,6 +78,55 @@ function stripLegacyRides<T>(s: T): T {
     return rest as T;
   }
   return s;
+}
+
+/**
+ * Merge determinístico de `vd-rides` (Sprint 10.4.9).
+ *
+ * Regras, nesta ordem:
+ *  1. Tombstone vence tudo — corrida apagada nunca renasce.
+ *  2. União por `id` — corrida que existe só em um lado é preservada.
+ *  3. Conflito no mesmo `id` → vence o maior `updatedAt` (fallback `date`);
+ *     empate → vence o LOCAL (device que está com o usuário na mão).
+ *
+ * Exportado para teste; usado por hydrate, realtime e push.
+ */
+export function mergeRidesPayload(
+  localRaw: unknown,
+  incomingRaw: unknown,
+  tombstonedIds: string[] = [],
+): { schemaVersion: number; rides: RideLike[] } {
+  const dead = new Set(tombstonedIds);
+  const local = extractRides(localRaw).filter(r => !dead.has(r.id));
+  const incoming = extractRides(incomingRaw).filter(r => !dead.has(r.id));
+
+  const byId = new Map<string, RideLike>();
+  for (const r of local) byId.set(r.id, r);
+  for (const r of incoming) {
+    const mine = byId.get(r.id);
+    if (!mine) { byId.set(r.id, r); continue; }
+    if (stamp(r) > stamp(mine)) byId.set(r.id, r);
+  }
+  return { schemaVersion: 1, rides: Array.from(byId.values()) };
+}
+
+interface RideLike { id: string; date?: string; updatedAt?: string }
+
+function extractRides(raw: unknown): RideLike[] {
+  if (Array.isArray(raw)) return raw.filter(isRideLike);
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { rides?: unknown[] }).rides)) {
+    return ((raw as { rides: unknown[] }).rides).filter(isRideLike);
+  }
+  return [];
+}
+
+function isRideLike(r: unknown): r is RideLike {
+  return !!r && typeof r === 'object' && typeof (r as RideLike).id === 'string';
+}
+
+function stamp(r: RideLike): number {
+  const t = Date.parse(r.updatedAt ?? r.date ?? '');
+  return Number.isFinite(t) ? t : 0;
 }
 
 function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
@@ -107,6 +163,14 @@ function mergeIncomingForKey(key: LocalKey, incoming: unknown): unknown {
     return (incoming as any[]).filter(
       e => !tomb.entries.includes(e.id) && !(e.shiftId && tomb.shifts.includes(e.shiftId))
     );
+  }
+
+  // Sprint 10.4.9 — merge determinístico do domínio canônico de corridas.
+  // ANTES: a hidratação SOBRESCREVIA `vd-rides` com o payload do cloud →
+  // qualquer corrida registrada offline (ou ainda no outbox) era perdida.
+  // AGORA: união por id, tombstones vencem sempre, desempate por `updatedAt`.
+  if (key === 'vd-rides') {
+    return mergeRidesPayload(readLocal('vd-rides'), incoming, tomb.rides);
   }
 
   if (key === GAMIFICATION_KEY) {
@@ -172,32 +236,32 @@ export async function hydrateFromCloud(userId: string) {
 }
 
 /**
- * Marca dados como sujos. Por padrão usa debounce de 600ms.
- * Use { immediate: true } para operações críticas (endShift, deleteEntry,
- * deleteShift, clearAllAppData) onde a app pode ser minimizada logo após.
- * Retorna a Promise do push quando immediate=true, para callers que precisam
- * aguardar a confirmação antes de mudar de tela / fechar dialog.
+ * Marca dados como sujos. A intenção é registrada no **outbox durável**
+ * (`vd-outbox`) antes de qualquer tentativa de rede: se o push falhar ou o
+ * processo morrer, o retry acontece no próximo gatilho (backoff, `online`,
+ * volta ao foreground ou próximo boot).
+ *
+ * `{ immediate: true }` força uma tentativa agora e retorna a Promise —
+ * mas a durabilidade NÃO depende dela ter sucesso.
  */
 export function markDirty(opts?: { immediate?: boolean }): Promise<void> | void {
   if (!currentUserId || hydrating) return;
-  if (opts?.immediate) {
-    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-    return pushToCloud();
-  }
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => void pushToCloud(), 300);
+  return outbox.markDirty({ immediate: opts?.immediate });
 }
 
 /**
  * Flush explícito e awaitable. Usar antes de navegar para fora de uma tela
- * crítica (ex.: fechar dialog de "finalizar turno") para garantir que o
- * estado finalizado já está no cloud antes do usuário potencialmente
- * minimizar/fechar o app — protege contra "turno renasce ativo" no reload.
+ * crítica (ex.: fechar dialog de "finalizar turno"). Nunca lança: falha
+ * permanece na fila do outbox.
  */
 export async function flushNow(): Promise<void> {
   if (!currentUserId || hydrating) return;
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  try { await pushToCloud(); } catch { /* silencioso — fallback no próximo ciclo */ }
+  await outbox.flush();
+}
+
+/** Estado do outbox — usado por indicadores de sincronização na UI. */
+export function getSyncState() {
+  return { status: outbox.getStatus(), ...outbox.getState() };
 }
 
 async function pushToCloud() {
@@ -208,9 +272,11 @@ async function pushToCloud() {
     v = mergeIncomingForKey(lk, v);
     payload[KEY_MAP[lk]] = v;
   }
-  await supabase
+  const { error } = await supabase
     .from('user_data')
     .upsert(payload as never, { onConflict: 'user_id' });
+  // Erro precisa PROPAGAR: é ele que mantém a intenção viva no outbox.
+  if (error) throw new Error(error.message || 'upsert_failed');
   try {
     telemetry.recordGamification('gamification_sync', 1);
     eventBus.emit('gamification:synced');
@@ -229,8 +295,7 @@ function flushOnLifecycle() {
       try { m.flushShiftBuffers(); } catch { /* noop */ }
     }).catch(() => { /* noop */ });
   } catch { /* noop */ }
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  void pushToCloud();
+  void outbox.markDirty({ immediate: true });
 }
 
 

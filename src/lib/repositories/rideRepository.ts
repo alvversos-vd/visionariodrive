@@ -25,6 +25,7 @@ import {
   deleteEntry as legacyDeleteEntry,
 } from '../storage';
 import { getShifts } from '../shifts';
+import { getTombstones, tombstoneRide } from '../tombstones';
 import { writeJson } from './baseRepository';
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
@@ -65,15 +66,27 @@ function loadPayload(): RidePayload {
   if (!raw) return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
   try {
     const parsed = JSON.parse(raw);
-    return { schemaVersion: RIDE_SCHEMA_VERSION, rides: migrateRidesPayload(parsed) };
+    const dead = new Set(getTombstones().rides);
+    const rides = migrateRidesPayload(parsed).filter(r => r.id && !dead.has(r.id));
+    return { schemaVersion: RIDE_SCHEMA_VERSION, rides };
   } catch {
     return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
   }
 }
 
-function persist(payload: RidePayload, opts: { silent?: boolean } = {}): void {
-  writeJson(RIDES_KEY, payload);
+/**
+ * Sprint 10.4.9 — toda escrita de corrida é CRÍTICA:
+ *  - carimba `updatedAt` (desempate determinístico no merge cloud);
+ *  - persiste local ANTES de qualquer rede (durabilidade não depende de push);
+ *  - enfileira no outbox durável em modo imediato.
+ */
+function persist(payload: RidePayload, opts: { silent?: boolean; immediate?: boolean } = {}): void {
+  writeJson(RIDES_KEY, payload, { immediate: opts.immediate !== false });
   if (!opts.silent) eventBus.emit('rides:changed');
+}
+
+function touch(ride: RideModel): RideModel {
+  return { ...ride, updatedAt: new Date().toISOString() };
 }
 
 // ─── Migração one-shot dos dados legacy ──────────────────────────────────
@@ -162,14 +175,23 @@ export const rideRepository = {
     return loadPayload().rides.find(r => r.id === id) ?? null;
   },
 
+  /** Insere/atualiza por id. Idempotente: o mesmo id nunca duplica. */
   add(ride: RideModel): RideModel {
     ensureMigratedFromLegacy();
     const payload = loadPayload();
+    const stamped = touch(ride);
     const idx = payload.rides.findIndex(r => r.id === ride.id);
-    if (idx >= 0) payload.rides[idx] = ride;
-    else payload.rides.push(ride);
+    if (idx >= 0) payload.rides[idx] = stamped;
+    else payload.rides.push(stamped);
     persist(payload);
-    return ride;
+    return stamped;
+  },
+
+  /** Busca por chave de idempotência da captura (notificação/quick form). */
+  findByClientRequestId(clientRequestId: string): RideModel | null {
+    if (!clientRequestId) return null;
+    ensureMigratedFromLegacy();
+    return loadPayload().rides.find(r => r.clientRequestId === clientRequestId) ?? null;
   },
 
   update(id: string, patch: Partial<RideModel>): RideModel | null {
@@ -177,7 +199,7 @@ export const rideRepository = {
     const payload = loadPayload();
     const idx = payload.rides.findIndex(r => r.id === id);
     if (idx < 0) return null;
-    payload.rides[idx] = { ...payload.rides[idx], ...patch, id };
+    payload.rides[idx] = touch({ ...payload.rides[idx], ...patch, id });
     persist(payload);
     return payload.rides[idx];
   },
@@ -186,8 +208,13 @@ export const rideRepository = {
     ensureMigratedFromLegacy();
     const payload = loadPayload();
     const next = payload.rides.filter(r => r.id !== id);
+    // Tombstone SEMPRE (mesmo se o item já não estiver local): protege contra
+    // ressurreição vinda de cloud/realtime com payload atrasado.
+    tombstoneRide(id);
     if (next.length !== payload.rides.length) {
       persist({ ...payload, rides: next });
+    } else {
+      persist(payload, { silent: true });
     }
   },
 
