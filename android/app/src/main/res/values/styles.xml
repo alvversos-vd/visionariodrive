@@ -27,4 +27,17 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowBackground">@drawable/splash</item>
     </style>
+
+    <!-- Sprint 10.5 (ADR-015): Quick Form nativo em janela flutuante.
+         Sem barra de título, fundo translúcido — a Activity aparece SOBRE o
+         app de entrega em uso, sem abrir a interface do Visionário Drive. -->
+    <style name="QuickRideDialogTheme" parent="@android:style/Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+        <item name="android:backgroundDimAmount">0.6</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:colorAccent">@color/colorAccent</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+    </style>
 </resources>
