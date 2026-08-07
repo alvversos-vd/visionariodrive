@@ -278,42 +278,68 @@ export const rideService = {
     return ride;
   },
 
-  // ─── Orquestração ShiftRide (Fase 2.4) ────────────────────────────────
+  // ─── Orquestração ShiftRide (Fase 2.4 · blindada na 10.4.9) ───────────
   /**
-   * Registra uma corrida dentro de um turno ativo.
-   * Escreve exclusivamente em `vd-rides` (canônico) e atualiza estado de
-   * SESSÃO do turno via `markRideRegistered` (sem tocar em Shift.rides).
+   * Registra uma corrida dentro de um turno ativo. ÚNICO caminho de escrita
+   * para qualquer interface de captura (formulário, notificação, quick form).
+   *
+   * Blindagem (Sprint 10.4.9):
+   *  1. Valida turno ATIVO (turno inexistente/finalizado → null, nunca grava).
+   *  2. Valida valor/km > 0.
+   *  3. Idempotência forte por `clientRequestId`.
+   *  4. Idempotência heurística: mesma dupla valor+km no mesmo turno dentro
+   *     de 20s é reenvio → devolve a corrida existente, não duplica.
+   *  5. Persistência local imediata + enfileiramento durável (outbox).
    */
   registerShiftRide(input: RegisterShiftRideInput): RideModel | null {
     const shift = findShift(input.shiftId);
     if (!shift || shift.status !== 'ativo') return null;
     const value = Number(input.value) || 0;
     const km = Number(input.km) || 0;
-    if (value <= 0 || km <= 0) return null;
-    const dateIso = new Date().toISOString();
-    const analysis = reclassify(shift, value, km);
-    const ride: RideModel = buildRide(
-      {
-        value,
-        km,
-        date: dateIso,
-        vehicleId: shift.veiculo_id,
-        notes: input.observacao?.trim() || undefined,
-        shiftId: shift.turno_id,
-        operationalDate: shift.data_operacional,
-        kmOrigin: input.kmOrigin,
-        gps: shift.rota && shift.rota.length > 0 ? { points: shift.rota.length } : undefined,
-        analysis,
-      },
-      input.kmOrigin === 'auto' ? 'gps' : 'manual',
+    if (!Number.isFinite(value) || !Number.isFinite(km) || value <= 0 || km <= 0) return null;
+
+    // 3. Idempotência forte.
+    if (input.clientRequestId) {
+      const existing = rideRepository.findByClientRequestId(input.clientRequestId);
+      if (existing) return existing;
+    }
+
+    const now = Date.now();
+    // 4. Idempotência heurística (protege contra double-tap / replay nativo).
+    const duplicate = rideRepository.listByShift(shift.turno_id).find(r =>
+      r.value === value &&
+      r.km === km &&
+      now - new Date(r.date).getTime() < DEDUPE_WINDOW_MS,
     );
-    rideRepository.add(ride);
+    if (duplicate) return duplicate;
+
+    const dateIso = new Date(now).toISOString();
+    const analysis = reclassify(shift, value, km);
+    const ride: RideModel = {
+      ...buildRide(
+        {
+          value,
+          km,
+          date: dateIso,
+          vehicleId: shift.veiculo_id,
+          notes: input.observacao?.trim() || undefined,
+          shiftId: shift.turno_id,
+          operationalDate: shift.data_operacional,
+          kmOrigin: input.kmOrigin,
+          gps: shift.rota && shift.rota.length > 0 ? { points: shift.rota.length } : undefined,
+          analysis,
+        },
+        input.kmOrigin === 'auto' ? 'gps' : 'manual',
+      ),
+      clientRequestId: input.clientRequestId,
+    };
+    const saved = rideRepository.add(ride);
     markRideRegistered(shift.turno_id, dateIso);
     // Sinaliza para o rideDetectionService que o driver registrou uma
     // corrida manual — permite computar gps_false_negative sem acoplar
     // este service ao detector (comunicação por evento).
     eventBus.emit('rides:manual-registered');
-    return ride;
+    return saved;
   },
 
   /**
