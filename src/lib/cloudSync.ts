@@ -179,32 +179,32 @@ export async function hydrateFromCloud(userId: string) {
 }
 
 /**
- * Marca dados como sujos. Por padrão usa debounce de 600ms.
- * Use { immediate: true } para operações críticas (endShift, deleteEntry,
- * deleteShift, clearAllAppData) onde a app pode ser minimizada logo após.
- * Retorna a Promise do push quando immediate=true, para callers que precisam
- * aguardar a confirmação antes de mudar de tela / fechar dialog.
+ * Marca dados como sujos. A intenção é registrada no **outbox durável**
+ * (`vd-outbox`) antes de qualquer tentativa de rede: se o push falhar ou o
+ * processo morrer, o retry acontece no próximo gatilho (backoff, `online`,
+ * volta ao foreground ou próximo boot).
+ *
+ * `{ immediate: true }` força uma tentativa agora e retorna a Promise —
+ * mas a durabilidade NÃO depende dela ter sucesso.
  */
 export function markDirty(opts?: { immediate?: boolean }): Promise<void> | void {
   if (!currentUserId || hydrating) return;
-  if (opts?.immediate) {
-    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-    return pushToCloud();
-  }
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => void pushToCloud(), 300);
+  return outbox.markDirty({ immediate: opts?.immediate });
 }
 
 /**
  * Flush explícito e awaitable. Usar antes de navegar para fora de uma tela
- * crítica (ex.: fechar dialog de "finalizar turno") para garantir que o
- * estado finalizado já está no cloud antes do usuário potencialmente
- * minimizar/fechar o app — protege contra "turno renasce ativo" no reload.
+ * crítica (ex.: fechar dialog de "finalizar turno"). Nunca lança: falha
+ * permanece na fila do outbox.
  */
 export async function flushNow(): Promise<void> {
   if (!currentUserId || hydrating) return;
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  try { await pushToCloud(); } catch { /* silencioso — fallback no próximo ciclo */ }
+  await outbox.flush();
+}
+
+/** Estado do outbox — usado por indicadores de sincronização na UI. */
+export function getSyncState() {
+  return { status: outbox.getStatus(), ...outbox.getState() };
 }
 
 async function pushToCloud() {
@@ -215,9 +215,11 @@ async function pushToCloud() {
     v = mergeIncomingForKey(lk, v);
     payload[KEY_MAP[lk]] = v;
   }
-  await supabase
+  const { error } = await supabase
     .from('user_data')
     .upsert(payload as never, { onConflict: 'user_id' });
+  // Erro precisa PROPAGAR: é ele que mantém a intenção viva no outbox.
+  if (error) throw new Error(error.message || 'upsert_failed');
   try {
     telemetry.recordGamification('gamification_sync', 1);
     eventBus.emit('gamification:synced');
@@ -236,8 +238,7 @@ function flushOnLifecycle() {
       try { m.flushShiftBuffers(); } catch { /* noop */ }
     }).catch(() => { /* noop */ });
   } catch { /* noop */ }
-  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
-  void pushToCloud();
+  void outbox.markDirty({ immediate: true });
 }
 
 
