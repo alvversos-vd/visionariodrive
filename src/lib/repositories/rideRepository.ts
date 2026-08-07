@@ -65,15 +65,27 @@ function loadPayload(): RidePayload {
   if (!raw) return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
   try {
     const parsed = JSON.parse(raw);
-    return { schemaVersion: RIDE_SCHEMA_VERSION, rides: migrateRidesPayload(parsed) };
+    const dead = new Set(getTombstones().rides);
+    const rides = migrateRidesPayload(parsed).filter(r => r.id && !dead.has(r.id));
+    return { schemaVersion: RIDE_SCHEMA_VERSION, rides };
   } catch {
     return { schemaVersion: RIDE_SCHEMA_VERSION, rides: [] };
   }
 }
 
-function persist(payload: RidePayload, opts: { silent?: boolean } = {}): void {
-  writeJson(RIDES_KEY, payload);
+/**
+ * Sprint 10.4.9 — toda escrita de corrida é CRÍTICA:
+ *  - carimba `updatedAt` (desempate determinístico no merge cloud);
+ *  - persiste local ANTES de qualquer rede (durabilidade não depende de push);
+ *  - enfileira no outbox durável em modo imediato.
+ */
+function persist(payload: RidePayload, opts: { silent?: boolean; immediate?: boolean } = {}): void {
+  writeJson(RIDES_KEY, payload, { immediate: opts.immediate !== false });
   if (!opts.silent) eventBus.emit('rides:changed');
+}
+
+function touch(ride: RideModel): RideModel {
+  return { ...ride, updatedAt: new Date().toISOString() };
 }
 
 // ─── Migração one-shot dos dados legacy ──────────────────────────────────
