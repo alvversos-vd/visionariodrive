@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getTombstones, filterByTombstones } from './tombstones';
 import { eventBus } from './eventBus';
 import { telemetry } from './telemetry';
+import { outbox } from './outbox';
 import {
   GAMIFICATION_KEY,
   emptyGamification,
