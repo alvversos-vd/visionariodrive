@@ -25,6 +25,7 @@ import {
   deleteEntry as legacyDeleteEntry,
 } from '../storage';
 import { getShifts } from '../shifts';
+import { getTombstones, tombstoneRide } from '../tombstones';
 import { writeJson } from './baseRepository';
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
