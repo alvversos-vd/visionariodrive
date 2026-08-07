@@ -19,6 +19,8 @@ export interface QuickActionEvent {
   type: QuickActionType;
   /** Texto digitado no RemoteInput do botão "Registrar corrida" (Sprint 10.4.8). */
   raw?: string;
+  /** Chave de idempotência da ação nativa (Sprint 10.4.9), quando disponível. */
+  requestId?: string;
   payload?: Record<string, unknown>;
 }
 
