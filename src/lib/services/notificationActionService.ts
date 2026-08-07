@@ -74,6 +74,18 @@ const UNDO_ARM_WINDOW_MS = 90_000;
  *
  * Formatos aceitos: "18,50 6,2 centro" · "R$18,50 6.2km" · "18,50" (km do GPS).
  */
+/**
+ * Chave de idempotência determinística para capturas nativas sem requestId
+ * próprio: mesmo turno + mesmo texto dentro da mesma janela de 30s =
+ * mesma intenção (replay de broadcast, double-tap no botão).
+ */
+function buildRequestId(shiftId: string, raw: string): string {
+  const bucket = Math.floor(Date.now() / 30_000);
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) hash = (hash * 31 + raw.charCodeAt(i)) | 0;
+  return `notif:${shiftId}:${bucket}:${hash}`;
+}
+
 export function parseQuickRideInput(raw: string): {
   value: number | null; km: number | null; notes?: string;
 } {
