@@ -266,7 +266,7 @@ class NotificationActionServiceImpl {
     switch (event.type) {
       case 'register': {
         const raw = typeof event.raw === 'string' ? event.raw.trim() : '';
-        if (raw) { await this.handleInlineRegister(raw); return; }
+        if (raw) { await this.handleInlineRegister(raw, event.requestId); return; }
         // Sem RemoteInput (device sem inline reply) → modal React oficial.
         this.undoArmedUntil = Date.now() + UNDO_ARM_WINDOW_MS;
         telemetry.recordNotification('notification_register');
