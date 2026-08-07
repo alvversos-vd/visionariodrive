@@ -121,6 +121,19 @@ export interface RideModel {
   originalValue?: number;
   /** Histórico de edições (append-only) — usado por undo/reverter. */
   edits?: RideEdit[];
+
+  // ─── Sprint 10.4.9 — blindagem de sincronização ───
+  /**
+   * ISO da última escrita local. Único critério de desempate no merge
+   * cloud ↔ device (last-writer-wins determinístico por corrida).
+   * Escrito exclusivamente pelo RideRepository.
+   */
+  updatedAt?: string;
+  /**
+   * Chave de idempotência da captura (notificação, quick form, GPS).
+   * Duas tentativas com o mesmo `clientRequestId` produzem UMA corrida.
+   */
+  clientRequestId?: string;
 }
 
 // ─── FinancialEntry ───────────────────────────────────────────────────────
