@@ -48,31 +48,47 @@ migrador declarado no repositório correspondente via
 4. Se presente e menor → aplicar migrador → devolver (e reescrever no
    próximo `write` — nunca no `read`, para evitar side-effects).
 
-## 4. Estratégia de escrita
+## 4. Estratégia de escrita (Sprint 10.4.9 — outbox durável)
 
 - Toda escrita passa por `Repository.write(payload, { markCloud })`.
-- `markCloud=true` (default) agenda push via `cloudSync.markDirty`.
-- Operações críticas (fim de turno, delete, reset) usam
-  `{ immediate: true }` para flush síncrono.
+- `markDirty` **não** faz rede: registra a intenção em `vd-outbox`
+  (`localStorage`). Isso sobrevive a kill do processo — o retry acontece no
+  próximo boot, no evento `online` ou ao voltar ao foreground.
+- Retry com backoff exponencial (1s → 2min). Falha de push **propaga** para
+  manter a intenção viva na fila.
+- Escritas de corrida (`vd-rides`) são sempre `{ immediate: true }`.
+- `flushNow()` (awaitable) para telas críticas; `getSyncState()` expõe
+  `idle | pending | syncing | error` para indicadores de UI.
 
 ## 5. Estratégia de merge (hidratação e realtime)
 
 Regras defensivas aplicadas em `cloudSync.mergeIncomingForKey`:
 
 - **Tombstones sempre vencem** — item apagado localmente nunca renasce
-  via cloud (chaves cobertas: `entries`, `shifts`).
+  via cloud (chaves cobertas: `entries`, `shifts`, `rides`).
 - **Nunca rebaixar shift finalizado** — turno já `finalizado` local não
   pode voltar a `ativo`/`pausado` por causa de payload atrasado.
 - **Union por id** — quando o cloud não conhece um item local ainda em
   voo, o local é preservado.
 
-Para Fase 2 (Ride Unificado):
+### 5.1 `vd-rides` — merge canônico (`mergeRidesPayload`)
 
-- `RideModel` merge por `id` (UUID).
-- Conflitos resolvem por `endedAt || date` (último vence), preservando
-  `startLocation`/`gps` do lado com maior densidade de pontos.
-- Bônus/despesas vinculadas (`relatedRideId`) sobrevivem a delete do
-  ride pai apenas se tiverem `sourceRef` externo.
+1. Tombstone vence tudo.
+2. União por `id` (UUID) — corrida offline nunca é sobrescrita.
+3. Conflito no mesmo `id` → maior `updatedAt` vence (fallback `date`);
+   empate → vence o LOCAL.
+
+Coberto por `src/lib/cloudSync.merge.test.ts`.
+
+### 5.2 Idempotência de captura
+
+`RideModel.clientRequestId` é a chave de idempotência de toda interface de
+entrada (form, notificação, quick form, GPS). `rideService.registerShiftRide`
+rejeita reenvio por `clientRequestId` e, na ausência dele, por heurística
+(mesmo valor+km no mesmo turno dentro de 20s).
+
+Bônus/despesas vinculadas (`relatedRideId`) sobrevivem a delete do
+ride pai apenas se tiverem `sourceRef` externo.
 
 ## 6. Sincronização
 
