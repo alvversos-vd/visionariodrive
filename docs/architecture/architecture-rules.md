@@ -95,3 +95,26 @@ infraestrutura e só pode ser importado por:
 
 Componentes e hooks importam **exclusivamente** `shiftService`.
 
+## Fronteira nativa — ADR-015 (obrigatório)
+
+A camada nativa **nunca conhece GPS**.
+
+```text
+Activity (coleta) → Plugin (transporte) → Service (interpreta) → Repository (persiste)
+```
+
+Contrato oficial devolvido pela Activity (v1):
+
+```ts
+{ value: number, km: number, kmSource: 'user' | 'prefilled', clientRequestId: string }
+```
+
+- A Activity nunca importa `gpsService`, `gpsBackgroundProvider`,
+  `@capgo/background-geolocation` ou qualquer provider de localização.
+- A Activity nunca decide `kmOrigin` nem `captureMode`.
+- `toKmOrigin()` em `notificationActionService` é a **única** tradução
+  autorizada (`prefilled → auto`, `user → manual`).
+- Todo ponto de entrada (Dashboard, Quick Form, atalho, widget,
+  notificação, Android Auto, Wear OS) reutiliza o pipeline único:
+  `rideService.registerShiftRide` → `rideRepository` → outbox →
+  cloudSync → eventBus. Nunca criar caminho paralelo.

@@ -30,6 +30,7 @@ import {
   quickActionsPlugin,
   isQuickActionsNative,
   type QuickActionEvent,
+  type QuickRideFormPayload,
 } from '../native/quickActionsPlugin';
 
 type Unsub = () => void;
@@ -84,6 +85,15 @@ function buildRequestId(shiftId: string, raw: string): string {
   let hash = 0;
   for (let i = 0; i < raw.length; i++) hash = (hash * 31 + raw.charCodeAt(i)) | 0;
   return `notif:${shiftId}:${bucket}:${hash}`;
+}
+
+/**
+ * ADR-015 — única tradução autorizada do contrato nativo para o domínio.
+ * A fronteira nativa fala `kmSource` (quem preencheu); o domínio fala
+ * `kmOrigin` (o que aquilo significa).
+ */
+export function toKmOrigin(kmSource: 'user' | 'prefilled'): 'auto' | 'manual' {
+  return kmSource === 'prefilled' ? 'auto' : 'manual';
 }
 
 export function parseQuickRideInput(raw: string): {
@@ -269,6 +279,55 @@ class NotificationActionServiceImpl {
     await this.toast(`✔ Corrida registrada · ${BRL.format(ride.value)} · ${ride.km.toFixed(1)} km`);
   }
 
+  // ─── Quick Form nativo (ADR-015) ──────────────────────────────────
+  /**
+   * ADR-015 — a Activity entrega apenas `{ value, km, kmSource,
+   * clientRequestId }`. Ela não conhece GPS e não decide `kmOrigin` nem
+   * `captureMode`. A tradução do contrato nativo para o domínio acontece
+   * exclusivamente aqui:
+   *
+   *   kmSource = 'user'      → kmOrigin = 'manual' → captureMode = 'manual'
+   *   kmSource = 'prefilled' → kmOrigin = 'auto'   → captureMode = 'gps'
+   *
+   * Mesmo pipeline oficial: rideService.registerShiftRide → rideRepository
+   * → outbox → cloudSync → eventBus. Nenhum caminho paralelo.
+   */
+  private async handleQuickFormRegister(form: QuickRideFormPayload): Promise<void> {
+    const active = shiftService.getActive();
+    if (!active) {
+      await this.toast('Nenhum turno ativo');
+      return;
+    }
+    const value = Number(form.value);
+    const km = Number(form.km);
+    if (!Number.isFinite(value) || value <= 0 || !Number.isFinite(km) || km <= 0) {
+      await this.toast('Valor e KM precisam ser maiores que zero');
+      return;
+    }
+
+    this.undoArmedUntil = Date.now() + UNDO_ARM_WINDOW_MS;
+    let ride: ReturnType<typeof rideService.registerShiftRide> = null;
+    try {
+      ride = rideService.registerShiftRide({
+        shiftId: active.turno_id,
+        value,
+        km,
+        kmOrigin: toKmOrigin(form.kmSource),
+        observacao: form.notes?.trim() || undefined,
+        clientRequestId: form.clientRequestId
+          || buildRequestId(active.turno_id, `${value}|${km}|${form.kmSource}`),
+      });
+    } catch { ride = null; }
+
+    if (!ride) {
+      this.undoArmedUntil = 0;
+      await this.toast('Não foi possível salvar a corrida');
+      return;
+    }
+    telemetry.recordNotification('notification_register');
+    await this.toast(`✔ Corrida registrada · ${BRL.format(ride.value)} · ${ride.km.toFixed(1)} km`);
+  }
+
   private async toast(message: string): Promise<void> {
     try { await quickActionsPlugin.showToast({ message }); } catch { /* noop */ }
   }
@@ -277,6 +336,7 @@ class NotificationActionServiceImpl {
   private async onPluginAction(event: QuickActionEvent): Promise<void> {
     switch (event.type) {
       case 'register': {
+        if (event.form) { await this.handleQuickFormRegister(event.form); return; }
         const raw = typeof event.raw === 'string' ? event.raw.trim() : '';
         if (raw) { await this.handleInlineRegister(raw, event.requestId); return; }
         // Sem RemoteInput (device sem inline reply) → modal React oficial.
@@ -329,6 +389,6 @@ function latestRide() {
 
 export const notificationActionService = new NotificationActionServiceImpl();
 
-export const _notificationActionInternals = { buildContent, formatDuration, buildAutoLabel, parseQuickRideInput };
+export const _notificationActionInternals = { buildContent, formatDuration, buildAutoLabel, parseQuickRideInput, toKmOrigin };
 
 export const notificationActionAvailable = isQuickActionsNative;

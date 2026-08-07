@@ -1,7 +1,7 @@
 # ADR-012 — NotificationActionService (Driver Quick Actions completo)
 
 **Status:** Aceito (Sprint 7 · Checkpoint 3)
-**Relaciona-se com:** ADR-004 (camadas), ADR-007 (ShiftService), ADR-008 (RideDetectionService)
+**Relaciona-se com:** ADR-004 (camadas), ADR-007 (ShiftService), ADR-008 (RideDetectionService), ADR-015 (fronteira nativa agnóstica de GPS)
 
 ## Contexto
 

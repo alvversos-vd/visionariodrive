@@ -15,8 +15,27 @@ export type QuickActionType =
   | 'discard-auto'
   | 'undo';
 
+/**
+ * ADR-015 — contrato oficial (v1) devolvido pela Activity nativa do
+ * Quick Form. A camada nativa NUNCA conhece GPS: `kmSource` informa
+ * apenas quem preencheu o campo KM. A tradução para o domínio
+ * (`kmOrigin` / `captureMode`) é exclusividade da camada de Service.
+ */
+export interface QuickRideFormPayload {
+  /** Versão do contrato nativo. Mudanças exigem nova versão. */
+  contractVersion?: 1;
+  value: number;
+  km: number;
+  kmSource: 'user' | 'prefilled';
+  clientRequestId: string;
+  /** Texto livre opcional (observação). Sem semântica de negócio. */
+  notes?: string;
+}
+
 export interface QuickActionEvent {
   type: QuickActionType;
+  /** Payload estruturado do Quick Form nativo (ADR-015). */
+  form?: QuickRideFormPayload;
   /** Texto digitado no RemoteInput do botão "Registrar corrida" (Sprint 10.4.8). */
   raw?: string;
   /** Chave de idempotência da ação nativa (Sprint 10.4.9), quando disponível. */
