@@ -111,3 +111,20 @@ Nunca duplicar regras.
   degrada silenciosamente para manual quando não há GPS (START).
 - Auditoria: nenhum arquivo em `android/` pode referenciar
   `location`, `gps` ou providers de rastreamento para fins de captura.
+
+## Implementação (Sprint 10.5 — Quick Form START)
+
+- `android/.../QuickRideActivity.java` — janela flutuante (`QuickRideDialogTheme`,
+  `taskAffinity=""`, `excludeFromRecents`, `noHistory`, `singleInstance`).
+  Coleta Valor, KM e Observação. Zero import de GPS, zero persistência.
+- `QuickActionsForegroundService.buildNotification()` — o botão
+  "Registrar corrida" agora abre a Activity via `PendingIntent.getActivity`
+  (RemoteInput de texto livre removido). A `MainActivity` nunca é aberta.
+- `VisionarioQuickActionsPlugin.dispatchQuickForm(...)` — transporte puro do
+  contrato v1; se o Bridge ainda não carregou, a intenção é persistida em
+  `SharedPreferences` e reentregue em `load()` (nenhuma corrida se perde).
+- `notificationActionService.toKmOrigin()` — única tradução autorizada
+  (`prefilled → auto`, `user → manual`), seguida de
+  `rideService.registerShiftRide()`.
+- Atualização instantânea de Dashboard, Histórico, turno ativo e notificação
+  via `rides:changed` / `shift:changed` no EventBus — sem polling.
