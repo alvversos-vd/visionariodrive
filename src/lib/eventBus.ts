@@ -32,7 +32,9 @@ export type BusEvent =
   | 'gamification:merged'
   // Sprint 7 — Driver Quick Actions (sinais de transporte UI, não regra de negócio)
   | 'notification:register'
-  | 'notification:edit-auto';
+  | 'notification:edit-auto'
+  // Sprint 10.4.9 — estado do outbox durável (idle/pending/syncing/error)
+  | 'sync:changed';
 
 type Listener = () => void;
 
@@ -49,6 +51,7 @@ const EVENTS: BusEvent[] = [
   'invite:changed',
   'gamification:synced', 'gamification:merged',
   'notification:register', 'notification:edit-auto',
+  'sync:changed',
 ];
 
 const listeners: Record<BusEvent, Set<Listener>> = Object.fromEntries(
