@@ -216,8 +216,11 @@ class NotificationActionServiceImpl {
    * Entrada alternativa para o MESMO fluxo oficial de registro manual
    * (`rideService.registerShiftRide`). Nenhuma persistência, cálculo ou
    * validação vive aqui — apenas tradução texto → parâmetros do Service.
+   *
+   * Sprint 10.4.9: envia `clientRequestId` para que replay de broadcast
+   * nativo (Android redeliver / fila PENDING do plugin) jamais duplique.
    */
-  private async handleInlineRegister(raw: string): Promise<void> {
+  private async handleInlineRegister(raw: string, requestId?: string): Promise<void> {
     const active = shiftService.getActive();
     if (!active) {
       await this.toast('Nenhum turno ativo');
@@ -241,6 +244,7 @@ class NotificationActionServiceImpl {
         km,
         kmOrigin: useAuto ? 'auto' : 'manual',
         observacao: parsed.notes,
+        clientRequestId: requestId ?? buildRequestId(active.turno_id, raw),
       });
     } catch { ride = null; }
 
