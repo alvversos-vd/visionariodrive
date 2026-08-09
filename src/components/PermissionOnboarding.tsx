@@ -53,6 +53,9 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const [step, setStep] = useState<StepId>('intro');
   const [d, setD] = useState<PermissionDiagnostic | null>(null);
   const [busy, setBusy] = useState(false);
+  // Sprint 10.6 — GPS é capacidade exclusiva do PRO. No START o assistente
+  // NUNCA apresenta passos de localização nem solicita essa permissão.
+  const { gps: gpsEnabled } = useCapabilities();
 
   useEffect(() => {
     const release = pushBlockingModal();
@@ -77,12 +80,20 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const skip = () => finish('manual');
 
   const stepOrder: StepId[] = useMemo(() => {
+    if (!gpsEnabled) {
+      // START — apenas notificação (quando o sistema exigir) e conclusão.
+      const list: StepId[] = ['intro'];
+      if (!isWeb && d?.notificationsRequired) list.push('notifications');
+      list.push('summary');
+      return list;
+    }
     if (isWeb) return ['intro', 'location', 'summary'];
     const list: StepId[] = ['intro', 'location', 'background'];
     if (d?.notificationsRequired) list.push('notifications');
     list.push('battery', 'summary');
     return list;
-  }, [isWeb, d?.notificationsRequired]);
+  }, [gpsEnabled, isWeb, d?.notificationsRequired]);
+
 
   const currentIndex = stepOrder.indexOf(step);
   const goNext = () => setStep(stepOrder[Math.min(stepOrder.length - 1, currentIndex + 1)]);
