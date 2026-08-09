@@ -261,9 +261,13 @@ export default function PermissionOnboarding({ onDone }: Props) {
           {step === 'notifications' && (
             <Step
               icon={<Bell size={28} className="text-primary" />}
-              eyebrow="Mantém o turno vivo"
-              title="Notificação persistente do turno"
-              body="Uma notificação fica visível enquanto o turno está ativo — ela mantém o GPS rodando no segundo plano. Some automaticamente quando você encerra."
+              eyebrow={gpsEnabled ? 'Mantém o turno vivo' : 'Registro mais rápido'}
+              title={gpsEnabled
+                ? 'Notificação persistente do turno'
+                : 'Notificações para registrar corridas mais rápido'}
+              body={gpsEnabled
+                ? 'Uma notificação fica visível enquanto o turno está ativo — ela mantém o GPS rodando no segundo plano. Some automaticamente quando você encerra.'
+                : 'Durante o turno o Visionário mostra uma notificação com o botão “Registrar corrida”. Você lança a corrida ali mesmo, sem sair do Uber, 99, iFood ou Keeta — e continua trabalhando sem trocar de aplicativo.'}
               ok={!!d?.notificationsGranted}
               okLabel="Notificações autorizadas"
               pendingLabel="Aguardando autorização"
@@ -273,6 +277,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
               onSkip={skip}
             />
           )}
+
 
           {step === 'battery' && (
             <Step
