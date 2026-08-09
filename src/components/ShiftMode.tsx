@@ -36,6 +36,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 import {
   subscribePermissionDiagnostic,
   refreshPermissionDiagnostic,
@@ -104,7 +106,9 @@ function AlertBanner({
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
+  const { gps: gpsEnabled } = useCapabilities();
   const [shift, setShift] = useState<Shift | null>(() => shiftService.getActive());
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('vehicle');
   const [pickedDate, setPickedDate] = useState<string>(shiftService.todayOperationalDate());
@@ -137,7 +141,11 @@ export default function ShiftMode({ onChange }: Props) {
     void refreshPermissionDiagnostic();
     return unsub;
   }, []);
-  const trackingMode: 'automatic' | 'manual' = permDiag?.trackingMode ?? 'automatic';
+  // Sprint 10.6 — START é 100% manual: nenhuma UI, permissão ou watcher de GPS.
+  const trackingMode: 'automatic' | 'manual' = gpsEnabled
+    ? (permDiag?.trackingMode ?? 'automatic')
+    : 'manual';
+
   const lastBgVerifiedRef = useRef<boolean>(isBgAlwaysVerified());
 
   // Verificação REAL de "Permitir o tempo todo" — fonte primária é nativa Android.
@@ -273,8 +281,11 @@ export default function ShiftMode({ onChange }: Props) {
    * 3) trata permissão negada com mensagens iOS/Android específicas
    */
   const requestGpsPermission = async (turnoId?: string) => {
+    // START nunca solicita localização (Sprint 10.6 · GATE 2).
+    if (!gpsEnabled) return;
     const id = turnoId ?? shift?.turno_id ?? null;
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
+
       if (id) shiftService.setGpsStatus(id, 'unavailable');
       toast('GPS indisponível neste dispositivo — modo manual ativo');
       refresh();
@@ -779,11 +790,12 @@ export default function ShiftMode({ onChange }: Props) {
   // Tempo desde a última posição GPS (para UX honesta + banner de background longo)
   const gapMs = lastFixAt ? Date.now() - lastFixAt : null;
   const gapSec = gapMs != null ? Math.floor(gapMs / 1000) : null;
-  const longBackgroundGap = gps === 'background' || (gapSec != null && gapSec > 60);
-  const needsBackgroundPermission = isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable';
-  const needsNotificationPermission = isNativePlatform && hasBackgroundGpsConsent()
+  const longBackgroundGap = gpsEnabled && (gps === 'background' || (gapSec != null && gapSec > 60));
+  const needsBackgroundPermission = gpsEnabled && isNativePlatform && hasBackgroundGpsConsent() && !bgVerified && gps !== 'denied' && gps !== 'unavailable';
+  const needsNotificationPermission = isNativePlatform
     && !!bgPermissionStatus?.notificationPermissionRequired
     && !bgPermissionStatus.notificationPermissionGranted;
+
   const fmtGap = (s: number) => s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s/60)}min` : `${Math.floor(s/3600)}h${String(Math.floor((s%3600)/60)).padStart(2,'0')}`;
 
   // === MODO FOCO ===
@@ -880,14 +892,17 @@ export default function ShiftMode({ onChange }: Props) {
               <span className="text-micro text-muted-foreground font-display font-mono-num">
                 {fmtHora(shift.inicio_turno)} · {tempoLive}
               </span>
-              <span className={`text-micro px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
-                {gpsBadge.icon} {gpsBadge.label}
-              </span>
-              {gapSec != null && (gps === 'tracking' || gps === 'background') && (
+              {gpsEnabled && (
+                <span className={`text-micro px-1.5 py-0.5 rounded-md font-display font-semibold inline-flex items-center gap-1 border ${gpsBadge.cls}`}>
+                  {gpsBadge.icon} {gpsBadge.label}
+                </span>
+              )}
+              {gpsEnabled && gapSec != null && (gps === 'tracking' || gps === 'background') && (
                 <span className="text-micro text-muted-foreground font-display font-mono-num">
                   · {fmtGap(gapSec)}
                 </span>
               )}
+
             </div>
 
             {/* Lucro hero */}
@@ -966,7 +981,7 @@ export default function ShiftMode({ onChange }: Props) {
           />
         )}
 
-        {(gps === 'denied' || gps === 'unavailable') && (
+        {gpsEnabled && (gps === 'denied' || gps === 'unavailable') && (
           <AlertBanner
             tone="warning"
             icon={<MapPinOff size={14} />}
@@ -1225,12 +1240,15 @@ export default function ShiftMode({ onChange }: Props) {
               className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
             />
             <p className="text-micro text-muted-foreground">
-              {kmDesde > 0
-                ? 'Deixe vazio para usar o km automático do GPS'
-                : (gps === 'denied' || gps === 'unavailable')
-                  ? 'Modo manual — informe o km da corrida'
-                  : 'GPS ainda não registrou movimento — você pode informar manualmente'}
+              {!gpsEnabled
+                ? 'Informe o km da corrida'
+                : kmDesde > 0
+                  ? 'Deixe vazio para usar o km automático do GPS'
+                  : (gps === 'denied' || gps === 'unavailable')
+                    ? 'Modo manual — informe o km da corrida'
+                    : 'GPS ainda não registrou movimento — você pode informar manualmente'}
             </p>
+
           </div>
 
           {/* Preview ao vivo */}

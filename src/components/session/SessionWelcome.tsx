@@ -8,6 +8,8 @@ import BrandMark from '@/components/brand/BrandMark';
 import { haptics } from '@/lib/haptics';
 import { vehicleService } from '@/lib/services/vehicleService';
 import { getBackgroundPermissionStatus } from '@/lib/bgPermission';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 import SessionLayout from './SessionLayout';
 import { formatDuracao } from './SessionHero';
 
@@ -50,11 +52,14 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 }
 
 export default function SessionWelcome({ metaDaily, lucroPorHora = 0, onStart, onCancel }: Props) {
+  const { gps: gpsEnabled } = useCapabilities();
   const [veiculo] = useState(() => vehicleService.getActive());
   const [gpsOk, setGpsOk] = useState(false);
   const [bgOk, setBgOk] = useState(false);
 
   useEffect(() => {
+    // START não consulta localização (ADR-015 · Sprint 10.6).
+    if (!gpsEnabled) return;
     let alive = true;
     getBackgroundPermissionStatus()
       .then(s => {
@@ -64,7 +69,8 @@ export default function SessionWelcome({ metaDaily, lucroPorHora = 0, onStart, o
       })
       .catch(() => { /* noop */ });
     return () => { alive = false; };
-  }, []);
+  }, [gpsEnabled]);
+
 
   const previstoMin = metaDaily > 0 && lucroPorHora > 0
     ? Math.round((metaDaily / lucroPorHora) * 60)
@@ -110,10 +116,11 @@ export default function SessionWelcome({ metaDaily, lucroPorHora = 0, onStart, o
           <p className="text-micro uppercase tracking-[0.18em] text-muted-foreground font-display font-semibold inline-flex items-center gap-1.5">
             <Target size={11} className="text-primary" /> Checklist
           </p>
-          <ChecklistItem ok={gpsOk} label="GPS ativo" />
-          <ChecklistItem ok={bgOk} label="Localização em segundo plano" />
+          {gpsEnabled && <ChecklistItem ok={gpsOk} label="GPS ativo" />}
+          {gpsEnabled && <ChecklistItem ok={bgOk} label="Localização em segundo plano" />}
           <ChecklistItem ok={!!veiculo} label="Veículo selecionado" />
           <ChecklistItem ok={metaDaily > 0} label="Meta carregada" />
+
         </div>
 
         <div className="space-y-1">

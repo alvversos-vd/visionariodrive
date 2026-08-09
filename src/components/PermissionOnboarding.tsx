@@ -33,6 +33,8 @@ import {
   openNotificationSettings,
 } from '@/lib/bgPermission';
 import { pushBlockingModal } from '@/lib/uiModalState';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 
 interface Props {
   onDone: (mode: 'automatic' | 'manual') => void;
@@ -53,6 +55,9 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const [step, setStep] = useState<StepId>('intro');
   const [d, setD] = useState<PermissionDiagnostic | null>(null);
   const [busy, setBusy] = useState(false);
+  // Sprint 10.6 — GPS é capacidade exclusiva do PRO. No START o assistente
+  // NUNCA apresenta passos de localização nem solicita essa permissão.
+  const { gps: gpsEnabled } = useCapabilities();
 
   useEffect(() => {
     const release = pushBlockingModal();
@@ -77,12 +82,20 @@ export default function PermissionOnboarding({ onDone }: Props) {
   const skip = () => finish('manual');
 
   const stepOrder: StepId[] = useMemo(() => {
+    if (!gpsEnabled) {
+      // START — apenas notificação (quando o sistema exigir) e conclusão.
+      const list: StepId[] = ['intro'];
+      if (!isWeb && d?.notificationsRequired) list.push('notifications');
+      list.push('summary');
+      return list;
+    }
     if (isWeb) return ['intro', 'location', 'summary'];
     const list: StepId[] = ['intro', 'location', 'background'];
     if (d?.notificationsRequired) list.push('notifications');
     list.push('battery', 'summary');
     return list;
-  }, [isWeb, d?.notificationsRequired]);
+  }, [gpsEnabled, isWeb, d?.notificationsRequired]);
+
 
   const currentIndex = stepOrder.indexOf(step);
   const goNext = () => setStep(stepOrder[Math.min(stepOrder.length - 1, currentIndex + 1)]);
@@ -152,7 +165,10 @@ export default function PermissionOnboarding({ onDone }: Props) {
     } finally { setBusy(false); }
   };
 
-  const meta = STEP_META[step];
+  const meta = !gpsEnabled && step === 'notifications'
+    ? { eyebrow: 'Permissão necessária', title: 'Notificações' }
+    : STEP_META[step];
+
 
   return (
     <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -199,7 +215,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
         {/* Body */}
         <div className="px-5 pt-6 pb-2">
           {step === 'intro' && (
-            <Intro onStart={goNext} onSkip={skip} />
+            <Intro onStart={goNext} onSkip={skip} gpsEnabled={gpsEnabled} />
           )}
 
           {step === 'location' && (
@@ -248,9 +264,13 @@ export default function PermissionOnboarding({ onDone }: Props) {
           {step === 'notifications' && (
             <Step
               icon={<Bell size={28} className="text-primary" />}
-              eyebrow="Mantém o turno vivo"
-              title="Notificação persistente do turno"
-              body="Uma notificação fica visível enquanto o turno está ativo — ela mantém o GPS rodando no segundo plano. Some automaticamente quando você encerra."
+              eyebrow={gpsEnabled ? 'Mantém o turno vivo' : 'Registro mais rápido'}
+              title={gpsEnabled
+                ? 'Notificação persistente do turno'
+                : 'Notificações para registrar corridas mais rápido'}
+              body={gpsEnabled
+                ? 'Uma notificação fica visível enquanto o turno está ativo — ela mantém o GPS rodando no segundo plano. Some automaticamente quando você encerra.'
+                : 'Durante o turno o Visionário mostra uma notificação com o botão “Registrar corrida”. Você lança a corrida ali mesmo, sem sair do Uber, 99, iFood ou Keeta — e continua trabalhando sem trocar de aplicativo.'}
               ok={!!d?.notificationsGranted}
               okLabel="Notificações autorizadas"
               pendingLabel="Aguardando autorização"
@@ -260,6 +280,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
               onSkip={skip}
             />
           )}
+
 
           {step === 'battery' && (
             <Step
@@ -279,7 +300,13 @@ export default function PermissionOnboarding({ onDone }: Props) {
           )}
 
           {step === 'summary' && d && (
-            <Summary diagnostic={d} onFinish={() => finish(d.trackingMode)} onRetry={() => setStep('location')} />
+            <Summary
+              diagnostic={d}
+              gpsEnabled={gpsEnabled}
+              onFinish={() => finish(d.trackingMode)}
+              onRetry={() => setStep(gpsEnabled ? 'location' : 'intro')}
+            />
+
           )}
         </div>
 
@@ -294,7 +321,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
    Sub-components
    ============================================================ */
 
-function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+function Intro({ onStart, onSkip, gpsEnabled }: { onStart: () => void; onSkip: () => void; gpsEnabled: boolean }) {
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -305,9 +332,15 @@ function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void })
             <Sparkles size={28} className="text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div className="space-y-1.5">
-            <h3 className="font-display font-bold text-xl tracking-tight">Sua gestão financeira no controle</h3>
+            <h3 className="font-display font-bold text-xl tracking-tight">
+              {gpsEnabled ? 'Sua gestão financeira no controle' : 'Registre sua corrida em segundos'}
+            </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. O GPS é opcional — serve apenas para automatizar km, tempo e rota.
+              {gpsEnabled ? (
+                <>O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. O GPS é opcional — serve apenas para automatizar km, tempo e rota.</>
+              ) : (
+                <>O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. Com a notificação ativa você registra a corrida sem sair do app em que está trabalhando.</>
+              )}
             </p>
           </div>
         </div>
@@ -317,19 +350,24 @@ function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void })
       <div className="space-y-2">
         <p className="text-label">O que vamos configurar</p>
         <div className="space-y-2">
-          <BulletRow icon={<MapPin size={14} />} title="Localização" desc="Cálculo automático de km" />
-          <BulletRow icon={<Navigation size={14} />} title="Segundo plano" desc="GPS continua com tela bloqueada" />
-          <BulletRow icon={<Bell size={14} />} title="Notificação" desc="Indica que o turno está ativo" />
+          {gpsEnabled && <BulletRow icon={<MapPin size={14} />} title="Localização" desc="Cálculo automático de km" />}
+          {gpsEnabled && <BulletRow icon={<Navigation size={14} />} title="Segundo plano" desc="GPS continua com tela bloqueada" />}
+          <BulletRow
+            icon={<Bell size={14} />}
+            title="Notificação"
+            desc={gpsEnabled ? 'Indica que o turno está ativo' : 'Botão “Registrar corrida” sempre à mão'}
+          />
         </div>
       </div>
 
       <div className="space-y-2">
-        <PrimaryButton onClick={onStart}>Começar configuração</PrimaryButton>
-        <GhostButton onClick={onSkip}>Pular — usar em modo manual</GhostButton>
+        <PrimaryButton onClick={onStart}>{gpsEnabled ? 'Começar configuração' : 'Continuar'}</PrimaryButton>
+        <GhostButton onClick={onSkip}>{gpsEnabled ? 'Pular — usar em modo manual' : 'Agora não'}</GhostButton>
       </div>
     </div>
   );
 }
+
 
 function Step({
   icon, eyebrow, title, body, ok, okLabel, pendingLabel,
@@ -389,9 +427,11 @@ function Step({
 }
 
 function Summary({
-  diagnostic, onFinish, onRetry,
-}: { diagnostic: PermissionDiagnostic; onFinish: () => void; onRetry: () => void }) {
-  const isAuto = diagnostic.trackingMode === 'automatic';
+  diagnostic, onFinish, onRetry, gpsEnabled,
+}: { diagnostic: PermissionDiagnostic; onFinish: () => void; onRetry: () => void; gpsEnabled: boolean }) {
+  // START não tem automação de GPS: "manual" é o estado normal e completo,
+  // nunca uma pendência.
+  const isAuto = gpsEnabled ? diagnostic.trackingMode === 'automatic' : true;
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-hero p-6 text-center">
@@ -404,16 +444,19 @@ function Summary({
           </div>
           <div className="space-y-1.5">
             <h3 className="font-display font-bold text-xl tracking-tight">
-              {isAuto ? 'Automação ativa' : 'Modo manual ativo'}
+              {!gpsEnabled ? 'Tudo pronto' : isAuto ? 'Automação ativa' : 'Modo manual ativo'}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {isAuto
-                ? 'Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.'
-                : 'O app funciona normalmente em modo manual — basta tocar no + para lançar uma corrida em segundos.'}
+              {!gpsEnabled
+                ? 'Comece um turno e registre suas corridas pela notificação ou pelo botão +, em segundos.'
+                : isAuto
+                  ? 'Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.'
+                  : 'O app funciona normalmente em modo manual — basta tocar no + para lançar uma corrida em segundos.'}
             </p>
           </div>
         </div>
       </div>
+
 
       {!isAuto && diagnostic.reasons.length > 0 && (
         <div className="space-y-2">

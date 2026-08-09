@@ -4,6 +4,8 @@ import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { gpsService, GpsFix } from '@/lib/gpsService';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 import { rideDetectionService } from '@/lib/services/rideDetectionService';
+import { hasCapability } from '@/lib/product/capabilities';
+
 
 
 export type GpsState =
@@ -173,12 +175,21 @@ export function useShiftTracker(shift: Shift | null, opts?: { onTick?: () => voi
       setGps('idle');
       return;
     }
+    // Sprint 10.6 — GPS é capacidade exclusiva do PRO. No START o watcher
+    // NUNCA é criado: `gpsService` não é instanciado, nenhuma permissão de
+    // localização é solicitada e nenhum provider de background é carregado.
+    if (!hasCapability('gps')) {
+      setGps('idle');
+      lastPoint.current = null;
+      return;
+    }
     // Modo manual — não inicia watcher GPS (zero drenagem de bateria).
     if (opts?.mode === 'manual') {
       setGps('idle');
       lastPoint.current = null;
       return;
     }
+
     if (shift.status === 'pausado') {
       setGps('paused');
       lastPoint.current = null;
