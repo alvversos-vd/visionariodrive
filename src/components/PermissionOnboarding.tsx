@@ -427,9 +427,11 @@ function Step({
 }
 
 function Summary({
-  diagnostic, onFinish, onRetry,
-}: { diagnostic: PermissionDiagnostic; onFinish: () => void; onRetry: () => void }) {
-  const isAuto = diagnostic.trackingMode === 'automatic';
+  diagnostic, onFinish, onRetry, gpsEnabled,
+}: { diagnostic: PermissionDiagnostic; onFinish: () => void; onRetry: () => void; gpsEnabled: boolean }) {
+  // START não tem automação de GPS: "manual" é o estado normal e completo,
+  // nunca uma pendência.
+  const isAuto = gpsEnabled ? diagnostic.trackingMode === 'automatic' : true;
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-hero p-6 text-center">
@@ -442,16 +444,19 @@ function Summary({
           </div>
           <div className="space-y-1.5">
             <h3 className="font-display font-bold text-xl tracking-tight">
-              {isAuto ? 'Automação ativa' : 'Modo manual ativo'}
+              {!gpsEnabled ? 'Tudo pronto' : isAuto ? 'Automação ativa' : 'Modo manual ativo'}
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              {isAuto
-                ? 'Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.'
-                : 'O app funciona normalmente em modo manual — basta tocar no + para lançar uma corrida em segundos.'}
+              {!gpsEnabled
+                ? 'Comece um turno e registre suas corridas pela notificação ou pelo botão +, em segundos.'
+                : isAuto
+                  ? 'Tudo pronto. Km, tempo e rota serão registrados automaticamente durante o turno.'
+                  : 'O app funciona normalmente em modo manual — basta tocar no + para lançar uma corrida em segundos.'}
             </p>
           </div>
         </div>
       </div>
+
 
       {!isAuto && diagnostic.reasons.length > 0 && (
         <div className="space-y-2">
