@@ -165,7 +165,10 @@ export default function PermissionOnboarding({ onDone }: Props) {
     } finally { setBusy(false); }
   };
 
-  const meta = STEP_META[step];
+  const meta = !gpsEnabled && step === 'notifications'
+    ? { eyebrow: 'Permissão necessária', title: 'Notificações' }
+    : STEP_META[step];
+
 
   return (
     <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -212,7 +215,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
         {/* Body */}
         <div className="px-5 pt-6 pb-2">
           {step === 'intro' && (
-            <Intro onStart={goNext} onSkip={skip} />
+            <Intro onStart={goNext} onSkip={skip} gpsEnabled={gpsEnabled} />
           )}
 
           {step === 'location' && (
@@ -297,7 +300,13 @@ export default function PermissionOnboarding({ onDone }: Props) {
           )}
 
           {step === 'summary' && d && (
-            <Summary diagnostic={d} onFinish={() => finish(d.trackingMode)} onRetry={() => setStep('location')} />
+            <Summary
+              diagnostic={d}
+              gpsEnabled={gpsEnabled}
+              onFinish={() => finish(d.trackingMode)}
+              onRetry={() => setStep(gpsEnabled ? 'location' : 'intro')}
+            />
+
           )}
         </div>
 
