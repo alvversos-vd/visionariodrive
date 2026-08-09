@@ -7,6 +7,8 @@ import { verdictToResultado } from '@/lib/adapters/rideAdapters';
 import { getVehicleById } from '@/lib/vehicles';
 import { useActiveShift } from '@/hooks/useShift';
 import { useBusVersion } from '@/hooks/useBusVersion';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 
 interface Props { onChange?: () => void }
 
@@ -29,7 +31,9 @@ export default function RegisterRideFab({ onChange }: Props) {
   // Substitui o polling anterior (setInterval 3s + 1s → shiftService.getActive()).
   // Elimina timer sempre-ativo e renders periódicos desnecessários.
   const shift = useActiveShift();
+  const { gps: gpsEnabled } = useCapabilities();
   const [open, setOpen] = useState(false);
+
   const [valor, setValor] = useState('');
   const [km, setKm] = useState('');
   const [obs, setObs] = useState('');

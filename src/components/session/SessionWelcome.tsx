@@ -8,6 +8,8 @@ import BrandMark from '@/components/brand/BrandMark';
 import { haptics } from '@/lib/haptics';
 import { vehicleService } from '@/lib/services/vehicleService';
 import { getBackgroundPermissionStatus } from '@/lib/bgPermission';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 import SessionLayout from './SessionLayout';
 import { formatDuracao } from './SessionHero';
 
@@ -119,8 +121,6 @@ export default function SessionWelcome({ metaDaily, lucroPorHora = 0, onStart, o
           <ChecklistItem ok={!!veiculo} label="Veículo selecionado" />
           <ChecklistItem ok={metaDaily > 0} label="Meta carregada" />
 
-          <ChecklistItem ok={!!veiculo} label="Veículo selecionado" />
-          <ChecklistItem ok={metaDaily > 0} label="Meta carregada" />
         </div>
 
         <div className="space-y-1">
