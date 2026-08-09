@@ -16,6 +16,8 @@
  */
 
 import { getBackgroundPermissionStatus, getVisionarioPermissionsPlugin, type BackgroundPermissionStatus } from './bgPermission';
+import { hasCapability } from './product/capabilities';
+
 
 export type TrackingMode = 'automatic' | 'manual';
 
@@ -72,6 +74,9 @@ export function resetOnboarding(): void {
 }
 
 function computeMode(d: Omit<PermissionDiagnostic, 'trackingMode' | 'reasons' | 'checkedAt' | 'forcedManual'>): { mode: TrackingMode; reasons: string[] } {
+  // Sprint 10.6 — sem capacidade de GPS (START) o produto é 100% manual por
+  // definição. Não é "pendência": não há razões a exibir nem permissão a pedir.
+  if (!hasCapability('gps')) return { mode: 'manual', reasons: [] };
   const reasons: string[] = [];
   if (!d.locationGranted) reasons.push('Localização não autorizada');
   if (!d.backgroundLocationGranted) reasons.push('Localização em segundo plano ausente');
@@ -80,6 +85,7 @@ function computeMode(d: Omit<PermissionDiagnostic, 'trackingMode' | 'reasons' | 
   if (!d.gpsReady) reasons.push('GPS indisponível neste dispositivo');
   return { mode: reasons.length === 0 ? 'automatic' : 'manual', reasons };
 }
+
 
 let lastDiagnostic: PermissionDiagnostic | null = null;
 const subscribers = new Set<(d: PermissionDiagnostic) => void>();
