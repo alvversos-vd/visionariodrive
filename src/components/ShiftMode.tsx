@@ -36,6 +36,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 import {
   subscribePermissionDiagnostic,
   refreshPermissionDiagnostic,
@@ -104,7 +106,9 @@ function AlertBanner({
 interface Props { onChange?: () => void }
 
 export default function ShiftMode({ onChange }: Props) {
+  const { gps: gpsEnabled } = useCapabilities();
   const [shift, setShift] = useState<Shift | null>(() => shiftService.getActive());
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [step, setStep] = useState<'date' | 'vehicle' | 'app'>('vehicle');
   const [pickedDate, setPickedDate] = useState<string>(shiftService.todayOperationalDate());
