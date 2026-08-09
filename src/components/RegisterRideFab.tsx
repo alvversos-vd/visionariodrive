@@ -62,10 +62,12 @@ export default function RegisterRideFab({ onChange }: Props) {
   if (!shift || shift.status !== 'ativo') return null;
 
   const kmAuto = shift.km_desde_ultima_corrida || 0;
-  const gpsOk = shift.gps_status === 'ok';
+  // START é 100% manual (Sprint 10.6): nenhum modo inteligente, nenhum texto de GPS.
+  const gpsOk = gpsEnabled && shift.gps_status === 'ok';
   // "Modo inteligente" = GPS válido + houve movimento rastreado desde a última corrida
   const smartAvailable = gpsOk && kmAuto > 0;
   const smartMode = smartAvailable && !forceManual;
+
 
   const v = parseFloat(valor.replace(',', '.'));
   const kManual = km ? parseFloat(km.replace(',', '.')) : NaN;
@@ -207,11 +209,12 @@ export default function RegisterRideFab({ onChange }: Props) {
                   placeholder={kmAuto > 0 ? `Sugestão: ${kmAuto.toFixed(1)} km` : 'Informe a distância'}
                   className="w-full px-3 py-2 text-sm rounded-lg border bg-background number-tabular"
                 />
-                {!gpsOk && (
+                {gpsEnabled && !gpsOk && (
                   <p className="text-micro text-muted-foreground">
                     GPS indisponível — informe o km manualmente.
                   </p>
                 )}
+
               </div>
             )}
 
