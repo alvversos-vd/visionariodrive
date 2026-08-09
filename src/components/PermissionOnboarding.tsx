@@ -33,6 +33,8 @@ import {
   openNotificationSettings,
 } from '@/lib/bgPermission';
 import { pushBlockingModal } from '@/lib/uiModalState';
+import { useCapabilities } from '@/hooks/useCapabilities';
+
 
 interface Props {
   onDone: (mode: 'automatic' | 'manual') => void;
