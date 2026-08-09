@@ -321,7 +321,7 @@ export default function PermissionOnboarding({ onDone }: Props) {
    Sub-components
    ============================================================ */
 
-function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+function Intro({ onStart, onSkip, gpsEnabled }: { onStart: () => void; onSkip: () => void; gpsEnabled: boolean }) {
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -332,9 +332,15 @@ function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void })
             <Sparkles size={28} className="text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div className="space-y-1.5">
-            <h3 className="font-display font-bold text-xl tracking-tight">Sua gestão financeira no controle</h3>
+            <h3 className="font-display font-bold text-xl tracking-tight">
+              {gpsEnabled ? 'Sua gestão financeira no controle' : 'Registre sua corrida em segundos'}
+            </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. O GPS é opcional — serve apenas para automatizar km, tempo e rota.
+              {gpsEnabled ? (
+                <>O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. O GPS é opcional — serve apenas para automatizar km, tempo e rota.</>
+              ) : (
+                <>O Visionário é uma <strong className="text-foreground">plataforma financeira</strong> para motoristas. Com a notificação ativa você registra a corrida sem sair do app em que está trabalhando.</>
+              )}
             </p>
           </div>
         </div>
@@ -344,19 +350,24 @@ function Intro({ onStart, onSkip }: { onStart: () => void; onSkip: () => void })
       <div className="space-y-2">
         <p className="text-label">O que vamos configurar</p>
         <div className="space-y-2">
-          <BulletRow icon={<MapPin size={14} />} title="Localização" desc="Cálculo automático de km" />
-          <BulletRow icon={<Navigation size={14} />} title="Segundo plano" desc="GPS continua com tela bloqueada" />
-          <BulletRow icon={<Bell size={14} />} title="Notificação" desc="Indica que o turno está ativo" />
+          {gpsEnabled && <BulletRow icon={<MapPin size={14} />} title="Localização" desc="Cálculo automático de km" />}
+          {gpsEnabled && <BulletRow icon={<Navigation size={14} />} title="Segundo plano" desc="GPS continua com tela bloqueada" />}
+          <BulletRow
+            icon={<Bell size={14} />}
+            title="Notificação"
+            desc={gpsEnabled ? 'Indica que o turno está ativo' : 'Botão “Registrar corrida” sempre à mão'}
+          />
         </div>
       </div>
 
       <div className="space-y-2">
-        <PrimaryButton onClick={onStart}>Começar configuração</PrimaryButton>
-        <GhostButton onClick={onSkip}>Pular — usar em modo manual</GhostButton>
+        <PrimaryButton onClick={onStart}>{gpsEnabled ? 'Começar configuração' : 'Continuar'}</PrimaryButton>
+        <GhostButton onClick={onSkip}>{gpsEnabled ? 'Pular — usar em modo manual' : 'Agora não'}</GhostButton>
       </div>
     </div>
   );
 }
+
 
 function Step({
   icon, eyebrow, title, body, ok, okLabel, pendingLabel,
