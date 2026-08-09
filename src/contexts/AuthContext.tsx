@@ -60,7 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
     prevPlanRef.current = next?.usuario_plano ?? null;
+    // Sprint 10.6 — plano é a ÚNICA origem das capacidades do produto.
+    // Fail-closed: sem perfil, vale START (sem GPS, sem permissão de local).
+    setProductPlan(next?.usuario_plano === 'PRO' ? 'PRO' : 'START');
     setProfile(next);
+
   };
 
   const loadProfile = async (uid: string) => {
