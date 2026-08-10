@@ -110,7 +110,7 @@ public class QuickRideActivity extends Activity {
         String kmSource = (kmPrefilled && !kmEditedByUser) ? "prefilled" : "user";
         String clientRequestId = "quickform:" + UUID.randomUUID();
 
-        VisionarioQuickActionsPlugin.dispatchQuickForm(
+        String status = VisionarioQuickActionsPlugin.dispatchQuickForm(
                 getApplicationContext(),
                 value,
                 km,
@@ -119,7 +119,18 @@ public class QuickRideActivity extends Activity {
                 notes.isEmpty() ? null : notes
         );
 
-        Toast.makeText(getApplicationContext(), "Corrida registrada", Toast.LENGTH_SHORT).show();
+        // Sprint 10.6.1 — feedback honesto. "delivered" não é confirmado aqui:
+        // quem confirma é o pipeline TS (toast nativo do NotificationActionService).
+        if ("failed".equals(status)) {
+            submitted = false;
+            Toast.makeText(getApplicationContext(),
+                    "Não foi possível registrar. Tente novamente.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if ("queued".equals(status)) {
+            Toast.makeText(getApplicationContext(),
+                    "✓ Registro salvo — sincronizando", Toast.LENGTH_SHORT).show();
+        }
         finish();
         overridePendingTransition(0, 0);
     }
