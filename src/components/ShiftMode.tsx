@@ -37,6 +37,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 import { useCapabilities } from '@/hooks/useCapabilities';
+import { NotificationPermissionCard } from './NotificationPermissionCard';
+import { eventBus } from '@/lib/eventBus';
 
 import {
   subscribePermissionDiagnostic,
