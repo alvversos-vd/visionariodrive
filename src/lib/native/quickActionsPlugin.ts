@@ -68,6 +68,11 @@ export interface QuickActionsPlugin {
   hideUndo(): Promise<void>;
   /** Toast nativo curto — feedback sem abrir o app. */
   showToast(options: { message: string }): Promise<void>;
+  /**
+   * Confirma ao nativo que a intenção do Quick Form virou corrida no pipeline
+   * oficial (ou foi reconhecida como duplicata). Só então sai da fila durável.
+   */
+  ackQuickForm(options: { clientRequestId: string }): Promise<void>;
   addListener(
     eventName: 'action',
     listener: (event: QuickActionEvent) => void,
