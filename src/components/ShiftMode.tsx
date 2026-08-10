@@ -37,6 +37,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { gpsTelemetry } from '@/lib/gpsTelemetry';
 import { useCapabilities } from '@/hooks/useCapabilities';
+import { NotificationPermissionCard } from './NotificationPermissionCard';
+import { eventBus } from '@/lib/eventBus';
 
 import {
   subscribePermissionDiagnostic,
@@ -136,6 +138,7 @@ export default function ShiftMode({ onChange }: Props) {
   const [trackerRestartSignal, setTrackerRestartSignal] = useState(0);
   const [bgPermissionStatus, setBgPermissionStatus] = useState<BackgroundPermissionStatus | null>(null);
   const [permDiag, setPermDiag] = useState<PermissionDiagnostic | null>(null);
+  const [notifPromptOpen, setNotifPromptOpen] = useState(false);
   useEffect(() => {
     const unsub = subscribePermissionDiagnostic(setPermDiag);
     void refreshPermissionDiagnostic();
@@ -404,6 +407,16 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
+    // Sprint 10.6.1 — permissão de notificação no momento de necessidade.
+    // Nunca bloqueia o turno e nunca envolve localização (ADR-015).
+    void (async () => {
+      if (!isNativePlatform) return;
+      const status = await getBackgroundPermissionStatus();
+      setBgPermissionStatus(status);
+      if (status.notificationPermissionRequired && !status.notificationPermissionGranted) {
+        setNotifPromptOpen(true);
+      }
+    })();
     requestGpsPermission(s.turno_id);
   };
 
@@ -968,7 +981,7 @@ export default function ShiftMode({ onChange }: Props) {
             tone="info"
             icon={<Bell size={14} />}
             title="Notificação do turno pendente"
-            body="Ela mantém o GPS ativo durante o turno e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano."
+            body="Ela permite registrar corridas sem sair do Uber, 99 ou iFood. Aparece só durante o turno e some ao finalizar."
             cta="Permitir"
             onClick={async () => {
               const status = await requestNotificationPermissionIfNeeded();
@@ -1091,6 +1104,24 @@ export default function ShiftMode({ onChange }: Props) {
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
+
+      <NotificationPermissionCard
+        open={notifPromptOpen}
+        onDismiss={() => setNotifPromptOpen(false)}
+        onAllow={async () => {
+          setNotifPromptOpen(false);
+          const status = await requestNotificationPermissionIfNeeded();
+          setBgPermissionStatus(status);
+          if (status.notificationPermissionGranted) {
+            // Turno já ativo: republica a notificação persistente agora.
+            eventBus.emit('shift:started');
+          } else {
+            const ok = await openNotificationSettings();
+            if (!ok) toast('Você pode permitir depois em Ajustes → Apps → Visionário Drive → Notificações');
+          }
+        }}
+      />
+
       <GpsConsentDialog
         open={consentOpen}
         onAccept={() => {

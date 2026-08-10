@@ -63,7 +63,18 @@ public class VisionarioQuickActionsPlugin extends Plugin {
      * NotificationActionService interpreta (`kmSource` → `kmOrigin`) e o
      * RideService persiste. Nenhuma regra de negócio aqui.
      */
-    static void dispatchQuickForm(
+    /**
+     * Sprint 10.6.1 — retorna o estado REAL da entrega:
+     *   "delivered" → o pipeline TS recebeu a intenção agora (Bridge vivo).
+     *   "queued"    → intenção gravada na fila durável; será entregue assim
+     *                 que o Bridge carregar. NUNCA é sucesso de registro.
+     *   "failed"    → não foi possível nem enfileirar.
+     *
+     * A intenção é SEMPRE persistida antes do dispatch e só é removida
+     * quando o pipeline oficial confirma via {@link #ackQuickForm}. A fila
+     * é transporte/recovery — nunca uma segunda fonte de verdade.
+     */
+    static String dispatchQuickForm(
             Context appContext,
             double value,
             double km,
@@ -83,24 +94,61 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         payload.put("type", "register");
         payload.put("form", form);
 
+        boolean persisted = persistPending(appContext, payload);
+
         VisionarioQuickActionsPlugin p = INSTANCE.get();
-        if (p == null) {
-            // Bridge ainda não carregado: persiste a INTENÇÃO em disco para que
-            // nenhuma corrida se perca se o processo morrer antes do flush.
-            persistPending(appContext, payload);
-            return;
+        if (p == null) return persisted ? "queued" : "failed";
+        try {
+            p.notifyListeners("action", payload);
+            return "delivered";
+        } catch (Throwable t) {
+            return persisted ? "queued" : "failed";
         }
-        p.notifyListeners("action", payload);
     }
 
-    private static void persistPending(Context ctx, JSObject payload) {
-        if (ctx == null) return;
+    private static boolean persistPending(Context ctx, JSObject payload) {
+        if (ctx == null) return false;
         try {
             SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             JSONArray arr = new JSONArray(prefs.getString(KEY_QUEUE, "[]"));
             arr.put(new JSONObject(payload.toString()));
-            prefs.edit().putString(KEY_QUEUE, arr.toString()).apply();
+            // commit() (síncrono): a intenção precisa estar em disco ANTES de
+            // qualquer feedback ao motorista.
+            return prefs.edit().putString(KEY_QUEUE, arr.toString()).commit();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Remove a intenção da fila durável pelo clientRequestId. */
+    private static void removePending(Context ctx, String clientRequestId) {
+        if (ctx == null || clientRequestId == null) return;
+        try {
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            JSONArray arr = new JSONArray(prefs.getString(KEY_QUEUE, "[]"));
+            JSONArray next = new JSONArray();
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.optJSONObject(i);
+                if (o == null) continue;
+                JSONObject form = o.optJSONObject("form");
+                String id = form != null ? form.optString("clientRequestId", "") : "";
+                if (clientRequestId.equals(id)) continue;
+                next.put(o);
+            }
+            prefs.edit().putString(KEY_QUEUE, next.toString()).commit();
         } catch (Throwable ignored) { }
+    }
+
+    /**
+     * Confirmação do pipeline oficial: a intenção virou corrida (ou foi
+     * reconhecida como duplicata idempotente). Só então sai da fila.
+     */
+    @PluginMethod
+    public void ackQuickForm(PluginCall call) {
+        removePending(getContext(), call.getString("clientRequestId"));
+        JSObject r = new JSObject();
+        r.put("acked", true);
+        call.resolve(r);
     }
 
     private void flushPersisted() {
@@ -110,7 +158,8 @@ public class VisionarioQuickActionsPlugin extends Plugin {
             SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             String raw = prefs.getString(KEY_QUEUE, "[]");
             if ("[]".equals(raw)) return;
-            prefs.edit().remove(KEY_QUEUE).apply();
+            // NÃO remove aqui: a intenção só sai da fila via ackQuickForm,
+            // depois que o pipeline oficial confirmou a persistência.
             JSONArray arr = new JSONArray(raw);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);

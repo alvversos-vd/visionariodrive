@@ -71,10 +71,12 @@
              `location` exigia permissão de localização concedida para
              startForeground(), causando SecurityException e morte do
              processo antes do Bridge. -->
+        <!-- Sprint 10.6.1: sem `stopWithTask`. O ciclo de vida da notificação
+             segue o TURNO, não a MainActivity. O motorista pode remover o app
+             dos recentes e continuar com a notificação do turno ativa. -->
         <service
             android:name=".QuickActionsForegroundService"
             android:exported="false"
-            android:stopWithTask="true"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"

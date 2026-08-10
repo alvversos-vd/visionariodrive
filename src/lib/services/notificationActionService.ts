@@ -293,14 +293,17 @@ class NotificationActionServiceImpl {
    * → outbox → cloudSync → eventBus. Nenhum caminho paralelo.
    */
   private async handleQuickFormRegister(form: QuickRideFormPayload): Promise<void> {
+    const requestId = form.clientRequestId;
     const active = shiftService.getActive();
     if (!active) {
+      await this.ack(requestId);
       await this.toast('Nenhum turno ativo');
       return;
     }
     const value = Number(form.value);
     const km = Number(form.km);
     if (!Number.isFinite(value) || value <= 0 || !Number.isFinite(km) || km <= 0) {
+      await this.ack(requestId);
       await this.toast('Valor e KM precisam ser maiores que zero');
       return;
     }
@@ -314,18 +317,27 @@ class NotificationActionServiceImpl {
         km,
         kmOrigin: toKmOrigin(form.kmSource),
         observacao: form.notes?.trim() || undefined,
-        clientRequestId: form.clientRequestId
+        clientRequestId: requestId
           || buildRequestId(active.turno_id, `${value}|${km}|${form.kmSource}`),
       });
     } catch { ride = null; }
 
     if (!ride) {
       this.undoArmedUntil = 0;
+      // Sem ack: a intenção continua na fila durável para nova tentativa.
       await this.toast('Não foi possível salvar a corrida');
       return;
     }
+    // Pipeline oficial aceitou → a intenção sai da fila de transporte.
+    await this.ack(requestId);
     telemetry.recordNotification('notification_register');
     await this.toast(`✔ Corrida registrada · ${BRL.format(ride.value)} · ${ride.km.toFixed(1)} km`);
+  }
+
+  /** Confirma ao nativo que a intenção foi consumida pelo pipeline oficial. */
+  private async ack(clientRequestId?: string): Promise<void> {
+    if (!clientRequestId) return;
+    try { await quickActionsPlugin.ackQuickForm({ clientRequestId }); } catch { /* noop */ }
   }
 
   private async toast(message: string): Promise<void> {
