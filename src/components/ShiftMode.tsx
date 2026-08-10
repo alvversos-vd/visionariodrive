@@ -1102,6 +1102,24 @@ export default function ShiftMode({ onChange }: Props) {
 
       {rideOpen && renderRideModal()}
       {editing && renderEditModal()}
+
+      <NotificationPermissionCard
+        open={notifPromptOpen}
+        onDismiss={() => setNotifPromptOpen(false)}
+        onAllow={async () => {
+          setNotifPromptOpen(false);
+          const status = await requestNotificationPermissionIfNeeded();
+          setBgPermissionStatus(status);
+          if (status.notificationPermissionGranted) {
+            // Turno já ativo: republica a notificação persistente agora.
+            eventBus.emit('shift:started');
+          } else {
+            const ok = await openNotificationSettings();
+            if (!ok) toast('Você pode permitir depois em Ajustes → Apps → Visionário Drive → Notificações');
+          }
+        }}
+      />
+
       <GpsConsentDialog
         open={consentOpen}
         onAccept={() => {
