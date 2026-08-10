@@ -90,6 +90,7 @@ const webStub: QuickActionsPlugin = {
   showUndo: noop,
   hideUndo: noop,
   showToast: noop,
+  ackQuickForm: noop,
   addListener: async () => ({ remove: async () => undefined }) as PluginListenerHandle,
 };
 
