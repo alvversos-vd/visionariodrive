@@ -136,6 +136,7 @@ export default function ShiftMode({ onChange }: Props) {
   const [trackerRestartSignal, setTrackerRestartSignal] = useState(0);
   const [bgPermissionStatus, setBgPermissionStatus] = useState<BackgroundPermissionStatus | null>(null);
   const [permDiag, setPermDiag] = useState<PermissionDiagnostic | null>(null);
+  const [notifPromptOpen, setNotifPromptOpen] = useState(false);
   useEffect(() => {
     const unsub = subscribePermissionDiagnostic(setPermDiag);
     void refreshPermissionDiagnostic();
