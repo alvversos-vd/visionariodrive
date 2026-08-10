@@ -981,7 +981,7 @@ export default function ShiftMode({ onChange }: Props) {
             tone="info"
             icon={<Bell size={14} />}
             title="Notificação do turno pendente"
-            body="Ela mantém o GPS ativo durante o turno e some ao finalizar. Sem ela, o Android pode cortar o tracking em segundo plano."
+            body="Ela permite registrar corridas sem sair do Uber, 99 ou iFood. Aparece só durante o turno e some ao finalizar."
             cta="Permitir"
             onClick={async () => {
               const status = await requestNotificationPermissionIfNeeded();
