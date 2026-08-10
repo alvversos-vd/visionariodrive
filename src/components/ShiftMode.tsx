@@ -404,6 +404,16 @@ export default function ShiftMode({ onChange }: Props) {
     setPickerOpen(false);
     onChange?.();
     toast.success('Turno iniciado 👊');
+    // Sprint 10.6.1 — permissão de notificação no momento de necessidade.
+    // Nunca bloqueia o turno e nunca envolve localização (ADR-015).
+    void (async () => {
+      if (!isNativePlatform) return;
+      const status = await getBackgroundPermissionStatus();
+      setBgPermissionStatus(status);
+      if (status.notificationPermissionRequired && !status.notificationPermissionGranted) {
+        setNotifPromptOpen(true);
+      }
+    })();
     requestGpsPermission(s.turno_id);
   };
 
