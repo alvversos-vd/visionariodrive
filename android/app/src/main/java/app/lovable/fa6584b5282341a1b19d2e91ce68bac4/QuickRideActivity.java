@@ -119,8 +119,9 @@ public class QuickRideActivity extends Activity {
                 notes.isEmpty() ? null : notes
         );
 
-        // Sprint 10.6.1 — feedback honesto. "delivered" não é confirmado aqui:
-        // quem confirma é o pipeline TS (toast nativo do NotificationActionService).
+        // Sprint 10.6.2 — feedback honesto. "delivered"/"hosting" não são
+        // confirmados aqui: quem confirma é o pipeline TS (toast nativo do
+        // NotificationActionService), depois da persistência real.
         if ("failed".equals(status)) {
             submitted = false;
             Toast.makeText(getApplicationContext(),
