@@ -146,6 +146,10 @@ class NotificationActionServiceImpl {
       this.actionListener = null;
     }
 
+    // LIM-001: o Bridge pode ter carregado (host invisível ou MainActivity)
+    // antes deste listener existir. Pede a reentrega da fila durável.
+    try { await quickActionsPlugin.flushPending(); } catch { /* noop */ }
+
     const active = shiftService.getActive();
     if (active) await this.handleShiftStarted();
   }
