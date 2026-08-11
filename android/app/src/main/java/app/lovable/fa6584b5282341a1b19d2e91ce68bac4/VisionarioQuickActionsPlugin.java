@@ -143,6 +143,9 @@ public class VisionarioQuickActionsPlugin extends Plugin {
                 next.put(o);
             }
             prefs.edit().putString(KEY_QUEUE, next.toString()).commit();
+            // Fila vazia → o pipeline oficial confirmou tudo. Se quem está
+            // hospedando o Bridge é o host invisível, ele pode encerrar.
+            if (next.length() == 0) BridgeHostActivity.notifyDrained();
         } catch (Throwable ignored) { }
     }
 
