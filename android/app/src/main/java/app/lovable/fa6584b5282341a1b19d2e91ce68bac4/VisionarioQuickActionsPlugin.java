@@ -64,8 +64,10 @@ public class VisionarioQuickActionsPlugin extends Plugin {
      * RideService persiste. Nenhuma regra de negócio aqui.
      */
     /**
-     * Sprint 10.6.1 — retorna o estado REAL da entrega:
+     * Sprint 10.6.2 (LIM-001) — retorna o estado REAL da entrega:
      *   "delivered" → o pipeline TS recebeu a intenção agora (Bridge vivo).
+     *   "hosting"   → sem Bridge vivo; o host invisível foi iniciado e vai
+     *                 processar pelo MESMO pipeline em instantes.
      *   "queued"    → intenção gravada na fila durável; será entregue assim
      *                 que o Bridge carregar. NUNCA é sucesso de registro.
      *   "failed"    → não foi possível nem enfileirar.
@@ -97,13 +99,18 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         boolean persisted = persistPending(appContext, payload);
 
         VisionarioQuickActionsPlugin p = INSTANCE.get();
-        if (p == null) return persisted ? "queued" : "failed";
-        try {
-            p.notifyListeners("action", payload);
-            return "delivered";
-        } catch (Throwable t) {
-            return persisted ? "queued" : "failed";
+        if (p != null) {
+            try {
+                p.notifyListeners("action", payload);
+                return "delivered";
+            } catch (Throwable ignored) { /* cai no host invisível abaixo */ }
         }
+
+        // LIM-001: sem Bridge vivo. Em vez de esperar o motorista abrir o app,
+        // sobe o HOST INVISÍVEL do Bridge oficial — mesmo bundle, mesmo
+        // pipeline, mesmo storage. Nada é gravado aqui.
+        if (persisted && BridgeHostActivity.start(appContext)) return "hosting";
+        return persisted ? "queued" : "failed";
     }
 
     private static boolean persistPending(Context ctx, JSObject payload) {
@@ -136,6 +143,9 @@ public class VisionarioQuickActionsPlugin extends Plugin {
                 next.put(o);
             }
             prefs.edit().putString(KEY_QUEUE, next.toString()).commit();
+            // Fila vazia → o pipeline oficial confirmou tudo. Se quem está
+            // hospedando o Bridge é o host invisível, ele pode encerrar.
+            if (next.length() == 0) BridgeHostActivity.notifyDrained();
         } catch (Throwable ignored) { }
     }
 
@@ -143,6 +153,20 @@ public class VisionarioQuickActionsPlugin extends Plugin {
      * Confirmação do pipeline oficial: a intenção virou corrida (ou foi
      * reconhecida como duplicata idempotente). Só então sai da fila.
      */
+    /**
+     * Sprint 10.6.2 — reentrega das intenções pendentes sob demanda.
+     * Chamado pelo TS logo após o listener oficial ser registrado, para
+     * cobrir a corrida entre `load()` (Bridge) e o mount do bundle React.
+     * Apenas transporte: nada é gravado nem removido aqui.
+     */
+    @PluginMethod
+    public void flushPending(PluginCall call) {
+        flushPersisted();
+        JSObject r = new JSObject();
+        r.put("flushed", true);
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void ackQuickForm(PluginCall call) {
         removePending(getContext(), call.getString("clientRequestId"));

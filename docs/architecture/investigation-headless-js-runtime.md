@@ -157,3 +157,32 @@ continua sem qualquer conhecimento de GPS. O host invisível do Bridge
 transporta o mesmo contrato para START e PRO; a interpretação de
 `kmSource` permanece exclusivamente no Service. START segue 100%
 manual, sem `gpsService`, sem `@capgo/background-geolocation`.
+
+---
+
+## 10. Implementação (Sprint 10.6.2 — Opção C aprovada)
+
+**Status:** implementado. LIM-001 deixa de ser comportamento normal.
+
+Arquivos:
+
+- `android/.../BridgeHostActivity.java` (novo) — host invisível do Bridge
+  oficial: 1x1, transparente, `FLAG_NOT_FOCUSABLE|NOT_TOUCHABLE`,
+  `taskAffinity=".bridgehost"`, `excludeFromRecents`, `noHistory`,
+  `singleTask`, sem animação. Encerra ao drenar a fila (ack) ou em 30 s.
+- `android/.../VisionarioQuickActionsPlugin.java` — `dispatchQuickForm`
+  passa a retornar `hosting` quando não há Bridge vivo e o host é
+  iniciado; `removePending` avisa o host quando a fila esvazia; novo
+  `flushPending()` (transporte) para reentrega sob demanda.
+- `android/.../QuickRideActivity.java` — trata `hosting` sem toast
+  otimista (a confirmação continua vindo do pipeline TS).
+- `AndroidManifest.xml` + `values/styles.xml` — registro do host e tema
+  `BridgeHostTheme` (AppCompat, obrigatório para `BridgeActivity`).
+- `src/lib/native/quickActionsPlugin.ts` — assinatura de `flushPending`.
+- `src/lib/services/notificationActionService.ts` — chama `flushPending()`
+  logo após registrar o listener oficial (cobre a corrida entre o
+  `load()` do Bridge e o mount do bundle React).
+
+Invariantes preservadas: nenhum Repository, Service, storage, outbox,
+EventBus, CloudSync ou parser novo. O host só existe quando
+`INSTANCE == null` — nunca há dois WebViews disputando `localStorage`.

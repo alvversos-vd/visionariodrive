@@ -73,6 +73,12 @@ export interface QuickActionsPlugin {
    * oficial (ou foi reconhecida como duplicata). Só então sai da fila durável.
    */
   ackQuickForm(options: { clientRequestId: string }): Promise<void>;
+  /**
+   * Sprint 10.6.2 (LIM-001) — pede ao nativo a reentrega das intenções
+   * pendentes da fila durável. Chamado após o listener oficial existir,
+   * cobrindo o host invisível do Bridge (MainActivity destruída).
+   */
+  flushPending(): Promise<{ flushed: boolean }>;
   addListener(
     eventName: 'action',
     listener: (event: QuickActionEvent) => void,
@@ -91,6 +97,7 @@ const webStub: QuickActionsPlugin = {
   hideUndo: noop,
   showToast: noop,
   ackQuickForm: noop,
+  flushPending: async () => ({ flushed: false }),
   addListener: async () => ({ remove: async () => undefined }) as PluginListenerHandle,
 };
 
