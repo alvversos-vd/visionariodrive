@@ -56,6 +56,21 @@
             android:documentLaunchMode="never"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density" />
 
+        <!-- Sprint 10.6.2 (LIM-001) — HOST INVISÍVEL do Bridge oficial.
+             Sem UI, 1x1, transparente, fora dos recentes e com task própria.
+             Existe apenas para inicializar o MESMO runtime JS/pipeline quando
+             a MainActivity foi destruída. Encerra sozinho após o ack. -->
+        <activity
+            android:name=".BridgeHostActivity"
+            android:exported="false"
+            android:theme="@style/BridgeHostTheme"
+            android:taskAffinity=".bridgehost"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:documentLaunchMode="never"
+            android:noHistory="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
