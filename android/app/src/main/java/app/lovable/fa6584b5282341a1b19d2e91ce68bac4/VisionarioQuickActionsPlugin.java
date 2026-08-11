@@ -99,13 +99,18 @@ public class VisionarioQuickActionsPlugin extends Plugin {
         boolean persisted = persistPending(appContext, payload);
 
         VisionarioQuickActionsPlugin p = INSTANCE.get();
-        if (p == null) return persisted ? "queued" : "failed";
-        try {
-            p.notifyListeners("action", payload);
-            return "delivered";
-        } catch (Throwable t) {
-            return persisted ? "queued" : "failed";
+        if (p != null) {
+            try {
+                p.notifyListeners("action", payload);
+                return "delivered";
+            } catch (Throwable ignored) { /* cai no host invisível abaixo */ }
         }
+
+        // LIM-001: sem Bridge vivo. Em vez de esperar o motorista abrir o app,
+        // sobe o HOST INVISÍVEL do Bridge oficial — mesmo bundle, mesmo
+        // pipeline, mesmo storage. Nada é gravado aqui.
+        if (persisted && BridgeHostActivity.start(appContext)) return "hosting";
+        return persisted ? "queued" : "failed";
     }
 
     private static boolean persistPending(Context ctx, JSObject payload) {
