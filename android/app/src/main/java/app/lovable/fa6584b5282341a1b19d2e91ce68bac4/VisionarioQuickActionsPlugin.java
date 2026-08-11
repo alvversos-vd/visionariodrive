@@ -153,6 +153,20 @@ public class VisionarioQuickActionsPlugin extends Plugin {
      * Confirmação do pipeline oficial: a intenção virou corrida (ou foi
      * reconhecida como duplicata idempotente). Só então sai da fila.
      */
+    /**
+     * Sprint 10.6.2 — reentrega das intenções pendentes sob demanda.
+     * Chamado pelo TS logo após o listener oficial ser registrado, para
+     * cobrir a corrida entre `load()` (Bridge) e o mount do bundle React.
+     * Apenas transporte: nada é gravado nem removido aqui.
+     */
+    @PluginMethod
+    public void flushPending(PluginCall call) {
+        flushPersisted();
+        JSObject r = new JSObject();
+        r.put("flushed", true);
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void ackQuickForm(PluginCall call) {
         removePending(getContext(), call.getString("clientRequestId"));
