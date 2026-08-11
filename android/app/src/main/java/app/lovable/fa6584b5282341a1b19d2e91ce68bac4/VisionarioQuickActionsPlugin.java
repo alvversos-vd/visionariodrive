@@ -64,8 +64,10 @@ public class VisionarioQuickActionsPlugin extends Plugin {
      * RideService persiste. Nenhuma regra de negócio aqui.
      */
     /**
-     * Sprint 10.6.1 — retorna o estado REAL da entrega:
+     * Sprint 10.6.2 (LIM-001) — retorna o estado REAL da entrega:
      *   "delivered" → o pipeline TS recebeu a intenção agora (Bridge vivo).
+     *   "hosting"   → sem Bridge vivo; o host invisível foi iniciado e vai
+     *                 processar pelo MESMO pipeline em instantes.
      *   "queued"    → intenção gravada na fila durável; será entregue assim
      *                 que o Bridge carregar. NUNCA é sucesso de registro.
      *   "failed"    → não foi possível nem enfileirar.
