@@ -1035,8 +1035,8 @@ export default function ShiftMode({ onChange }: Props) {
         </p>
 
 
-        {/* Mapa ao vivo (opt-in) */}
-        {showMap && (shift.rota?.length ?? 0) > 0 && (
+        {/* Mapa ao vivo (opt-in) — PRO apenas (ADR-015 / START sem GPS) */}
+        {gpsEnabled && showMap && (shift.rota?.length ?? 0) > 0 && (
           <div className="relative space-y-2">
             <ShiftLiveMap shift={shift} />
             <div className="grid grid-cols-2 gap-2">
@@ -1053,17 +1053,19 @@ export default function ShiftMode({ onChange }: Props) {
         )}
 
         {/* Actions principais */}
-        <div className="relative grid grid-cols-4 gap-2">
+        <div className={`relative grid gap-2 ${gpsEnabled ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <button onClick={handlePause} title={pausado ? 'Retomar' : 'Pausar'} className="h-12 rounded-xl surface-inset border border-border/60 text-foreground font-display font-semibold text-sm flex items-center justify-center press">
             {pausado ? <Play size={16} /> : <Pause size={16} />}
           </button>
-          <button
-            onClick={() => setShowMap(v => !v)}
-            title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
-            className={`h-12 rounded-xl font-display font-semibold text-sm flex items-center justify-center press ${showMap ? 'bg-primary/15 text-primary border border-primary/40 shadow-glow-sm' : 'surface-inset border border-border/60 text-foreground'}`}
-          >
-            <MapIcon size={16} />
-          </button>
+          {gpsEnabled && (
+            <button
+              onClick={() => setShowMap(v => !v)}
+              title={showMap ? 'Ocultar mapa' : 'Mostrar mapa'}
+              className={`h-12 rounded-xl font-display font-semibold text-sm flex items-center justify-center press ${showMap ? 'bg-primary/15 text-primary border border-primary/40 shadow-glow-sm' : 'surface-inset border border-border/60 text-foreground'}`}
+            >
+              <MapIcon size={16} />
+            </button>
+          )}
           <button
             onClick={openRide}
             disabled={pausado}
