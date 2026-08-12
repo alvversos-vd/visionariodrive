@@ -121,7 +121,7 @@ function IndexInner() {
 
     switch (tab) {
       case 'home':
-        return <><NotificationActivationCard /><Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
+        return <div className="space-y-4"><NotificationActivationCard /><Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} /></div>;
       case 'upgrade':
         return <UpgradeView onDismiss={() => setTab('home')} />;
       case 'input':
