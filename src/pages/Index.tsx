@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles, Loader2 } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
 import InstallAppButton from '@/components/InstallAppButton';
+import NotificationActivationCard from '@/components/NotificationActivationCard';
 import { achievementService } from '@/lib/services/achievementService';
 import { BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
 import BrandMark from '@/components/brand/BrandMark';
@@ -38,7 +39,8 @@ function ViewFallback() {
 
 type Tab = 'home' | 'input' | 'ride' | 'goals' | 'financial' | 'history' | 'strategy' | 'settings' | 'profile' | 'upgrade';
 
-const PRO_TABS: Tab[] = ['history', 'strategy'];
+// Sprint 10.6.x — Histórico liberado para START (somente exportação é PRO).
+const PRO_TABS: Tab[] = ['strategy'];
 
 export default function Index() {
   return (
@@ -112,7 +114,6 @@ function IndexInner() {
     if (tab !== 'home' && tab !== 'input' && tab !== 'goals' && tab !== 'financial' && tab !== 'settings' && tab !== 'profile' && tab !== 'upgrade' && isLocked(tab)) {
       const labels: Partial<Record<Tab, string>> = {
         ride: 'a análise de corridas',
-        history: 'o histórico completo',
         strategy: 'as estratégias e simulador',
       };
       return <ProRequired feature={labels[tab]} onUpgrade={() => setTab('upgrade')} />;
@@ -120,7 +121,7 @@ function IndexInner() {
 
     switch (tab) {
       case 'home':
-        return <Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} />;
+        return <div className="space-y-4"><NotificationActivationCard /><Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} /></div>;
       case 'upgrade':
         return <UpgradeView onDismiss={() => setTab('home')} />;
       case 'input':

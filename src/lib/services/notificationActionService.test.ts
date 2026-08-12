@@ -77,7 +77,7 @@ vi.mock('./shiftService', () => ({
 
 import { eventBus } from '../eventBus';
 import { telemetry } from '../telemetry';
-import { notificationActionService, parseQuickRideInput, toKmOrigin } from './notificationActionService';
+import { notificationActionService, parseQuickRideInput, toKmOrigin, parseDecimalNumber } from './notificationActionService';
 import type { QuickActionEvent } from '../native/quickActionsPlugin';
 
 type ActionListener = (e: QuickActionEvent) => void;
@@ -313,4 +313,37 @@ describe('Quick Form nativo · Sprint 10.5 (ADR-015)', () => {
 
     expect(h.registerShiftRide).not.toHaveBeenCalled();
   });
+});
+
+// ─── Sprint 10.6.x — KM decimal no Quick Form nativo ────────────────────────
+describe('parseDecimalNumber (Quick Form KM/valor decimal)', () => {
+  const validBr: Array<[string, number]> = [
+    ['0,2', 0.2], ['0,5', 0.5], ['0,75', 0.75],
+    ['1,2', 1.2], ['1,75', 1.75], ['2', 2], ['6,2', 6.2], ['10,5', 10.5],
+  ];
+  const validIntl: Array<[string, number]> = [
+    ['0.2', 0.2], ['0.5', 0.5], ['0.75', 0.75],
+    ['1.2', 1.2], ['1.75', 1.75], ['6.2', 6.2], ['10.5', 10.5],
+  ];
+
+  it.each([...validBr, ...validIntl])('normaliza "%s" → %f', (raw, expected) => {
+    expect(parseDecimalNumber(raw)).toBeCloseTo(expected, 6);
+  });
+
+  it('aceita number já normalizado', () => {
+    expect(parseDecimalNumber(0.5)).toBe(0.5);
+    expect(parseDecimalNumber(6.2)).toBe(6.2);
+  });
+
+  it('tolera sufixos/prefixos da UI', () => {
+    expect(parseDecimalNumber('R$ 18,50')).toBeCloseTo(18.5, 6);
+    expect(parseDecimalNumber('0,5 km')).toBeCloseTo(0.5, 6);
+  });
+
+  it.each(['0', '0,0', '-1', '-0,5', '', ' ', 'abc', ',', '.', '1,2,3', null, undefined, {}])(
+    'rejeita %p',
+    (raw) => {
+      expect(parseDecimalNumber(raw as unknown)).toBeNull();
+    },
+  );
 });

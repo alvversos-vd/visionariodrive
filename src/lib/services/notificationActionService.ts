@@ -117,6 +117,31 @@ export function parseQuickRideInput(raw: string): {
   };
 }
 
+/**
+ * Sprint 10.6.x — normalização ÚNICA de números decimais vindos da fronteira
+ * nativa. Aceita `number` já normalizado e string em formato BR ("0,5") ou
+ * internacional ("0.5"). O domínio SEMPRE trabalha com `number`.
+ * Retorna `null` quando o valor não é um decimal positivo válido.
+ */
+export function parseDecimalNumber(raw: unknown): number | null {
+  let n: number;
+  if (typeof raw === 'number') {
+    n = raw;
+  } else if (typeof raw === 'string') {
+    const cleaned = raw.trim()
+      .replace(/r\$/i, '')
+      .replace(/km/i, '')
+      .replace(/\s/g, '')
+      .replace(',', '.');
+    if (!/^\d*\.?\d+$/.test(cleaned)) return null;
+    n = Number.parseFloat(cleaned);
+  } else {
+    return null;
+  }
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
 class NotificationActionServiceImpl {
   private attached = false;
   private busUnsubs: Unsub[] = [];
@@ -304,9 +329,9 @@ class NotificationActionServiceImpl {
       await this.toast('Nenhum turno ativo');
       return;
     }
-    const value = Number(form.value);
-    const km = Number(form.km);
-    if (!Number.isFinite(value) || value <= 0 || !Number.isFinite(km) || km <= 0) {
+    const value = parseDecimalNumber(form.value);
+    const km = parseDecimalNumber(form.km);
+    if (value === null || km === null) {
       await this.ack(requestId);
       await this.toast('Valor e KM precisam ser maiores que zero');
       return;

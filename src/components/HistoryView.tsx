@@ -13,6 +13,8 @@ import HistoryCharts from './HistoryCharts';
 import PeriodComparison from './PeriodComparison';
 import ShiftHistoryView from './ShiftHistoryView';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useCapabilities } from '@/hooks/useCapabilities';
+import { Lock } from 'lucide-react';
 
 const WEEKDAYS_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -73,6 +75,8 @@ function FilterChips({ label, value, options, onChange }: FilterBarProps) {
 }
 
 export default function HistoryView({ refresh, onRefresh }: Props) {
+  // Sprint 10.6.x — visualização liberada para START; exportação continua PRO.
+  const isPro = useCapabilities().plan === 'PRO';
   // Todos os DailyEntry já ajustados com despesas do dia — vem do MetricsService.
   const allEntries: AdjustedDailyEntry[] = useMemo(() => { void refresh; return metricsService.historyEntries(); }, [refresh]);
   const allRides: RideModel[] = useMemo(() => { void refresh; return metricsService.recentIndividualRides(9999); }, [refresh]);
@@ -214,29 +218,35 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
   return (
     <div className="space-y-4 animate-slide-up">
       <ShiftHistoryView refresh={refresh} />
-      <button
-        onClick={async () => {
-          const SCOPE = 'HistoryView.exportPdfButton';
-          exportTelemetry.step(SCOPE, 'click', { entriesCount: entries.length });
-          try {
-            const path = await exportHistoryPdf(entries);
-            exportTelemetry.step(SCOPE, 'export_resolved', { path });
-            if (path === 'failed') {
-              toast.error('Não foi possível salvar o PDF neste dispositivo');
-            } else {
-              toast.success('Relatório PDF gerado com sucesso');
+      {isPro ? (
+        <button
+          onClick={async () => {
+            const SCOPE = 'HistoryView.exportPdfButton';
+            exportTelemetry.step(SCOPE, 'click', { entriesCount: entries.length });
+            try {
+              const path = await exportHistoryPdf(entries);
+              exportTelemetry.step(SCOPE, 'export_resolved', { path });
+              if (path === 'failed') {
+                toast.error('Não foi possível salvar o PDF neste dispositivo');
+              } else {
+                toast.success('Relatório PDF gerado com sucesso');
+              }
+            } catch (e) {
+              exportTelemetry.error(SCOPE, 'export_threw', e);
+              const msg = e instanceof Error ? e.message : String(e);
+              toast.error(`Erro ao gerar PDF: ${msg}`);
             }
-          } catch (e) {
-            exportTelemetry.error(SCOPE, 'export_threw', e);
-            const msg = e instanceof Error ? e.message : String(e);
-            toast.error(`Erro ao gerar PDF: ${msg}`);
-          }
-        }}
-        disabled={entries.length === 0}
-        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-display font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-      >
-        <FileDown size={16} /> Exportar relatório PDF
-      </button>
+          }}
+          disabled={entries.length === 0}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-display font-semibold py-3 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+        >
+          <FileDown size={16} /> Exportar relatório PDF
+        </button>
+      ) : (
+        <div className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 py-3 text-caption text-muted-foreground">
+          <Lock size={14} /> Exportar relatório PDF é um recurso PRO
+        </div>
+      )}
 
       {/* Filters */}
       {(vehicleOptions.length > 0 || rideTypeOptions.length > 0) && (
