@@ -3,11 +3,12 @@ import { toast } from 'sonner';
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { exportShiftsCsv, exportShiftsPdf } from '@/lib/exportShifts';
+import { useCapabilities } from '@/hooks/useCapabilities';
 import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { goalsService } from '@/lib/services/goalsService';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
 
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
@@ -44,6 +45,8 @@ function inFilter(dataOp: string, filter: Filter): boolean {
 interface Props { refresh: number }
 
 export default function ShiftHistoryView({ refresh }: Props) {
+  // Sprint 10.6.x — histórico visível no START; exportação continua PRO.
+  const isPro = useCapabilities().plan === 'PRO';
   const [filter, setFilter] = useState<Filter>('semana');
   const [vehicleFilter, setVehicleFilter] = useState<'todos' | TipoVeiculo>('todos');
   const [appFilter, setAppFilter] = useState<string>('todos');
@@ -186,16 +189,22 @@ export default function ShiftHistoryView({ refresh }: Props) {
           <h2 className="font-display font-bold text-lg flex items-center gap-2">📊 Histórico de turnos</h2>
           <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
         </div>
-        <button
-          onClick={() => setExportOpen(o => !o)}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-foreground text-xs font-display font-semibold border"
-          aria-expanded={exportOpen}
-        >
-          <Download size={13} /> Exportar
-        </button>
+        {isPro ? (
+          <button
+            onClick={() => setExportOpen(o => !o)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-foreground text-xs font-display font-semibold border"
+            aria-expanded={exportOpen}
+          >
+            <Download size={13} /> Exportar
+          </button>
+        ) : (
+          <span className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-border/70 text-micro text-muted-foreground font-display">
+            <Lock size={12} /> Exportar é PRO
+          </span>
+        )}
       </div>
 
-      {exportOpen && (
+      {isPro && exportOpen && (
         <div className="bg-card border rounded-xl p-3 space-y-3 animate-slide-up">
           <p className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Período do export</p>
           <div className="grid grid-cols-2 gap-2">
