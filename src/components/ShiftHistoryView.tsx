@@ -422,7 +422,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                             {meta > 0 && result === 'excelente' && (
                               <p className="text-xs text-profit flex items-center gap-1 font-display font-semibold"><Trophy size={12}/> Bateu a meta de {fmt(meta)}</p>
                             )}
-                            {(s.rota?.length ?? 0) > 1 && (
+                            {isPro && (s.rota?.length ?? 0) > 1 && (
                               <div className="pt-1 space-y-1.5">
                                 <p className="text-micro uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                                   <MapIcon size={10}/> Rota ({s.rota!.length} pontos)
