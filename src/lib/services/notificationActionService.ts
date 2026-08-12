@@ -329,9 +329,9 @@ class NotificationActionServiceImpl {
       await this.toast('Nenhum turno ativo');
       return;
     }
-    const value = Number(form.value);
-    const km = Number(form.km);
-    if (!Number.isFinite(value) || value <= 0 || !Number.isFinite(km) || km <= 0) {
+    const value = parseDecimalNumber(form.value);
+    const km = parseDecimalNumber(form.km);
+    if (value === null || km === null) {
       await this.ack(requestId);
       await this.toast('Valor e KM precisam ser maiores que zero');
       return;
