@@ -59,8 +59,8 @@ export default function NotificationActivationCard() {
 
   const activate = async () => {
     const status = await requestNotificationPermissionIfNeeded();
+    await refreshPermissionDiagnostic();
     if (status.notificationPermissionGranted) {
-      setVisible(false);
       toast.success('Notificações ativadas');
       return;
     }
@@ -69,6 +69,7 @@ export default function NotificationActivationCard() {
       toast('Ative em Ajustes → Apps → Visionário Drive → Notificações');
     }
   };
+
 
   return (
     <div className="relative rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 animate-slide-up">
