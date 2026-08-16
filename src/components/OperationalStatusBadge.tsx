@@ -5,6 +5,7 @@ import {
   refreshPermissionDiagnostic,
   type PermissionDiagnostic,
 } from '@/lib/permissionDiagnostic';
+import { useCapabilities } from '@/hooks/useCapabilities';
 
 interface Props {
   /** layout compacto p/ headers; default = card. */
@@ -12,18 +13,24 @@ interface Props {
 }
 
 /**
- * Badge SEMPRE visível indicando se o app está em automação ou modo manual.
- * Toque → reabre o onboarding de permissões (via evento global).
+ * Badge de estado operacional do rastreamento automático.
+ *
+ * Existe APENAS onde a capability `gps` está ativa (PRO). No START o produto é
+ * 100% manual: não há automação a diagnosticar, portanto o componente não é
+ * renderizado (não é ocultação visual — ele não existe na árvore).
  */
 export default function OperationalStatusBadge({ compact = false }: Props) {
+  const { gps: gpsEnabled } = useCapabilities();
   const [d, setD] = useState<PermissionDiagnostic | null>(null);
   useEffect(() => {
+    if (!gpsEnabled) return;
     const unsub = subscribePermissionDiagnostic(setD);
     void refreshPermissionDiagnostic();
     return unsub;
-  }, []);
+  }, [gpsEnabled]);
 
-  if (!d) return null;
+  if (!gpsEnabled || !d) return null;
+
   const auto = d.trackingMode === 'automatic';
 
   const openOnboarding = () => {

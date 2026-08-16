@@ -14,51 +14,53 @@ import { Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
-  getBackgroundPermissionStatus,
   requestNotificationPermissionIfNeeded,
   openNotificationSettings,
 } from '@/lib/bgPermission';
+import {
+  subscribePermissionDiagnostic,
+  refreshPermissionDiagnostic,
+  type PermissionDiagnostic,
+} from '@/lib/permissionDiagnostic';
 
-const SNOOZE_KEY = 'vd-notif-activation-snooze-until';
-const SNOOZE_MS = 24 * 60 * 60 * 1000;
+// Snooze v2: escopo de sessão do app (sessionStorage), nunca device-global.
+// Um usuário novo — mesmo em aparelho já usado — sempre vê o card.
+const SNOOZE_KEY = 'vd-notif-activation-snooze-v2';
 
 function snoozed(): boolean {
-  try {
-    const raw = localStorage.getItem(SNOOZE_KEY);
-    return !!raw && Number(raw) > Date.now();
-  } catch { return false; }
+  try { return sessionStorage.getItem(SNOOZE_KEY) === '1'; } catch { return false; }
 }
 
 export default function NotificationActivationCard() {
-  const [visible, setVisible] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<PermissionDiagnostic | null>(null);
+  const [dismissed, setDismissed] = useState(snoozed);
 
+  // Fonte única e REATIVA: o diagnóstico oficial já revalida em focus,
+  // visibilitychange e retorno das configurações do sistema.
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      if (snoozed()) return;
-      const status = await getBackgroundPermissionStatus();
-      if (cancelled) return;
-      const pending =
-        status.native &&
-        status.platform === 'android' &&
-        status.notificationPermissionRequired &&
-        !status.notificationPermissionGranted;
-      setVisible(pending);
-    })();
-    return () => { cancelled = true; };
+    const unsub = subscribePermissionDiagnostic(setDiagnostic);
+    void refreshPermissionDiagnostic();
+    return unsub;
   }, []);
 
-  if (!visible) return null;
+  const pending =
+    !!diagnostic &&
+    diagnostic.platform === 'android' &&
+    diagnostic.notificationsRequired &&
+    !diagnostic.notificationsGranted;
+
+  if (dismissed || !pending) return null;
 
   const dismiss = () => {
-    try { localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS)); } catch { /* noop */ }
-    setVisible(false);
+    try { sessionStorage.setItem(SNOOZE_KEY, '1'); } catch { /* noop */ }
+    setDismissed(true);
   };
+
 
   const activate = async () => {
     const status = await requestNotificationPermissionIfNeeded();
+    await refreshPermissionDiagnostic();
     if (status.notificationPermissionGranted) {
-      setVisible(false);
       toast.success('Notificações ativadas');
       return;
     }
@@ -67,6 +69,7 @@ export default function NotificationActivationCard() {
       toast('Ative em Ajustes → Apps → Visionário Drive → Notificações');
     }
   };
+
 
   return (
     <div className="relative rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 animate-slide-up">
