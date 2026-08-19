@@ -137,7 +137,14 @@ export async function getBackgroundPermissionStatus(): Promise<BackgroundPermiss
   if (!p || !base.native || base.platform !== 'android') return withForegroundFallback(base);
   try {
     const native = await p.checkStatus();
-    const status: BackgroundPermissionStatus = { ...base, ...native, native: true, platform: 'android' };
+    const status: BackgroundPermissionStatus = {
+      ...base,
+      ...native,
+      native: true,
+      platform: 'android',
+      // Leitura nativa bem-sucedida => estado conhecido.
+      notificationPermissionKnown: typeof native.notificationPermissionGranted === 'boolean',
+    };
     if (status.backgroundLocationGranted) markBgAlwaysVerified();
     else if (!status.foregroundLocationGranted) clearBgAlwaysVerified();
     return status;
