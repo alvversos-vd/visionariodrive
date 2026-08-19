@@ -19,6 +19,12 @@ export interface BackgroundPermissionStatus {
   locationServicesEnabled: boolean;
   notificationPermissionRequired: boolean;
   notificationPermissionGranted: boolean;
+  /**
+   * `false` quando a leitura nativa da permissão de notificação falhou ou não
+   * está disponível. Nunca tratamos falha técnica como "permissão concedida"
+   * (fail-open): o estado permanece desconhecido e a descoberta continua ativa.
+   */
+  notificationPermissionKnown: boolean;
   batteryOptimizationDisabled: boolean;
 }
 
@@ -38,6 +44,9 @@ function fallbackStatus(): BackgroundPermissionStatus {
   const native = !!w?.Capacitor?.isNativePlatform?.();
   const platform = (w?.Capacitor?.getPlatform?.() as BackgroundPermissionStatus['platform']) ?? (native ? 'unknown' : 'web');
   const verified = isBgAlwaysVerified();
+  // Android nativo sem leitura confiável => estado DESCONHECIDO, tratado como
+  // pendente de descoberta (fail-closed). Web/iOS não usam POST_NOTIFICATIONS.
+  const androidUnknown = native && platform === 'android';
   return {
     native,
     platform,
@@ -47,11 +56,13 @@ function fallbackStatus(): BackgroundPermissionStatus {
     coarseLocationGranted: verified,
     backgroundLocationGranted: verified,
     locationServicesEnabled: true,
-    notificationPermissionRequired: false,
-    notificationPermissionGranted: true,
+    notificationPermissionRequired: androidUnknown,
+    notificationPermissionGranted: !androidUnknown,
+    notificationPermissionKnown: !androidUnknown,
     batteryOptimizationDisabled: true,
   };
 }
+
 
 let cachedPlugin: VisionarioPermissionsPlugin | null | undefined;
 
