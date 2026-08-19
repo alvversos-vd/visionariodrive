@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/contexts/AuthContext';
 import {
   requestNotificationPermissionIfNeeded,
   openNotificationSettings,
@@ -23,17 +24,15 @@ import {
   type PermissionDiagnostic,
 } from '@/lib/permissionDiagnostic';
 
-// Snooze v2: escopo de sessão do app (sessionStorage), nunca device-global.
-// Um usuário novo — mesmo em aparelho já usado — sempre vê o card.
-const SNOOZE_KEY = 'vd-notif-activation-snooze-v2';
-
-function snoozed(): boolean {
-  try { return sessionStorage.getItem(SNOOZE_KEY) === '1'; } catch { return false; }
-}
-
+/**
+ * Elegibilidade vem EXCLUSIVAMENTE do permissionDiagnostic (SSOT).
+ * "Agora não" é apenas estado efêmero em memória, resetado a cada troca de
+ * conta — nunca persiste, nunca mascara permissão pendente.
+ */
 export default function NotificationActivationCard() {
+  const { user } = useAuth();
   const [diagnostic, setDiagnostic] = useState<PermissionDiagnostic | null>(null);
-  const [dismissed, setDismissed] = useState(snoozed);
+  const [dismissed, setDismissed] = useState(false);
 
   // Fonte única e REATIVA: o diagnóstico oficial já revalida em focus,
   // visibilitychange e retorno das configurações do sistema.
@@ -43,6 +42,12 @@ export default function NotificationActivationCard() {
     return unsub;
   }, []);
 
+  // Troca de conta (login/logout) reinicia a descoberta.
+  useEffect(() => {
+    setDismissed(false);
+    void refreshPermissionDiagnostic();
+  }, [user?.id]);
+
   const pending =
     !!diagnostic &&
     diagnostic.platform === 'android' &&
@@ -51,10 +56,8 @@ export default function NotificationActivationCard() {
 
   if (dismissed || !pending) return null;
 
-  const dismiss = () => {
-    try { sessionStorage.setItem(SNOOZE_KEY, '1'); } catch { /* noop */ }
-    setDismissed(true);
-  };
+  const dismiss = () => setDismissed(true);
+
 
 
   const activate = async () => {
