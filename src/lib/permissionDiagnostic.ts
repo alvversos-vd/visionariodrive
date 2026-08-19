@@ -123,6 +123,7 @@ export async function refreshPermissionDiagnostic(): Promise<PermissionDiagnosti
     backgroundLocationGranted: bg.backgroundLocationGranted,
     notificationsGranted: bg.notificationPermissionGranted,
     notificationsRequired: bg.notificationPermissionRequired,
+    notificationsStatusKnown: bg.notificationPermissionKnown,
     batteryOptimizationDisabled: batteryDisabled,
     locationServicesEnabled: bg.locationServicesEnabled,
     gpsReady,
