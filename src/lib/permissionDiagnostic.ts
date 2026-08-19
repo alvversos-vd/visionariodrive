@@ -26,6 +26,8 @@ export interface PermissionDiagnostic {
   backgroundLocationGranted: boolean;
   notificationsGranted: boolean;
   notificationsRequired: boolean;
+  /** `false` = leitura nativa indisponível/falhou. Nunca implica "concedida". */
+  notificationsStatusKnown: boolean;
   batteryOptimizationDisabled: boolean;
   locationServicesEnabled: boolean;
   gpsReady: boolean;
