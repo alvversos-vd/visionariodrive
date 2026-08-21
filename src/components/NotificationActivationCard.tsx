@@ -48,11 +48,12 @@ export default function NotificationActivationCard() {
     void refreshPermissionDiagnostic();
   }, [user?.id]);
 
+  // Fail-closed: pendente = Android + (não concedida OU leitura desconhecida).
   const pending =
     !!diagnostic &&
     diagnostic.platform === 'android' &&
     diagnostic.notificationsRequired &&
-    !diagnostic.notificationsGranted;
+    (!diagnostic.notificationsGranted || !diagnostic.notificationsStatusKnown);
 
   if (dismissed || !pending) return null;
 
