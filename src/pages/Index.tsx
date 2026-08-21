@@ -4,7 +4,7 @@ import Dashboard from '@/components/Dashboard';
 import DailyInputForm from '@/components/DailyInputForm';
 import ProRequired from '@/components/ProRequired';
 import PermissionOnboarding from '@/components/PermissionOnboarding';
-import { isOnboardingCompleted } from '@/lib/permissionDiagnostic';
+import { isOnboardingCompleted, refreshPermissionDiagnostic } from '@/lib/permissionDiagnostic';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calculator, BarChart3, Target, Navigation, Home, Settings as SettingsIcon, Lightbulb, User, Lock, Wallet, Sparkles, Loader2 } from 'lucide-react';
 import RegisterRideFab from '@/components/RegisterRideFab';
