@@ -203,7 +203,16 @@ function IndexInner() {
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
       <SessionOverlays refresh={refresh} />
-      {showOnboarding && <PermissionOnboarding onDone={() => setShowOnboarding(false)} />}
+      {showOnboarding && (
+        <PermissionOnboarding
+          onDone={() => {
+            setShowOnboarding(false);
+            // Reavalia o SSOT ao fechar o assistente: o card do Dashboard
+            // reflete o estado real de POST_NOTIFICATIONS sem reload.
+            void refreshPermissionDiagnostic();
+          }}
+        />
+      )}
 
     </div>
   );
