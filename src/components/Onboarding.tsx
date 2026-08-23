@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,11 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
   const [objective, setObjective] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    console.info('[NOTIF-LIFECYCLE] Onboarding mounted', { userId: user?.id ?? null });
+    return () => console.info('[NOTIF-LIFECYCLE] Onboarding unmounted', { userId: user?.id ?? null });
+  }, [user?.id]);
+
   const idx = STEP_ORDER.indexOf(step);
   const progress = (idx / (STEP_ORDER.length - 1)) * 100;
 
@@ -52,6 +57,7 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const finalize = async () => {
     if (!user) return;
+    console.info('[NOTIF-LIFECYCLE] Onboarding finalize started', { userId: user.id });
     setSaving(true);
     try {
       if (vehicle && !vehicleService.hasAny()) {
@@ -77,7 +83,9 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
         objetivo_principal: objective,
       });
       await refreshProfile();
+      console.info('[NOTIF-LIFECYCLE] Onboarding profile refreshed', { userId: user.id });
       onFinish();
+      console.info('[NOTIF-LIFECYCLE] Onboarding finalize completed', { userId: user.id });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Tente novamente';
       toast({ title: 'Erro', description: msg, variant: 'destructive' });
@@ -88,10 +96,13 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   const skipAll = async () => {
     if (!user) return;
+    console.info('[NOTIF-LIFECYCLE] Onboarding skip started', { userId: user.id });
     setSaving(true);
     await profileService.update(user.id, { onboarding_completo: true });
     await refreshProfile();
+    console.info('[NOTIF-LIFECYCLE] Onboarding skipped profile refreshed', { userId: user.id });
     onFinish();
+    console.info('[NOTIF-LIFECYCLE] Onboarding skip completed', { userId: user.id });
   };
 
   const displayName = profile?.nome_usuario?.trim() || '';

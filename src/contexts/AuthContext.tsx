@@ -81,6 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Listener primeiro
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      console.info('[NOTIF-LIFECYCLE] Auth state changed', {
+        event: _event,
+        userId: newSession?.user.id ?? null,
+      });
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
@@ -110,6 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Depois sessão atual
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      console.info('[NOTIF-LIFECYCLE] Initial session resolved', {
+        userId: existing?.user.id ?? null,
+      });
       setSession(existing);
       setUser(existing?.user ?? null);
       if (existing?.user) {

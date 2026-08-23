@@ -48,10 +48,30 @@ function AppReadySignal() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, dataReady, profile } = useAuth();
-  if (loading) return <FullScreenLoader label="Iniciando..." />;
-  if (!user) return <Navigate to="/auth" replace />;
-  if (!dataReady) return <FullScreenLoader label="Carregando seus dados..." />;
-  if (profile && !profile.onboarding_completo) return <Onboarding onFinish={() => { /* re-render via refreshProfile */ }} />;
+  console.info('[NOTIF-LIFECYCLE] ProtectedRoute', {
+    userId: user?.id ?? null,
+    loading,
+    dataReady,
+    profileLoaded: profile !== null,
+    onboardingComplete: profile?.onboarding_completo ?? null,
+  });
+  if (loading) {
+    console.info('[NOTIF-LIFECYCLE] ProtectedRoute -> loader:initializing');
+    return <FullScreenLoader label="Iniciando..." />;
+  }
+  if (!user) {
+    console.info('[NOTIF-LIFECYCLE] ProtectedRoute -> auth');
+    return <Navigate to="/auth" replace />;
+  }
+  if (!dataReady) {
+    console.info('[NOTIF-LIFECYCLE] ProtectedRoute -> loader:data');
+    return <FullScreenLoader label="Carregando seus dados..." />;
+  }
+  if (profile && !profile.onboarding_completo) {
+    console.info('[NOTIF-LIFECYCLE] ProtectedRoute -> onboarding');
+    return <Onboarding onFinish={() => { console.info('[NOTIF-LIFECYCLE] Onboarding onFinish reached ProtectedRoute'); }} />;
+  }
+  console.info('[NOTIF-LIFECYCLE] ProtectedRoute -> protected content');
   return <>{children}</>;
 }
 
