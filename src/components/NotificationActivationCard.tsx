@@ -37,9 +37,13 @@ export default function NotificationActivationCard() {
   // Fonte única e REATIVA: o diagnóstico oficial já revalida em focus,
   // visibilitychange e retorno das configurações do sistema.
   useEffect(() => {
+    console.info('[NOTIF-CARD] mounted');
     const unsub = subscribePermissionDiagnostic(setDiagnostic);
     void refreshPermissionDiagnostic();
-    return unsub;
+    return () => {
+      console.info('[NOTIF-CARD] unmounted');
+      unsub();
+    };
   }, []);
 
   // Troca de conta (login/logout) reinicia a descoberta.
@@ -54,6 +58,13 @@ export default function NotificationActivationCard() {
     diagnostic.platform === 'android' &&
     diagnostic.notificationsRequired &&
     (!diagnostic.notificationsGranted || !diagnostic.notificationsStatusKnown);
+
+  const rendering = !dismissed && pending;
+  console.info(`[NOTIF-CARD] userId=${user?.id ?? 'null'}`);
+  console.info('[NOTIF-CARD] diagnostic=', diagnostic);
+  console.info(`[NOTIF-CARD] pending=${pending}`);
+  console.info(`[NOTIF-CARD] dismissed=${dismissed}`);
+  console.info(`[NOTIF-CARD] rendering=${rendering}`);
 
   if (dismissed || !pending) return null;
 

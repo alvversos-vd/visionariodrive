@@ -58,6 +58,11 @@ function IndexInner() {
   const { sessionMode } = useSessionMode();
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboardingCompleted());
 
+  useEffect(() => {
+    console.info('[NOTIF-LIFECYCLE] Index mounted', { tab: 'home' });
+    return () => console.info('[NOTIF-LIFECYCLE] Index unmounted');
+  }, []);
+
 
   useEffect(() => {
     setRefresh(p => p + 1);
@@ -121,6 +126,7 @@ function IndexInner() {
 
     switch (tab) {
       case 'home':
+        console.info('[NOTIF-LIFECYCLE] Index rendering home with NotificationActivationCard');
         return <div className="space-y-4"><NotificationActivationCard /><Dashboard refresh={refresh} onGoToGoals={() => setTab('goals')} onGoToUpgrade={() => setTab('upgrade')} /></div>;
       case 'upgrade':
         return <UpgradeView onDismiss={() => setTab('home')} />;
@@ -206,10 +212,13 @@ function IndexInner() {
       {showOnboarding && (
         <PermissionOnboarding
           onDone={() => {
+            console.info('[NOTIF-LIFECYCLE] PermissionOnboarding onDone');
             setShowOnboarding(false);
             // Reavalia o SSOT ao fechar o assistente: o card do Dashboard
             // reflete o estado real de POST_NOTIFICATIONS sem reload.
-            void refreshPermissionDiagnostic();
+            void refreshPermissionDiagnostic().then(() => {
+              console.info('[NOTIF-LIFECYCLE] PermissionOnboarding close refresh completed');
+            });
           }}
         />
       )}

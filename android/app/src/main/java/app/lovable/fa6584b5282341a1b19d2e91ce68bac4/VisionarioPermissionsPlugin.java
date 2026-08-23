@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -32,6 +33,8 @@ import com.getcapacitor.annotation.PermissionCallback;
         }
 )
 public class VisionarioPermissionsPlugin extends Plugin {
+    private static final String TAG = "NATIVE-PERMISSION";
+
     private boolean hasAndroidPermission(String permission) {
         return getContext().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
     }
@@ -119,7 +122,13 @@ public class VisionarioPermissionsPlugin extends Plugin {
 
     @PluginMethod
     public void checkStatus(PluginCall call) {
-        call.resolve(buildStatus());
+        JSObject status = buildStatus();
+        Log.i(TAG, "[NATIVE-PERMISSION] checkStatus"
+                + " SDK=" + Build.VERSION.SDK_INT
+                + " POST_NOTIFICATIONS granted=" + status.getBool("notificationPermissionGranted")
+                + " notificationPermissionRequired=" + status.getBool("notificationPermissionRequired")
+                + " notificationPermissionGranted=" + status.getBool("notificationPermissionGranted"));
+        call.resolve(status);
     }
 
     @PluginMethod

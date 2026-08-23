@@ -139,6 +139,15 @@ export async function refreshPermissionDiagnostic(): Promise<PermissionDiagnosti
     reasons: forcedManual ? ['Modo manual forçado nas configurações'] : reasons,
     checkedAt: Date.now(),
   };
+  console.info('[PERMISSION-DIAGNOSTIC]', {
+    platform: diagnostic.platform,
+    notificationsRequired: diagnostic.notificationsRequired,
+    notificationsGranted: diagnostic.notificationsGranted,
+    notificationsStatusKnown: diagnostic.notificationsStatusKnown,
+    gps: diagnostic.gpsReady,
+    locationPermission: diagnostic.locationGranted,
+    backgroundGps: diagnostic.backgroundLocationGranted,
+  });
   lastDiagnostic = diagnostic;
   notifyAll();
   return diagnostic;
