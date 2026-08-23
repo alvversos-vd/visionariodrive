@@ -134,9 +134,18 @@ export function clearBgAlwaysVerified(): void {
 export async function getBackgroundPermissionStatus(): Promise<BackgroundPermissionStatus> {
   const base = fallbackStatus();
   const p = await plugin();
-  if (!p || !base.native || base.platform !== 'android') return withForegroundFallback(base);
+  console.info('[BG-PERMISSION] check started', {
+    native: base.native,
+    platform: base.platform,
+    pluginAvailable: p !== null,
+  });
+  if (!p || !base.native || base.platform !== 'android') {
+    console.info('[BG-PERMISSION] using fallback', base);
+    return withForegroundFallback(base);
+  }
   try {
     const native = await p.checkStatus();
+    console.info('[BG-PERMISSION] native checkStatus returned', native);
     const status: BackgroundPermissionStatus = {
       ...base,
       ...native,
@@ -147,8 +156,10 @@ export async function getBackgroundPermissionStatus(): Promise<BackgroundPermiss
     };
     if (status.backgroundLocationGranted) markBgAlwaysVerified();
     else if (!status.foregroundLocationGranted) clearBgAlwaysVerified();
+    console.info('[BG-PERMISSION] normalized native status', status);
     return status;
-  } catch {
+  } catch (error) {
+    console.error('[BG-PERMISSION] native checkStatus failed; using fallback', error);
     return withForegroundFallback(base);
   }
 }
