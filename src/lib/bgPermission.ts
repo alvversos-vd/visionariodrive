@@ -245,7 +245,6 @@ export async function openAppLocationSettings(): Promise<boolean> {
       await p.openLocationPermissionSettings();
       return true;
     }
-    const { registerPlugin } = await import('@capacitor/core');
     const Bg = registerPlugin<{ openSettings: () => Promise<void> }>('BackgroundGeolocation');
     await Bg.openSettings();
     return true;
