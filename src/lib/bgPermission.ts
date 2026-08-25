@@ -6,6 +6,8 @@
  * A flag local continua como evidência empírica/fallback quando um fix chega em background.
  */
 
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
 const BG_VERIFIED_KEY = 'vd-bg-always-verified-v1';
 
 export interface BackgroundPermissionStatus {
@@ -71,14 +73,22 @@ let cachedPlugin: VisionarioPermissionsPlugin | null | undefined;
  * Registrada apenas no Android — evita registro duplicado e exceções
  * "not implemented on web" em PWA/desktop.
  */
-export async function getVisionarioPermissionsPlugin<T = VisionarioPermissionsPlugin>(): Promise<T | null> {
-  return (await plugin()) as unknown as T | null;
+export function getVisionarioPermissionsPlugin<T = VisionarioPermissionsPlugin>(): T | null {
+  return plugin() as unknown as T | null;
 }
 
-async function plugin(): Promise<VisionarioPermissionsPlugin | null> {
+/**
+ * SÍNCRONA por contrato. O objeto devolvido por `registerPlugin()` é um Proxy
+ * que responde a QUALQUER propriedade — inclusive `then` — o que o torna um
+ * "thenable". Retorná-lo de uma função `async` faz o motor JS chamar
+ * `proxy.then(resolve, reject)`, disparando no bridge o método inexistente
+ * `VisionarioPermissions.then()`; a promise externa nunca se estabiliza e o
+ * diagnóstico trava para sempre. A referência do plugin NUNCA pode atravessar
+ * uma fronteira async/await/Promise.resolve — só o RESULTADO dos métodos pode.
+ */
+function plugin(): VisionarioPermissionsPlugin | null {
   if (cachedPlugin !== undefined) return cachedPlugin;
   try {
-    const { Capacitor, registerPlugin } = await import('@capacitor/core');
     // Plugin existe apenas no container nativo Android; em web/PWA o
     // registerPlugin geraria rejeição "not implemented on web".
     cachedPlugin = Capacitor.getPlatform() === 'android'
@@ -133,7 +143,7 @@ export function clearBgAlwaysVerified(): void {
 
 export async function getBackgroundPermissionStatus(): Promise<BackgroundPermissionStatus> {
   const base = fallbackStatus();
-  const p = await plugin();
+  const p = plugin();
   console.info('[BG-PERMISSION] check started', {
     native: base.native,
     platform: base.platform,
@@ -173,7 +183,7 @@ export async function requestNotificationPermissionIfNeeded(): Promise<Backgroun
   if (!before.native || before.platform !== 'android' || !before.notificationPermissionRequired || before.notificationPermissionGranted) {
     return before;
   }
-  const p = await plugin();
+  const p = plugin();
   if (!p) return before;
   try {
     const native = await p.requestNotificationPermission();
@@ -189,7 +199,7 @@ export async function requestForegroundLocationPermissionIfPossible(): Promise<B
   // Caminho nativo (Android): callback resolve só após o diálogo do sistema fechar
   // e o estado de checkSelfPermission já estar propagado — fonte da verdade.
   if (before.native && before.platform === 'android') {
-    const p = await plugin();
+    const p = plugin();
     if (p?.requestForegroundLocationPermission) {
       try {
         const native = await p.requestForegroundLocationPermission();
@@ -210,7 +220,7 @@ export async function requestForegroundLocationPermissionIfPossible(): Promise<B
 export async function requestBackgroundLocationPermissionIfPossible(): Promise<BackgroundPermissionStatus> {
   const before = await getBackgroundPermissionStatus();
   if (!before.native || before.platform !== 'android' || before.backgroundLocationGranted) return before;
-  const p = await plugin();
+  const p = plugin();
   if (!p) return before;
   try {
     const native = await p.requestBackgroundLocationPermission();
@@ -230,7 +240,7 @@ export async function requestBackgroundLocationPermissionIfPossible(): Promise<B
  */
 export async function openAppLocationSettings(): Promise<boolean> {
   try {
-    const p = await plugin();
+    const p = plugin();
     if (p) {
       await p.openLocationPermissionSettings();
       return true;
@@ -246,7 +256,7 @@ export async function openAppLocationSettings(): Promise<boolean> {
 
 export async function openNotificationSettings(): Promise<boolean> {
   try {
-    const p = await plugin();
+    const p = plugin();
     if (!p) return false;
     await p.openNotificationSettings();
     return true;

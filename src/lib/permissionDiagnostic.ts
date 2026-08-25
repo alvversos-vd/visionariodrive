@@ -48,8 +48,8 @@ type NativePermPlugin = {
   requestIgnoreBatteryOptimization?: () => Promise<{ requested: boolean; disabled?: boolean }>;
 };
 
-/** Reusa a instância única/cacheada registrada em bgPermission (somente Android). */
-async function nativePlugin(): Promise<NativePermPlugin | null> {
+/** Reusa a instância única/cacheada registrada em bgPermission (somente Android). SÍNCRONA: o Proxy do plugin nunca pode atravessar uma função async (thenable-leak). */
+function nativePlugin(): NativePermPlugin | null {
   return getVisionarioPermissionsPlugin<NativePermPlugin>();
 }
 
@@ -105,7 +105,7 @@ export async function refreshPermissionDiagnostic(): Promise<PermissionDiagnosti
   let batteryDisabled = true;
   if (bg.native && bg.platform === 'android') {
     try {
-      const p = await nativePlugin();
+      const p = nativePlugin();
       const res = await p?.isBatteryOptimizationDisabled?.();
       if (res && typeof res.disabled === 'boolean') batteryDisabled = res.disabled;
     } catch { /* mantém true por default — não bloqueia automático */ }
@@ -180,7 +180,7 @@ export function subscribePermissionDiagnostic(fn: (d: PermissionDiagnostic) => v
 
 export async function requestIgnoreBatteryOptimization(): Promise<boolean> {
   try {
-    const p = await nativePlugin();
+    const p = nativePlugin();
     const res = await p?.requestIgnoreBatteryOptimization?.();
     await refreshPermissionDiagnostic();
     return !!res?.disabled;
