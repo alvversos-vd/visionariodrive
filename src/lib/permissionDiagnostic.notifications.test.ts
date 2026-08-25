@@ -20,7 +20,7 @@ const KNOWN_ANDROID = {
 
 vi.mock('./bgPermission', () => ({
   getBackgroundPermissionStatus: vi.fn(),
-  getVisionarioPermissionsPlugin: vi.fn(async () => null),
+  getVisionarioPermissionsPlugin: vi.fn(() => null),
 }));
 
 import { getBackgroundPermissionStatus } from './bgPermission';
