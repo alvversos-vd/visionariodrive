@@ -53,19 +53,11 @@ describe('permissionDiagnostic — lifecycle finito', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(mocks.getStatus).toHaveBeenCalledTimes(2);
-    unsubscribe();
-  });
-
-  it('retorno das configurações dispara uma única atualização', async () => {
-    mocks.getStatus.mockResolvedValue(STATUS);
-    const service = await import('./permissionDiagnostic');
-    const unsubscribe = service.subscribePermissionDiagnostic(vi.fn());
-    await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledTimes(1));
 
     window.dispatchEvent(new Event('focus'));
-    await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalledTimes(3));
     await Promise.resolve();
-    expect(mocks.getStatus).toHaveBeenCalledTimes(2);
+    expect(mocks.getStatus).toHaveBeenCalledTimes(3);
     unsubscribe();
   });
 });
