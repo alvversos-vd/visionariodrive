@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Satellite, Wrench, ChevronRight } from 'lucide-react';
 import {
   subscribePermissionDiagnostic,
+  refreshPermissionDiagnostic,
   type PermissionDiagnostic,
 } from '@/lib/permissionDiagnostic';
 import { useCapabilities } from '@/hooks/useCapabilities';
@@ -24,6 +25,7 @@ export default function OperationalStatusBadge({ compact = false }: Props) {
   useEffect(() => {
     if (!gpsEnabled) return;
     const unsub = subscribePermissionDiagnostic(setD);
+    void refreshPermissionDiagnostic();
     return unsub;
   }, [gpsEnabled]);
 

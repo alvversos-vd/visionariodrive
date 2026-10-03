@@ -42,6 +42,7 @@ import { eventBus } from '@/lib/eventBus';
 
 import {
   subscribePermissionDiagnostic,
+  refreshPermissionDiagnostic,
   type PermissionDiagnostic,
 } from '@/lib/permissionDiagnostic';
 
@@ -140,6 +141,7 @@ export default function ShiftMode({ onChange }: Props) {
   const [notifPromptOpen, setNotifPromptOpen] = useState(false);
   useEffect(() => {
     const unsub = subscribePermissionDiagnostic(setPermDiag);
+    void refreshPermissionDiagnostic();
     return unsub;
   }, []);
   // Sprint 10.6 — START é 100% manual: nenhuma UI, permissão ou watcher de GPS.
