@@ -1,10 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const refreshPermissionDiagnostic = vi.fn(async () => pendingDiagnostic);
-const unsubscribe = vi.fn();
-let currentUser: { id: string } | null = { id: 'user-a' };
-
 const pendingDiagnostic = {
   locationGranted: false,
   backgroundLocationGranted: false,
@@ -22,16 +18,22 @@ const pendingDiagnostic = {
   checkedAt: 1,
 };
 
+const mocks = vi.hoisted(() => ({
+  refreshPermissionDiagnostic: vi.fn(),
+  unsubscribe: vi.fn(),
+  currentUser: { value: { id: 'user-a' } as { id: string } | null },
+}));
+
 vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({ user: currentUser }),
+  useAuth: () => ({ user: mocks.currentUser.value }),
 }));
 
 vi.mock('@/lib/permissionDiagnostic', () => ({
   subscribePermissionDiagnostic: vi.fn((subscriber: (value: typeof pendingDiagnostic) => void) => {
-    void refreshPermissionDiagnostic().then(subscriber);
-    return unsubscribe;
+    void mocks.refreshPermissionDiagnostic().then(subscriber);
+    return mocks.unsubscribe;
   }),
-  refreshPermissionDiagnostic,
+  refreshPermissionDiagnostic: mocks.refreshPermissionDiagnostic,
 }));
 
 vi.mock('@/lib/bgPermission', () => ({
@@ -43,18 +45,19 @@ import NotificationActivationCard from './NotificationActivationCard';
 
 describe('NotificationActivationCard — ciclo do diagnóstico', () => {
   beforeEach(() => {
-    currentUser = { id: 'user-a' };
-    refreshPermissionDiagnostic.mockClear();
-    unsubscribe.mockClear();
+    mocks.currentUser.value = { id: 'user-a' };
+    mocks.refreshPermissionDiagnostic.mockReset();
+    mocks.refreshPermissionDiagnostic.mockResolvedValue(pendingDiagnostic);
+    mocks.unsubscribe.mockClear();
   });
 
   it('consulta uma vez na montagem e não consulta novamente em rerenders', async () => {
     const view = render(<NotificationActivationCard />);
     expect(await screen.findByText('Ative as notificações do Visionário Drive')).toBeInTheDocument();
-    expect(refreshPermissionDiagnostic).toHaveBeenCalledTimes(1);
+    expect(mocks.refreshPermissionDiagnostic).toHaveBeenCalledTimes(1);
 
     view.rerender(<NotificationActivationCard />);
-    expect(refreshPermissionDiagnostic).toHaveBeenCalledTimes(1);
+    expect(mocks.refreshPermissionDiagnostic).toHaveBeenCalledTimes(1);
   });
 
   it('faz nova consulta e restaura o card somente quando o usuário muda', async () => {
@@ -63,10 +66,10 @@ describe('NotificationActivationCard — ciclo do diagnóstico', () => {
     fireEvent.click(screen.getByText('Agora não'));
     expect(screen.queryByText('Ative as notificações do Visionário Drive')).not.toBeInTheDocument();
 
-    currentUser = { id: 'user-b' };
+    mocks.currentUser.value = { id: 'user-b' };
     view.rerender(<NotificationActivationCard />);
 
     expect(await screen.findByText('Ative as notificações do Visionário Drive')).toBeInTheDocument();
-    expect(refreshPermissionDiagnostic).toHaveBeenCalledTimes(2);
+    expect(mocks.refreshPermissionDiagnostic).toHaveBeenCalledTimes(2);
   });
 });
