@@ -9,7 +9,7 @@
  * `openNotificationSettings`). Não bloqueia o START e NUNCA menciona nem
  * solicita localização (ADR-015).
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,13 +33,13 @@ export default function NotificationActivationCard() {
   const { user } = useAuth();
   const [diagnostic, setDiagnostic] = useState<PermissionDiagnostic | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const previousUserId = useRef(user?.id);
 
   // Fonte única e REATIVA: o diagnóstico oficial já revalida em focus,
   // visibilitychange e retorno das configurações do sistema.
   useEffect(() => {
     console.info('[NOTIF-CARD] mounted');
     const unsub = subscribePermissionDiagnostic(setDiagnostic);
-    void refreshPermissionDiagnostic();
     return () => {
       console.info('[NOTIF-CARD] unmounted');
       unsub();
@@ -48,6 +48,8 @@ export default function NotificationActivationCard() {
 
   // Troca de conta (login/logout) reinicia a descoberta.
   useEffect(() => {
+    if (previousUserId.current === user?.id) return;
+    previousUserId.current = user?.id;
     setDismissed(false);
     void refreshPermissionDiagnostic();
   }, [user?.id]);

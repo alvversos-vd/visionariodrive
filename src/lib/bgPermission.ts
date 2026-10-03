@@ -134,8 +134,11 @@ export function markBgAlwaysVerified(): void {
 
 export function clearBgAlwaysVerified(): void {
   try {
+    const was = localStorage.getItem(BG_VERIFIED_KEY);
     localStorage.removeItem(BG_VERIFIED_KEY);
-    if (typeof window !== 'undefined') {
+    // Idempotência obrigatória: uma leitura que confirma o estado já limpo não
+    // é uma mudança e não pode realimentar o diagnóstico via evento.
+    if (was === '1' && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('vd-bg-verified-changed', { detail: { verified: false } }));
     }
   } catch { /* noop */ }

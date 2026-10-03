@@ -90,6 +90,7 @@ function computeMode(d: Omit<PermissionDiagnostic, 'trackingMode' | 'reasons' | 
 
 
 let lastDiagnostic: PermissionDiagnostic | null = null;
+let refreshInFlight: Promise<PermissionDiagnostic> | null = null;
 const subscribers = new Set<(d: PermissionDiagnostic) => void>();
 let listenersAttached = false;
 
@@ -100,7 +101,7 @@ function notifyAll() {
   }
 }
 
-export async function refreshPermissionDiagnostic(): Promise<PermissionDiagnostic> {
+async function runPermissionDiagnostic(): Promise<PermissionDiagnostic> {
   const bg: BackgroundPermissionStatus = await getBackgroundPermissionStatus();
   let batteryDisabled = true;
   if (bg.native && bg.platform === 'android') {
@@ -151,6 +152,19 @@ export async function refreshPermissionDiagnostic(): Promise<PermissionDiagnosti
   lastDiagnostic = diagnostic;
   notifyAll();
   return diagnostic;
+}
+
+/**
+ * Consolida solicitações simultâneas numa única leitura nativa. Não é polling
+ * nem debounce: após a leitura terminar, o próximo evento legítimo consulta o
+ * dispositivo novamente.
+ */
+export function refreshPermissionDiagnostic(): Promise<PermissionDiagnostic> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = runPermissionDiagnostic().finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
 }
 
 export function getCachedDiagnostic(): PermissionDiagnostic | null { return lastDiagnostic; }
