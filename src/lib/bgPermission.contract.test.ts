@@ -33,6 +33,7 @@ vi.mock('@capacitor/core', () => ({
 describe('bgPermission — contrato de fronteira do plugin nativo', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     (globalThis as unknown as { window?: unknown }).window ??= globalThis;
     (window as unknown as { Capacitor: unknown }).Capacitor = {
       isNativePlatform: () => true,
@@ -66,5 +67,24 @@ describe('bgPermission — contrato de fronteira do plugin nativo', () => {
     // O estado real da permissão continua sendo a fonte da verdade.
     expect(status.notificationPermissionGranted).toBe(false);
     expect(status.notificationPermissionKnown).toBe(true);
+  });
+
+  it('limpeza do estado verificado só emite evento quando há transição real', async () => {
+    const { markBgAlwaysVerified, clearBgAlwaysVerified } = await import('./bgPermission');
+    const changed = vi.fn();
+    window.addEventListener('vd-bg-verified-changed', changed);
+
+    markBgAlwaysVerified();
+    expect(changed).toHaveBeenCalledTimes(1);
+
+    clearBgAlwaysVerified();
+    expect(changed).toHaveBeenCalledTimes(2);
+
+    // O estado já está limpo: repetir a confirmação não pode realimentar o SSOT.
+    clearBgAlwaysVerified();
+    clearBgAlwaysVerified();
+    expect(changed).toHaveBeenCalledTimes(2);
+
+    window.removeEventListener('vd-bg-verified-changed', changed);
   });
 });
