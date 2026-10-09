@@ -113,7 +113,7 @@ export default function RegisterRideFab({ onChange }: Props) {
       <button
         onClick={() => setOpen(true)}
         aria-label="Registrar nova corrida"
-        className="fixed z-40 bottom-5 right-5 h-14 w-14 rounded-full bg-profit-gradient text-primary-foreground shadow-glow shadow-premium flex items-center justify-center active:scale-95 transition-transform animate-fab-pop"
+        className="fixed z-40 bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] right-5 h-14 w-14 rounded-full bg-profit-gradient text-primary-foreground shadow-glow shadow-premium flex items-center justify-center active:scale-95 transition-transform animate-fab-pop"
       >
         <Plus size={26} strokeWidth={2.5} />
       </button>
