@@ -15,6 +15,7 @@ import { BRAND_NAME, BRAND_TAGLINE } from '@/assets/branding/logo';
 import BrandMark from '@/components/brand/BrandMark';
 import { SessionModeProvider, useSessionMode } from '@/components/session/SessionModeContext';
 import SessionOverlays from '@/components/session/SessionOverlays';
+import TabNavigation from '@/components/TabNavigation';
 
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
@@ -93,25 +94,15 @@ function IndexInner() {
     { key: 'history', label: 'Histórico', icon: BarChart3, pro: true },
   ];
 
-  // Sprint 7.5 Onda 2 — navegação "que respira": underline desliza, ícone sobe 2px,
-  // label ganha peso, glow médio aparece. Sincronizado em 180ms.
-  // Sprint 7.5 Onda 2 — navegação "que respira": underline desliza, ícone sobe 2px,
-  // label ganha peso, glow médio aparece. Sincronizado em 180ms.
-  // Sprint 10 — em Sessão Visionária, abas secundárias perdem destaque (só visual).
-  const tabClass = (active: boolean, dimmed = false) =>
-    `group relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-caption font-display tracking-wide rounded-md min-w-0 flex-1 press overflow-hidden transition-all duration-[180ms] ${
-      active
-        ? 'text-primary font-bold'
-        : `text-muted-foreground font-semibold hover:text-foreground ${dimmed ? 'opacity-40' : ''}`
-    } after:content-[""] after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:h-[2px] after:rounded-full after:transition-all after:duration-[180ms] after:ease-out ${
-      active
-        ? `after:w-8 after:bg-primary ${dimmed ? '' : 'after:shadow-[0_0_10px_hsl(var(--primary)/0.65)]'}`
-        : 'after:w-0 after:bg-transparent'
-    }`;
-
-
-  const iconClass = (active: boolean) =>
-    `transition-transform duration-[180ms] ease-out ${active ? '-translate-y-0.5' : 'translate-y-0'}`;
+  const navigationItems = tabs.map(t => ({
+    ...t,
+    indicator: t.pro && !isPro ? <Lock size={12} aria-label="Indicador PRO" /> : undefined,
+  }));
+  const currentNavigation = navigationItems.find(t => t.key === tab) ?? {
+    key: tab,
+    label: tab === 'profile' ? 'Perfil' : tab === 'settings' ? 'Configurações' : 'PRO',
+    icon: tab === 'profile' ? User : tab === 'settings' ? SettingsIcon : Sparkles,
+  };
 
   const isLocked = (key: Tab) => PRO_TABS.includes(key) && !isPro;
 
@@ -181,29 +172,15 @@ function IndexInner() {
       </header>
 
       <main className="container max-w-lg mx-auto px-4 mt-4 space-y-4">
-        <nav className="flex bg-card/60 border border-border/60 rounded-xl p-1 gap-0.5">
-          {tabs.map(t => {
-            const active = tab === t.key;
-            const dimmed = sessionMode && t.key !== 'home';
-            return (
-              <button
-                key={t.key}
-                className={tabClass(active, dimmed)}
-
-                onClick={() => {
-                  setTab(t.key);
-                  if (t.key !== 'input') setResult(null);
-                }}
-              >
-                <t.icon size={16} className={iconClass(active)} />
-                <span className="truncate">{t.label}</span>
-                {t.pro && !isPro && (
-                  <Lock size={8} className="absolute top-1 right-1 opacity-60" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        <TabNavigation<Tab>
+          items={navigationItems}
+          current={currentNavigation}
+          dimSecondary={sessionMode}
+          onSelect={key => {
+            setTab(key);
+            if (key !== 'input') setResult(null);
+          }}
+        />
 
         <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
       </main>
