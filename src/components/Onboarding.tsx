@@ -55,7 +55,69 @@ export default function Onboarding({ onFinish }: { onFinish: () => void }) {
 
   useEffect(() => {
     console.info('[NOTIF-LIFECYCLE] Onboarding mounted', { userId: user?.id ?? null });
-    const titles: Record<StepKey, string> = {
+    return () => console.info('[NOTIF-LIFECYCLE] Onboarding unmounted', { userId: user?.id ?? null });
+  }, [user?.id]);
+
+  const idx = STEP_ORDER.indexOf(step);
+  const progress = (idx / (STEP_ORDER.length - 1)) * 100;
+  const next = () => setStep(STEP_ORDER[Math.min(idx + 1, STEP_ORDER.length - 1)]);
+
+  const finalize = async () => {
+    if (!user || submitting.current) return;
+    submitting.current = true;
+    setSaving(true);
+    try {
+      if (vehicle && !vehicleService.hasAny()) {
+        vehicleService.add({
+          tipo_veiculo: vehicle,
+          nome_veiculo: VEHICLES.find(v => v.key === vehicle)?.label || 'Meu veículo',
+          km_por_litro: vehicle === 'bike' || vehicle === 'bike_eletrica' ? null : 10,
+          tipo_combustivel: vehicle === 'bike' ? 'nenhum' : vehicle === 'bike_eletrica' ? 'eletrico' : 'gasolina',
+          valor_combustivel_litro: vehicle === 'bike' || vehicle === 'bike_eletrica' ? 0 : 6,
+          custo_fixo_mensal: 0,
+        });
+      }
+      if (app) vehicleService.setLastApp(app);
+      const finalGoal = goal ?? (customGoal ? Number(customGoal) : 0);
+      if (finalGoal > 0) {
+        const g = goalsService.get();
+        goalsService.save({ ...g, daily: finalGoal });
+      }
+      await profileService.markOnboarded(user.id, {
+        tipo_veiculo_principal: vehicle,
+        meta_lucro_diaria: finalGoal || null,
+        app_principal: app,
+        objetivo_principal: objective,
+      });
+      await refreshProfile();
+      onFinish();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Tente novamente';
+      toast({ title: 'Erro', description: msg, variant: 'destructive' });
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
+  };
+
+  const skipAll = async () => {
+    if (!user || submitting.current) return;
+    submitting.current = true;
+    setSaving(true);
+    try {
+      await profileService.update(user.id, { onboarding_completo: true });
+      await refreshProfile();
+      onFinish();
+    } catch (e: unknown) {
+      toast({ title: 'Erro', description: e instanceof Error ? e.message : 'Tente novamente', variant: 'destructive' });
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
+  };
+
+  const displayName = profile?.nome_usuario?.trim() || '';
+  const titles: Record<StepKey, string> = {
     welcome: 'Vamos montar seu painel', vehicle: 'Qual seu veículo?',
     goal: 'Quanto quer lucrar por dia?', app: 'Qual app você mais usa?',
     objective: 'O que quer melhorar?', done: 'Tudo certo para começar?',
