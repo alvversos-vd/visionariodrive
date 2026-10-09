@@ -7,4 +7,4 @@
 - [x] Audit diagnostic controls and navigation presentation.
 - [x] Restrict diagnostics to existing explicit activation and remove floating overlap.
 - [x] Compact mobile menu and protect available height and bottom safe area.
-- [ ] Verify START/PRO presentation and regression tests; document physical device limitations.
+- [x] Verify START/PRO presentation and regression tests; document physical device limitations in docs/release/dashboard-mobile-audit.md.
