@@ -14,7 +14,7 @@ vi.mock('@/hooks/use-toast', () => ({ toast: mocks.toast }));
 
 afterEach(cleanup);
 beforeEach(() => { vi.resetAllMocks(); mocks.hasAny.mockReturnValue(false); });
-const click = (name: string) => fireEvent.click(screen.getByRole('button', { name, exact: true }));
+const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
 
 describe('existing onboarding flow', () => {
   it('retains selections when navigating back and saves through the existing services only on completion', async () => {
