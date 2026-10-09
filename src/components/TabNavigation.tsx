@@ -35,7 +35,7 @@ export default function TabNavigation<T extends string>({ items, current, onSele
         className={cn(
           'motion-reduce:transition-none font-display',
           mobile
-            ? 'h-12 w-full justify-start gap-3 px-3 text-sm'
+             ? 'h-auto min-h-11 w-full justify-start gap-3 px-3 py-2 text-sm'
             : 'h-auto min-h-12 min-w-0 flex-1 flex-col gap-1 px-1 py-2.5 text-caption',
           active ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary font-bold' : 'text-muted-foreground font-semibold',
           dimmed && !active && 'opacity-40',
@@ -74,12 +74,12 @@ export default function TabNavigation<T extends string>({ items, current, onSele
       <PopoverContent
         align="start"
         side="bottom"
-        avoidCollisions={false}
+        collisionPadding={16}
         sideOffset={8}
         aria-label="Navegação"
-        className="w-[var(--radix-popover-trigger-width)] max-h-[min(65dvh,26rem)] overflow-y-auto rounded-xl border-border/70 bg-popover p-1.5 shadow-elevated duration-150 motion-reduce:animate-none"
+        className="w-[var(--radix-popover-trigger-width)] max-h-[min(var(--radix-popover-content-available-height),26rem)] overflow-y-auto overscroll-contain rounded-xl border-border/70 bg-popover p-1 shadow-elevated duration-150 motion-reduce:animate-none"
       >
-        <nav aria-label="Seções" className="space-y-0.5">{entries}</nav>
+        <nav aria-label="Seções">{entries}</nav>
       </PopoverContent>
     </Popover>
   );

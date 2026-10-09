@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { saveBlob } from '@/lib/saveBlob';
 import { exportTelemetry } from '@/lib/exportTelemetry';
+import { Button } from '@/components/ui/button';
 
 /**
  * BUG-MVP-004/005 — Botão flutuante de diagnóstico de exportações.
@@ -33,7 +34,7 @@ export default function ExportDebugButton() {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      setEnabled(true);
+      setEnabled(params.get('exportDebug') === '1');
     } catch {
       setEnabled(false);
     }
@@ -56,37 +57,38 @@ export default function ExportDebugButton() {
   };
 
   return (
-    <div className="fixed bottom-20 right-4 z-[9999] flex flex-col items-end gap-2">
+    <div className="flex flex-col items-start gap-2 p-4">
       {open && (
         <div className="flex flex-col gap-1 p-2 rounded-lg bg-card border border-border shadow-xl text-xs">
-          <button className="px-3 py-1.5 rounded bg-primary text-primary-foreground" onClick={exportSnapshot}>
+          <Button className="min-h-11" onClick={exportSnapshot}>
             Exportar snapshot
-          </button>
-          <button className="px-3 py-1.5 rounded bg-muted" onClick={() => runTest('1kb', makeDummyBlob(1024, 'application/pdf'), 'pdf')}>
+          </Button>
+          <Button variant="secondary" className="min-h-11" onClick={() => runTest('1kb', makeDummyBlob(1024, 'application/pdf'), 'pdf')}>
             Teste PDF 1KB
-          </button>
-          <button className="px-3 py-1.5 rounded bg-muted" onClick={() => runTest('500kb', makeDummyBlob(500 * 1024, 'application/pdf'), 'pdf')}>
+          </Button>
+          <Button variant="secondary" className="min-h-11" onClick={() => runTest('500kb', makeDummyBlob(500 * 1024, 'application/pdf'), 'pdf')}>
             Teste PDF 500KB
-          </button>
-          <button className="px-3 py-1.5 rounded bg-muted" onClick={() => runTest('5mb', makeDummyBlob(5 * 1024 * 1024, 'application/pdf'), 'pdf')}>
+          </Button>
+          <Button variant="secondary" className="min-h-11" onClick={() => runTest('5mb', makeDummyBlob(5 * 1024 * 1024, 'application/pdf'), 'pdf')}>
             Teste PDF 5MB
-          </button>
-          <button className="px-3 py-1.5 rounded bg-muted" onClick={() => runTest('gpx', new Blob(['<gpx/>'], { type: 'application/gpx+xml' }), 'gpx')}>
+          </Button>
+          <Button variant="secondary" className="min-h-11" onClick={() => runTest('gpx', new Blob(['<gpx/>'], { type: 'application/gpx+xml' }), 'gpx')}>
             Teste GPX
-          </button>
-          <button className="px-3 py-1.5 rounded bg-muted" onClick={() => runTest('kml', new Blob(['<kml/>'], { type: 'application/vnd.google-earth.kml+xml' }), 'kml')}>
+          </Button>
+          <Button variant="secondary" className="min-h-11" onClick={() => runTest('kml', new Blob(['<kml/>'], { type: 'application/vnd.google-earth.kml+xml' }), 'kml')}>
             Teste KML
-          </button>
+          </Button>
         </div>
       )}
-      <button
+      <Button
+        variant="outline"
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg opacity-80 hover:opacity-100"
+        className="min-h-11 text-xs"
         aria-label="Diagnóstico de exportações"
       >
         Export diag
-      </button>
+      </Button>
     </div>
   );
 }

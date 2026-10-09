@@ -141,7 +141,7 @@ function IndexInner() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <div className="min-h-screen bg-background pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
       <header className="bg-hero border-b border-border/60 px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-5">
         <div className="container max-w-lg mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
