@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,7 +80,7 @@ export default function EntryForm({ open, type, onClose, onSubmit }: Props) {
       <SheetContent side="bottom" className="mx-auto max-h-[90dvh] max-w-lg overflow-y-auto rounded-t-2xl border-border bg-card px-5 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] [&>button]:h-11 [&>button]:w-11 [&>button]:top-2 [&>button]:right-2 [&>button]:flex [&>button]:items-center [&>button]:justify-center">
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display tracking-normal">{TITLES[type]}</SheetTitle>
-          <p className="text-xs text-muted-foreground">{HELP[type]}</p>
+          <SheetDescription className="text-xs text-muted-foreground">{HELP[type]}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-5 py-6 [&_input]:min-h-11 [&_button[role=combobox]]:min-h-11">
