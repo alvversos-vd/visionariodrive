@@ -29,16 +29,16 @@ beforeEach(() => {
 describe('Existing history actions', () => {
   it('preserves vehicle filtering and clearing without changing source order', () => {
     render(<HistoryView refresh={0} onRefresh={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Moto', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Moto' }));
     expect(screen.getAllByRole('button', { name: 'Excluir corrida' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Limpar', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar' }));
     expect(screen.getAllByRole('button', { name: 'Excluir corrida' })).toHaveLength(2);
     fireEvent.click(screen.getAllByRole('button', { name: 'Excluir corrida' })[0]);
     expect(mocks.deleteRide).toHaveBeenCalledWith('ride-a');
   });
   it('preserves ride-type filtering', () => {
     render(<HistoryView refresh={0} onRefresh={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Passageiro', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Passageiro' }));
     fireEvent.click(screen.getByRole('button', { name: 'Excluir corrida' }));
     expect(mocks.deleteRide).toHaveBeenCalledWith('ride-b');
   });

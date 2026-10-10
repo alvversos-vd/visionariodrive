@@ -214,13 +214,13 @@ export default function ShiftHistoryView({ refresh }: Props) {
               <span>De</span>
               <input type="date" value={exportFrom} max={exportTo}
                 onChange={e => setExportFrom(e.target.value)}
-                aria-label="Aplicativo do turno" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+                aria-label="Data inicial da exportação" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
             </label>
             <label className="text-caption text-muted-foreground space-y-1">
               <span>Até</span>
               <input type="date" value={exportTo} min={exportFrom} max={todayIso}
                 onChange={e => setExportTo(e.target.value)}
-                aria-label="Aplicativo do turno" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+                aria-label="Data final da exportação" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
             </label>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -255,7 +255,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
             <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Car size={10}/> Veículo</p>
-            <div className="flex gap-1 bg-secondary rounded-lg p-1">
+            <div className="flex flex-wrap gap-1 bg-secondary rounded-lg p-1">
               {tipoOptions.map(o => (
                 <Button variant="ghost" key={o.key} aria-label={o.key === 'todos' ? 'Todos os veículos' : TIPO_LABEL[o.key]} aria-pressed={vehicleFilter === o.key} onClick={() => setVehicleFilter(o.key)}
                   className={`h-auto min-h-11 min-w-11 flex-1 px-1 py-1 text-caption font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
