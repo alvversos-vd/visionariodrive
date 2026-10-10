@@ -11,5 +11,5 @@
 
 # Financeiro premium · Gate 2
 - [x] Audit current indicators, filters, dates, form and design tokens.
-- [ ] Refine FinancialView and EntryForm presentation only; preserve existing calculations and actions.
-- [ ] Verify regressions and authenticated browser layout; document results and physical-device limitations.
+- [x] Refine FinancialView and EntryForm presentation only; preserve existing calculations and actions.
+- [x] Verify regressions and authenticated browser layout; document results and physical-device limitations in docs/release/financial-premium-audit.md.
