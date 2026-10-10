@@ -15,7 +15,7 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Sparkles, Receipt, Banknote } from 'lucide-react';
+import { Plus, Trash2, Sparkles, Receipt, Banknote, Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { financialService } from '@/lib/services/financialService';
 import { metricsService } from '@/lib/services/metricsService';
 import type { FinancialEntry, FinancialType } from '@/lib/domain/models';
@@ -99,57 +99,68 @@ export default function FinancialView({ refresh, onChanged }: Props) {
   const monthNet = monthMetrics.bonus + monthMetrics.income - monthMetrics.expense;
 
   return (
-    <div className="space-y-4 animate-slide-up">
-      {/* Header estilo extrato bancário — saldo do mês em destaque */}
-      <div className="card-premium relative overflow-hidden p-5 animate-fade-in-up">
-        <div className="absolute inset-x-0 top-0 h-px bg-primary/60" />
-        <p className="text-micro uppercase tracking-[0.22em] text-muted-foreground font-display font-semibold">
-          Saldo financeiro · este mês
-        </p>
-        <p className={`kpi-display mt-2 text-[36px] ${monthNet >= 0 ? 'text-foreground' : 'text-loss'}`}>
-          {monthNet >= 0 ? '' : '−'}{fmt(Math.abs(monthNet))}
-        </p>
-        <div className="mt-5 grid grid-cols-3 gap-3 divide-x divide-border/60">
-          <StatCell label="Bônus"    value={fmt(monthMetrics.bonus)}    tone="profit" />
-          <StatCell label="Receitas" value={fmt(monthMetrics.income)}   tone="profit" />
-          <StatCell label="Despesas" value={fmt(monthMetrics.expense)}  tone="loss" />
+    <div className="min-w-0 space-y-6 animate-slide-up">
+      <header className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-xl font-semibold tracking-normal">Financeiro</h2>
+        <p className="text-xs text-muted-foreground">Este mês</p>
+      </header>
+
+      {/* Os mesmos indicadores mensais, sem agregar receitas ou mudar o saldo. */}
+      <section aria-label="Resumo financeiro do mês" className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-[1.2fr_1fr_1fr] sm:gap-x-3">
+        <div className="col-span-2 min-w-0 border-t-2 border-primary pt-4 sm:col-span-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet size={15} aria-hidden="true" />
+            <p className="text-xs font-medium">Saldo financeiro</p>
+          </div>
+          <p className={`font-mono-num mt-3 text-[28px] font-semibold leading-tight tracking-normal [overflow-wrap:anywhere] ${monthNet >= 0 ? 'text-foreground' : 'text-loss'}`}>
+            {monthNet >= 0 ? '' : '−'}{fmt(Math.abs(monthNet))}
+          </p>
         </div>
-      </div>
+        <div className="min-w-0 border-t border-border pt-4">
+          <div className="mb-3 flex items-center gap-1.5 text-profit">
+            <ArrowDownLeft size={15} aria-hidden="true" />
+            <p className="text-xs font-medium">Receitas</p>
+          </div>
+          <div className="space-y-3">
+            <StatCell label="Bônus" value={fmt(monthMetrics.bonus)} tone="profit" />
+            <StatCell label="Receitas" value={fmt(monthMetrics.income)} tone="profit" />
+          </div>
+        </div>
+        <div className="min-w-0 border-t border-border pt-4">
+          <div className="mb-3 flex items-center gap-1.5 text-muted-foreground">
+            <ArrowUpRight size={15} aria-hidden="true" />
+            <p className="text-xs font-medium">Despesas</p>
+          </div>
+          <StatCell label="Despesas" value={fmt(monthMetrics.expense)} tone="neutral" />
+        </div>
+      </section>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as FinancialType)}>
-        <TabsList className="w-full">
-          <TabsTrigger value="bonus"   className="flex-1">Bônus</TabsTrigger>
-          <TabsTrigger value="expense" className="flex-1">Despesas</TabsTrigger>
-          <TabsTrigger value="income"  className="flex-1">Receitas</TabsTrigger>
+        <TabsList aria-label="Tipo de movimentação" className="grid h-auto w-full grid-cols-3 gap-1 p-1">
+          <TabsTrigger value="bonus"   className="min-h-11 min-w-0 px-2">Bônus</TabsTrigger>
+          <TabsTrigger value="expense" className="min-h-11 min-w-0 px-2">Despesas</TabsTrigger>
+          <TabsTrigger value="income"  className="min-h-11 min-w-0 px-2">Receitas</TabsTrigger>
         </TabsList>
 
         {(['bonus','expense','income'] as FinancialType[]).map(t => (
-          <TabsContent key={t} value={t} className="mt-4 space-y-3">
-            <Button
-              onClick={() => setFormOpen(true)}
-              className="w-full press"
-              variant="default"
-            >
-              <Plus size={16} className="mr-1.5" /> {TAB_META[t].cta}
-            </Button>
-
+          <TabsContent key={t} value={t} className="mt-5 space-y-4">
             {entries.length === 0 ? (
               <EmptyState
                 icon={<Icon size={22} />}
                 title={meta.empty}
-                description="Toque no botão acima para registrar o primeiro."
+                className="py-8 [&_h3]:tracking-normal"
               />
             ) : (
-              <div className="card-premium overflow-hidden">
+              <div className="min-w-0">
                 {grouped.map((group, gi) => (
                   <div key={group.date}>
                     {gi > 0 && <div className="divider-hairline" />}
-                    <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-                      <p className="text-micro uppercase tracking-[0.14em] text-muted-foreground font-display font-semibold">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 bg-muted/40 px-3 py-2.5">
+                      <p className="text-xs text-muted-foreground font-medium">
                         {fmtDate(group.date)}
                       </p>
-                      <p className={`text-caption font-mono-num ${TAB_META[t].color}`}>
+                      <p className="min-w-0 text-xs font-mono-num text-muted-foreground [overflow-wrap:anywhere]">
                         {TAB_META[t].sign}{fmt(group.items.reduce((s, e) => s + e.value, 0))}
                       </p>
                     </div>
@@ -159,31 +170,34 @@ export default function FinancialView({ refresh, onChanged }: Props) {
                       return (
                         <div key={e.id}>
                           {i > 0 && <div className="mx-4 divider-hairline" />}
-                          <div className="flex items-center gap-3 px-4 py-3">
-                            <div className="h-8 w-8 rounded-lg surface-inset flex items-center justify-center shrink-0">
-                              <IconRow size={14} className={em.color} />
+                          <div className="grid grid-cols-[2rem_minmax(0,1fr)_2.75rem] items-center gap-x-3 gap-y-1 px-3 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_minmax(0,auto)_2.75rem] sm:gap-x-2">
+                            <div className="h-8 w-8 rounded-lg surface-inset flex items-center justify-center">
+                              <IconRow size={15} className="text-muted-foreground" aria-hidden="true" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-display font-semibold text-foreground truncate">
+                              <p className="text-sm font-display font-semibold text-foreground break-words">
                                 {e.category}
                               </p>
-                              <p className="text-caption text-muted-foreground truncate mt-0.5">
+                              <p className="text-xs leading-relaxed text-muted-foreground break-words mt-0.5">
                                 {e.app && <>{e.app}</>}
                                 {e.app && e.notes && <> · </>}
                                 {e.notes}
                                 {!e.app && !e.notes && <span className="italic opacity-70">Sem detalhes</span>}
                               </p>
                             </div>
-                            <p className={`font-mono-num font-semibold text-base shrink-0 tracking-tight ${em.color}`}>
+                            <p className={`col-start-2 row-start-2 min-w-0 text-right font-mono-num font-semibold text-base tracking-normal [overflow-wrap:anywhere] sm:col-start-3 sm:row-start-1 ${em.color}`}>
                               {em.sign}{fmt(e.value)}
                             </p>
-                            <button
+                            <Button
                               onClick={() => handleRemove(e.id)}
-                              className="p-1.5 -mr-1.5 text-muted-foreground/70 hover:text-destructive transition-colors press"
+                              variant="ghost"
+                              size="icon"
+                              className="col-start-3 row-start-1 h-11 w-11 text-muted-foreground hover:text-destructive sm:col-start-4"
                               aria-label="Remover"
+                              title={`Remover ${e.category}`}
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       );
@@ -192,6 +206,13 @@ export default function FinancialView({ refresh, onChanged }: Props) {
                 ))}
               </div>
             )}
+            <Button
+              onClick={() => setFormOpen(true)}
+              className="w-full press"
+              variant="default"
+            >
+              <Plus size={16} /> {TAB_META[t].cta}
+            </Button>
           </TabsContent>
         ))}
       </Tabs>
@@ -209,9 +230,9 @@ export default function FinancialView({ refresh, onChanged }: Props) {
 function StatCell({ label, value, tone }: { label: string; value: string; tone: 'profit' | 'loss' | 'neutral' }) {
   const color = tone === 'profit' ? 'text-profit' : tone === 'loss' ? 'text-loss' : 'text-foreground';
   return (
-    <div className="px-3 first:pl-0 last:pr-0">
-      <p className="text-micro uppercase tracking-wider text-muted-foreground font-display font-semibold">{label}</p>
-      <p className={`mt-1 text-base font-display font-semibold font-mono-num ${color}`}>{value}</p>
+    <div className="min-w-0">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-base leading-relaxed font-semibold font-mono-num tracking-normal [overflow-wrap:anywhere] ${color}`}>{value}</p>
     </div>
   );
 }
