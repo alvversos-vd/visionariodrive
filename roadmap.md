@@ -8,3 +8,8 @@
 - [x] Restrict diagnostics to existing explicit activation and remove floating overlap.
 - [x] Compact mobile menu and protect available height and bottom safe area.
 - [x] Verify START/PRO presentation and regression tests; document physical device limitations in docs/release/dashboard-mobile-audit.md.
+
+# Financeiro premium · Gate 2
+- [x] Audit current indicators, filters, dates, form and design tokens.
+- [ ] Refine FinancialView and EntryForm presentation only; preserve existing calculations and actions.
+- [ ] Verify regressions and authenticated browser layout; document results and physical-device limitations.
