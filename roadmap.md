@@ -13,3 +13,8 @@
 - [x] Audit current indicators, filters, dates, form and design tokens.
 - [x] Refine FinancialView and EntryForm presentation only; preserve existing calculations and actions.
 - [x] Verify regressions and authenticated browser layout; document results and physical-device limitations in docs/release/financial-premium-audit.md.
+
+# Histórico premium · Gate 3
+- [x] Audit existing history sources, filters, optional fields and operational dates.
+- [ ] Refine current history cards and day headings without changing ordering or domain behavior.
+- [ ] Verify regression tests and browser interactions; document results and device limitations.
