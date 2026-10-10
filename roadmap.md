@@ -16,5 +16,5 @@
 
 # Histórico premium · Gate 3
 - [x] Audit existing history sources, filters, optional fields and operational dates.
-- [ ] Refine current history cards and day headings without changing ordering or domain behavior.
-- [ ] Verify regression tests and browser interactions; document results and device limitations.
+- [x] Refine current history cards and day headings without changing ordering or domain behavior.
+- [x] Verify regression tests and browser interactions; document results and device limitations in docs/release/history-premium-audit.md.

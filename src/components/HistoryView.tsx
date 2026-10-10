@@ -460,7 +460,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           entries.map((entry, index) => (
             <Fragment key={entry.id}>
               {(index === 0 || historyDayKey(entries[index - 1].date) !== historyDayKey(entry.date)) && <DayHeading date={entry.date} />}
-            <div key={entry.id} className="rounded-lg border border-border bg-card p-4 relative">
+            <div className="rounded-lg border border-border bg-card p-4 relative">
               {!entry.expenseOnly && (
                 <Button variant="ghost"
                   onClick={() => handleDeleteEntry(entry.id)}
