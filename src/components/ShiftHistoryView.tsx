@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
@@ -183,20 +185,20 @@ export default function ShiftHistoryView({ refresh }: Props) {
   const hasActiveFilter = vehicleFilter !== 'todos' || appFilter !== 'todos';
 
   return (
-    <div className="space-y-4 animate-slide-up">
-      <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 space-y-4 animate-slide-up [&_.number-tabular]:font-mono-num [&_.number-tabular]:[overflow-wrap:anywhere]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display font-bold text-lg flex items-center gap-2">📊 Histórico de turnos</h2>
+          <h2 className="font-display font-semibold text-base tracking-normal flex items-center gap-2">📊 Histórico de turnos</h2>
           <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
         </div>
         {isPro ? (
-          <button
+          <Button variant="ghost"
             onClick={() => setExportOpen(o => !o)}
             className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-secondary text-foreground text-xs font-display font-semibold border"
             aria-expanded={exportOpen}
           >
             <Download size={13} /> Exportar
-          </button>
+          </Button>
         ) : (
           <span className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-border/70 text-micro text-muted-foreground font-display">
             <Lock size={12} /> Exportar é PRO
@@ -207,27 +209,27 @@ export default function ShiftHistoryView({ refresh }: Props) {
       {isPro && exportOpen && (
         <div className="bg-card border rounded-xl p-3 space-y-3 animate-slide-up">
           <p className="text-caption uppercase tracking-wider text-muted-foreground font-display font-semibold">Período do export</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className="text-caption text-muted-foreground space-y-1">
               <span>De</span>
               <input type="date" value={exportFrom} max={exportTo}
                 onChange={e => setExportFrom(e.target.value)}
-                className="w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+                aria-label="Data inicial da exportação" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
             </label>
             <label className="text-caption text-muted-foreground space-y-1">
               <span>Até</span>
               <input type="date" value={exportTo} min={exportFrom} max={todayIso}
                 onChange={e => setExportTo(e.target.value)}
-                className="w-full px-2 py-2 rounded-lg border bg-background text-xs" />
+                aria-label="Data final da exportação" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs" />
             </label>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => handleExport('csv')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-primary text-primary-foreground font-display font-semibold text-xs">
+            <Button variant="ghost" onClick={() => handleExport('csv')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-primary text-primary-foreground font-display font-semibold text-xs">
               <FileSpreadsheet size={13}/> CSV
-            </button>
-            <button onClick={() => handleExport('pdf')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-foreground text-background font-display font-semibold text-xs">
+            </Button>
+            <Button variant="ghost" onClick={() => handleExport('pdf')} className="flex items-center justify-center gap-1.5 p-2.5 rounded-lg bg-foreground text-background font-display font-semibold text-xs">
               <FileText size={13}/> PDF
-            </button>
+            </Button>
           </div>
           <p className="text-micro text-muted-foreground">Exporta todos os turnos finalizados cuja data operacional cai no período selecionado.</p>
         </div>
@@ -241,30 +243,30 @@ export default function ShiftHistoryView({ refresh }: Props) {
             const active = filter === f.key;
             const count = periodCounts[f.key];
             return (
-              <button key={f.key} onClick={() => setFilter(f.key)}
-                className={`flex-1 py-1.5 text-xs font-display font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Button variant="ghost" key={f.key} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
+                className={`h-auto min-h-11 min-w-0 flex-1 px-1 py-1.5 text-xs font-display font-semibold rounded-md transition-colors flex items-center justify-center gap-1.5 ${active ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {f.label}
                 <span className={`text-micro px-1.5 rounded-full number-tabular ${active ? 'bg-primary-foreground/20' : 'bg-background/60'}`}>{count}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
             <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Car size={10}/> Veículo</p>
-            <div className="flex gap-1 bg-secondary rounded-lg p-1">
+            <div className="flex flex-wrap gap-1 bg-secondary rounded-lg p-1">
               {tipoOptions.map(o => (
-                <button key={o.key} onClick={() => setVehicleFilter(o.key)}
-                  className={`flex-1 py-1 text-caption font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
+                <Button variant="ghost" key={o.key} aria-label={o.key === 'todos' ? 'Todos os veículos' : TIPO_LABEL[o.key]} aria-pressed={vehicleFilter === o.key} onClick={() => setVehicleFilter(o.key)}
+                  className={`h-auto min-h-11 min-w-11 flex-1 px-1 py-1 text-caption font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
                   {o.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
           <div>
             <p className="text-micro uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1"><Smartphone size={10}/> App</p>
-            <select value={appFilter} onChange={e => setAppFilter(e.target.value)} className="w-full px-2 py-2 rounded-lg border bg-background text-xs">
+            <select value={appFilter} onChange={e => setAppFilter(e.target.value)} aria-label="Aplicativo do turno" className="min-h-11 w-full px-2 py-2 rounded-lg border bg-background text-xs">
               <option value="todos">Todos</option>
               {APPS.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
@@ -272,12 +274,12 @@ export default function ShiftHistoryView({ refresh }: Props) {
         </div>
 
         {hasActiveFilter && (
-          <button
+          <Button variant="ghost"
             onClick={() => { setVehicleFilter('todos'); setAppFilter('todos'); }}
             className="w-full text-caption font-display font-semibold text-muted-foreground hover:text-foreground flex items-center justify-center gap-1 py-1"
           >
             <X size={11}/> Limpar filtros
-          </button>
+          </Button>
         )}
       </div>
 
@@ -336,10 +338,10 @@ export default function ShiftHistoryView({ refresh }: Props) {
             {hasActiveFilter ? 'Tente limpar os filtros ou trocar o período.' : 'Finalize um turno no Modo Turno para vê-lo aqui.'}
           </p>
           {hasActiveFilter && (
-            <button onClick={() => { setVehicleFilter('todos'); setAppFilter('todos'); setFilter('todos'); }}
+            <Button variant="ghost" onClick={() => { setVehicleFilter('todos'); setAppFilter('todos'); setFilter('todos'); }}
               className="mt-2 text-xs font-display font-semibold text-primary hover:underline">
               Limpar tudo
-            </button>
+            </Button>
           )}
         </div>
       ) : (() => {
@@ -366,7 +368,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     <p className="text-micro uppercase tracking-[0.18em] font-display font-semibold text-muted-foreground">{label} · {groups[label].length}</p>
                     <p className={`text-caption font-display font-bold number-tabular ${groupLucro >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(groupLucro)}</p>
                   </div>
-                  {groups[label].map(s => {
+                  {groups[label].map((s, index) => {
                     const t = shiftService.getTotals(s);
                     const result = classifyDay(t.lucro_total, meta);
                     const style = RESULT_STYLE[result];
@@ -374,25 +376,27 @@ export default function ShiftHistoryView({ refresh }: Props) {
                     const v = getVehicleById(s.veiculo_id);
                     const lucroHora = t.tempo_online_minutos > 0 ? t.lucro_total / (t.tempo_online_minutos / 60) : 0;
                     return (
-                      <div key={s.turno_id} className={`bg-card border border-border/60 rounded-xl overflow-hidden shadow-sm transition-all ${open ? `ring-2 ${style.ring}` : ''}`}>
-                        <button onClick={() => setOpenId(open ? null : s.turno_id)} className="w-full p-3 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors">
+                      <Fragment key={s.turno_id}>
+                      {(index === 0 || groups[label][index - 1].data_operacional !== s.data_operacional) && <p className="pt-2 text-xs font-medium text-muted-foreground">{shiftService.formatOperationalDate(s.data_operacional)}</p>}
+                      <div className={`bg-card border border-border/60 rounded-lg overflow-hidden transition-colors ${open ? `ring-2 ${style.ring}` : ''}`}>
+                        <Button variant="ghost" aria-expanded={open} onClick={() => setOpenId(open ? null : s.turno_id)} className="h-auto min-h-11 w-full whitespace-normal p-4 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors">
                           <div className={`w-1 self-stretch rounded-full ${style.bg}`} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-display font-bold text-sm">{shiftService.formatOperationalDate(s.data_operacional)}</p>
                               <span className={`text-micro font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
                             </div>
-                            <p className="text-caption text-muted-foreground truncate">
-                              {v ? `${TIPO_LABEL[v.tipo_veiculo]} ${v.nome_veiculo}` : 'Sem veículo'}
-                              {s.app_utilizado && ` · ${s.app_utilizado}`}
-                            </p>
-                            <div className="flex items-center justify-between gap-2 mt-0.5">
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {v && <Badge variant="secondary" className="max-w-full whitespace-normal break-words">{TIPO_LABEL[v.tipo_veiculo]} {v.nome_veiculo}</Badge>}
+                              {s.app_utilizado && <Badge variant="success" className="max-w-full whitespace-normal break-words">{s.app_utilizado}</Badge>}
+                            </div>
+                            <div className="flex flex-wrap items-baseline justify-between gap-2 mt-3">
                               <p className={`font-display font-bold number-tabular ${t.lucro_total >= 0 ? 'text-profit' : 'text-loss'}`}>{fmt(t.lucro_total)}</p>
                               <p className="text-xs text-muted-foreground number-tabular">{t.corridas_total} corr · {shiftService.formatTempo(t.tempo_online_minutos)} · {t.km_total.toFixed(0)} km</p>
                             </div>
                           </div>
                           {open ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                        </button>
+                        </Button>
                         {open && (
                           <div className="border-t border-border/60 p-3 space-y-2 bg-secondary/20">
                             <div className="grid grid-cols-3 gap-2">
@@ -425,19 +429,19 @@ export default function ShiftHistoryView({ refresh }: Props) {
                             {isPro && (s.rota?.length ?? 0) > 1 && (
                               <div className="pt-1 space-y-1.5">
                                 <p className="text-micro uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                                  <MapIcon size={10}/> Rota ({s.rota!.length} pontos)
+                                  <MapIcon size={10}/> Rota ({s.rota?.length} pontos)
                                 </p>
                                 <div className="grid grid-cols-3 gap-1.5">
-                                  <button
+                                  <Button variant="ghost"
                                     onClick={async () => { if (await exportRouteGpx(s)) toast.success('GPX exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1"
-                                  ><Download size={11}/> GPX</button>
+                                  ><Download size={11}/> GPX</Button>
                                   
-                                  <button
+                                  <Button variant="ghost"
                                     onClick={async () => { if (await exportRouteKml(s)) toast.success('KML exportado'); else toast('Rota vazia'); }}
                                     className="px-2 py-1.5 rounded bg-secondary text-foreground text-caption font-display font-semibold flex items-center justify-center gap-1"
-                                  ><Download size={11}/> KML</button>
-                                  <button
+                                  ><Download size={11}/> KML</Button>
+                                  <Button variant="ghost"
                                     onClick={() => {
                                       if (shiftService.clearRoute(s.turno_id)) {
                                         toast.success('Rota apagada');
@@ -445,7 +449,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                                       }
                                     }}
                                     className="px-2 py-1.5 rounded bg-loss/10 text-loss text-caption font-display font-semibold flex items-center justify-center gap-1 border border-loss/30"
-                                  ><Trash2 size={11}/> Apagar</button>
+                                  ><Trash2 size={11}/> Apagar</Button>
                                 </div>
                                 <p className="text-micro text-muted-foreground">Abra GPX/KML no Google Earth, Maps ou Strava.</p>
                               </div>
@@ -454,6 +458,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                         )}
 
                       </div>
+                      </Fragment>
                     );
                   })}
                 </div>
