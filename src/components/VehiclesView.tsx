@@ -1,4 +1,5 @@
-import { Car, Fuel, Calendar, Plus, Trash2, Check, Bike, Zap, Truck, X } from 'lucide-react';
+import { Car, Fuel, Calendar, Plus, Trash2, Check, Bike, X } from 'lucide-react';
+import { MotorcycleIcon, ElectricBikeIcon } from '@/components/vehicleIcons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -13,10 +14,10 @@ interface Props {
 }
 
 const TIPOS: { key: TipoVeiculo; label: string; Icon: typeof Bike }[] = [
-  { key: 'moto', label: 'Moto', Icon: Truck },
+  { key: 'moto', label: 'Moto', Icon: MotorcycleIcon },
   { key: 'carro', label: 'Carro', Icon: Car },
   { key: 'bike', label: 'Bike', Icon: Bike },
-  { key: 'bike_eletrica', label: 'Bike elétrica', Icon: Zap },
+  { key: 'bike_eletrica', label: 'Bike elétrica', Icon: ElectricBikeIcon },
 ];
 
 export default function VehiclesView({ onChange, onClose, forceOnboarding }: Props) {

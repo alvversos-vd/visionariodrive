@@ -12,15 +12,16 @@ import type { AppEntrega } from '@/lib/services/vehicleService';
 import { goalsService } from '@/lib/services/goalsService';
 import { profileService } from '@/lib/services/profileService';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, ArrowRight, Bike, Car, Check, CircleCheck, Loader2, Receipt, ShieldCheck, Target, TrendingUp, Wallet, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bike, Car, Check, CircleCheck, Loader2, Receipt, ShieldCheck, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
+import { MotorcycleIcon, ElectricBikeIcon } from '@/components/vehicleIcons';
 
 type StepKey = 'welcome' | 'vehicle' | 'goal' | 'app' | 'objective' | 'done';
 
 const VEHICLES: { key: TipoVeiculo; label: string; icon: LucideIcon }[] = [
-  { key: 'moto', label: 'Moto', icon: Bike },
+  { key: 'moto', label: 'Moto', icon: MotorcycleIcon },
   { key: 'carro', label: 'Carro', icon: Car },
   { key: 'bike', label: 'Bike', icon: Bike },
-  { key: 'bike_eletrica', label: 'Bike elétrica', icon: Zap },
+  { key: 'bike_eletrica', label: 'Bike elétrica', icon: ElectricBikeIcon },
 ];
 
 const GOALS = [100, 200, 300, 500];

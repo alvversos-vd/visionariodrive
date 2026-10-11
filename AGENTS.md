@@ -6,3 +6,4 @@
 - Keep financial-screen polish in FinancialView and EntryForm presentation; retain existing service calls, filters and calculations unchanged so visual refinement cannot change financial meaning or persistence.
 - Keep history date labels in a presentation-only helper and existing history views; preserve service ordering, local calendar interpretation and shift operational dates so visual grouping never reassigns records.
 - Render achievement glyphs through the small ID-based AchievementIcon presentation component; keep the catalog and persisted achievement contracts untouched so icon changes cannot affect rewards or progression.
+- Reuse local Lucide-compatible vehicle glyphs for motorcycle and electric bicycle presentation so all vehicle selectors stay consistent without changing domain types.

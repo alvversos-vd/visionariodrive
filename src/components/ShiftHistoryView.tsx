@@ -1,4 +1,5 @@
-import { CircleCheck, CircleAlert, CircleX, type LucideIcon, ChartNoAxesCombined, Bike, Zap, ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, type LucideIcon, ChartNoAxesCombined, Bike, ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
+import { MotorcycleIcon, ElectricBikeIcon } from '@/components/vehicleIcons';
 import { Fragment, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -177,10 +178,10 @@ export default function ShiftHistoryView({ refresh }: Props) {
 
   const tipoOptions: { key: 'todos' | TipoVeiculo; label: string; icon?: LucideIcon }[] = [
     { key: 'todos', label: 'Todos' },
-    { key: 'moto', label: 'Moto', icon: Bike },
+    { key: 'moto', label: 'Moto', icon: MotorcycleIcon },
     { key: 'carro', label: 'Carro', icon: Car },
     { key: 'bike', label: 'Bike', icon: Bike },
-    { key: 'bike_eletrica', label: 'Bike elétrica', icon: Zap },
+    { key: 'bike_eletrica', label: 'Bike elétrica', icon: ElectricBikeIcon },
   ];
 
   const hasActiveFilter = vehicleFilter !== 'todos' || appFilter !== 'todos';
