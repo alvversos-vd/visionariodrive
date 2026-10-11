@@ -1,5 +1,6 @@
-import AchievementIcon from './AchievementIcon';
 import { Sparkles } from 'lucide-react';
+import AchievementIcon from './AchievementIcon';
+
 /**
  * AchievementToast — Sprint 6 · Fase 2.
  *

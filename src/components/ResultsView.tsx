@@ -50,7 +50,7 @@ export default function ResultsView({ entry, onBack }: Props) {
       {/* Goal progress */}
       {goalDaily > 0 && (
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground mb-1"><Target aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Meta diária: {fmt(goalDaily)}</p>
+          <p className="text-xs text-muted-foreground mb-1"><Target aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Meta diária: {fmt(goalDaily)}</p>
           <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"

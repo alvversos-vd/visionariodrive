@@ -70,7 +70,7 @@ export default function HistoryCharts({ entries }: Props) {
   return (
     <div className="bg-card border rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <p className="font-display font-semibold text-foreground text-sm"><TrendingUp aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Evolução</p>
+        <p className="font-display font-semibold text-foreground text-sm"><TrendingUp aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Evolução</p>
         <div className="flex bg-secondary rounded-md p-0.5 gap-0.5">
           {(['week', 'month'] as Range[]).map(r => (
             <button

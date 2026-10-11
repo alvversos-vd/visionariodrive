@@ -1,6 +1,6 @@
-import { CircleCheck, CircleAlert } from 'lucide-react';
+import { CircleCheck, CircleAlert, Satellite, Wrench, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Satellite, Wrench, ChevronRight } from 'lucide-react';
+
 import {
   subscribePermissionDiagnostic,
   refreshPermissionDiagnostic,

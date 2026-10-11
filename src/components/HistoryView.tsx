@@ -1,4 +1,4 @@
-import { type LucideIcon, AlertTriangle, CircleCheck, CircleAlert, CircleX, Flame, Search, Lightbulb, Package } from 'lucide-react';
+import { type LucideIcon, AlertTriangle, CircleCheck, CircleAlert, CircleX, Flame, Search, Lightbulb, Package, Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles, BarChart3, Lock, Navigation, Smartphone, Car, Clock } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { goalsService } from '@/lib/services/goalsService';
@@ -6,7 +6,7 @@ import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsS
 // Sprint 4: HistoryView consome apenas Services — zero repository direto.
 import type { RideModel, FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles, BarChart3 } from 'lucide-react';
+
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ import PeriodComparison from './PeriodComparison';
 import ShiftHistoryView from './ShiftHistoryView';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useCapabilities } from '@/hooks/useCapabilities';
-import { Lock, Navigation, Smartphone, Car, Clock } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { historyDayKey, historyDayLabel } from './historyDatePresentation';
@@ -366,7 +366,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {/* Insights */}
       {insights.length > 0 && (
         <div className="bg-accent/10 border border-accent/40 rounded-lg p-4 space-y-2">
-          <p className="text-xs font-display font-semibold text-foreground uppercase tracking-wide"><Lightbulb aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Insights</p>
+          <p className="text-xs font-display font-semibold text-foreground uppercase tracking-wide"><Lightbulb aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Insights</p>
           {insights.map((i, idx) => (
             <p key={idx} className="text-sm text-foreground"><i.icon aria-hidden="true" size={18} className="inline-block align-middle mr-1.5 text-primary" /> {i.text}</p>
           ))}
@@ -376,7 +376,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {/* Breakdown by category */}
       {entries.length > 0 && (breakdown.byVehicle.length > 1 || breakdown.byRideType.length > 1 || hasFilter) && (
         <div className="bg-card rounded-lg p-4 border shadow-sm space-y-4">
-          <p className="font-display font-semibold text-foreground text-sm"><BarChart3 aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Resumo por categoria</p>
+          <p className="font-display font-semibold text-foreground text-sm"><BarChart3 aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Resumo por categoria</p>
 
           {breakdown.byVehicle.length > 0 && (
             <div className="space-y-2">
@@ -384,7 +384,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {breakdown.byVehicle.map(b => (
                 <div key={'v' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-display font-semibold text-foreground"><Car aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
+                    <span className="text-sm font-display font-semibold text-foreground"><Car aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
                     <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">
@@ -419,7 +419,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {breakdown.byRideType.map(b => (
                 <div key={'t' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-display font-semibold text-foreground"><Package aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
+                    <span className="text-sm font-display font-semibold text-foreground"><Package aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
                     <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">

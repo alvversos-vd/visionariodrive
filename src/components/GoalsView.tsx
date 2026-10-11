@@ -1,4 +1,4 @@
-import { CircleCheck, CircleAlert, CircleX } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { goalsService, type Goals } from '@/lib/services/goalsService';
@@ -8,7 +8,7 @@ import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+
 import SessionEntryCard from '@/components/session/SessionEntryCard';
 
 interface Props {

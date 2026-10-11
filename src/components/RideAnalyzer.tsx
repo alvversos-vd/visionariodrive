@@ -1,4 +1,4 @@
-import { CircleCheck, CircleAlert, CircleX, ChartNoAxesCombined, Zap } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, ChartNoAxesCombined, Zap, AlertCircle, Save, Sparkles, ArrowRight } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { settingsService } from '@/lib/services/settingsService';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, Save, Sparkles, ArrowRight } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { getLastAvoidAt, markAvoidNow, incrementRidesAnalyzed } from '@/lib/engagement';
 import { useAuth } from '@/contexts/AuthContext';
@@ -91,7 +91,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
     if (verdict === 'good') {
       toast.success('Essa corrida pode aumentar seu lucro');
     } else if (verdict === 'bad') {
-      toast('Essa corrida pode te dar prejuízo', { icon: <AlertCircle aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-warning" /> });
+      toast('Essa corrida pode te dar prejuízo', { icon: <AlertCircle aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-warning" /> });
       // Micro-win: evitou prejuízo (anti-spam: 1x a cada 6h)
       const now = Date.now();
       if (now - getLastAvoidAt() > 6 * 60 * 60 * 1000) {
@@ -114,7 +114,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
       {/* Cost base info */}
       {costPerKm !== null && minIdealKm !== null ? (
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground mb-2"><ChartNoAxesCombined aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Base do último cálculo</p>
+          <p className="text-xs text-muted-foreground mb-2"><ChartNoAxesCombined aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Base do último cálculo</p>
           <div className="flex gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Custo real/km</p>
@@ -128,14 +128,14 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
         </div>
       ) : (
         <div className="bg-secondary rounded-lg p-4 text-center">
-          <p className="text-sm text-muted-foreground"><AlertCircle aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-warning" />Faça um cálculo diário primeiro para ter sua base de custo por km.</p>
+          <p className="text-sm text-muted-foreground"><AlertCircle aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-warning" />Faça um cálculo diário primeiro para ter sua base de custo por km.</p>
         </div>
       )}
 
       {/* Quick input */}
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <p className="font-display font-semibold text-foreground"><Zap aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Análise Rápida</p>
+          <p className="font-display font-semibold text-foreground"><Zap aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Análise Rápida</p>
           <p className="text-micro text-muted-foreground uppercase tracking-wider">Tempo real</p>
         </div>
         <div className="grid grid-cols-2 gap-3">

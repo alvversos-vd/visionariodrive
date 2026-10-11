@@ -1,10 +1,11 @@
+import { Trophy, ArrowLeft } from 'lucide-react';
 import AchievementIcon from '../gamification/AchievementIcon';
 /**
  * SessionSummary — Sprint 10.1 (encerramento cinematográfico).
  * Resumo premium exibido ao encerrar a Sessão Visionária. Só apresentação.
  */
 import { useMemo } from 'react';
-import { Trophy, ArrowLeft } from 'lucide-react';
+
 import { useCountUp } from '@/hooks/useCountUp';
 import { achievementService } from '@/lib/services/achievementService';
 import { haptics } from '@/lib/haptics';

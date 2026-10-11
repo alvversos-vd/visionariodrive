@@ -1,3 +1,4 @@
+import { Trophy, Lock } from 'lucide-react';
 import AchievementIcon from './AchievementIcon';
 /**
  * AchievementsModal — Sprint 6.3.
@@ -6,7 +7,7 @@ import AchievementIcon from './AchievementIcon';
 import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Lock } from 'lucide-react';
+
 import { useAchievements } from '@/hooks/useAchievements';
 import { telemetry } from '@/lib/telemetry';
 import type { Rarity } from '@/lib/gamification/catalog';

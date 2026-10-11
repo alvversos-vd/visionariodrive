@@ -1,3 +1,4 @@
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
@@ -10,7 +11,7 @@ import {
   shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
+
 import OperationalStatusBadge from './OperationalStatusBadge';
 import ShiftMode from './ShiftMode';
 import InsightsCard from './InsightsCard';

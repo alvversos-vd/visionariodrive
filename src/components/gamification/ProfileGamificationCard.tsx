@@ -1,3 +1,4 @@
+import { Trophy, Lock, ChevronDown, ChevronUp, LineChart as LineChartIcon } from 'lucide-react';
 import AchievementIcon from './AchievementIcon';
 /**
  * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 + Sprint 7.5 Onda 4.
@@ -9,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trophy, Lock, ChevronDown, ChevronUp, LineChart as LineChartIcon } from 'lucide-react';
+
 import XpProgressBar from './XpProgressBar';
 import AchievementsModal from './AchievementsModal';
 import MyEvolutionChart from './MyEvolutionChart';

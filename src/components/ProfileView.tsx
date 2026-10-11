@@ -1,4 +1,4 @@
-import { Banknote, Calculator, Shield, Target, ChartNoAxesCombined } from 'lucide-react';
+import { Banknote, Calculator, Shield, Target, ChartNoAxesCombined, LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, MapPin, UserMinus, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, Trash2, CreditCard, Sparkles, Pencil, Check, X, FileText, Shield, MapPin, UserMinus, Loader2 } from 'lucide-react';
+
 import { profileService } from '@/lib/services/profileService';
 import { dataLifecycleService } from '@/lib/services/dataLifecycleService';
 import { useToast } from '@/hooks/use-toast';

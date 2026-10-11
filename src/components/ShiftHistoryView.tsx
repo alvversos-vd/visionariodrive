@@ -1,4 +1,4 @@
-import { CircleCheck, CircleAlert, CircleX, type LucideIcon, ChartNoAxesCombined, Bike, Zap } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, type LucideIcon, ChartNoAxesCombined, Bike, Zap, ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { goalsService } from '@/lib/services/goalsService';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
+
 
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
@@ -189,7 +189,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     <div className="min-w-0 space-y-4 animate-slide-up [&_.number-tabular]:font-mono-num [&_.number-tabular]:[overflow-wrap:anywhere]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display font-semibold text-base tracking-normal flex items-center gap-2"><ChartNoAxesCombined aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Histórico de turnos</h2>
+          <h2 className="font-display font-semibold text-base tracking-normal flex items-center gap-2"><ChartNoAxesCombined aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Histórico de turnos</h2>
           <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
         </div>
         {isPro ? (

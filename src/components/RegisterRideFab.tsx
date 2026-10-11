@@ -1,6 +1,6 @@
-import { CircleCheck, CircleAlert, CircleX } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { shiftService } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';

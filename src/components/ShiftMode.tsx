@@ -1,11 +1,7 @@
-import { CircleCheck, CircleAlert, CircleX, Route } from 'lucide-react';
+import { CircleCheck, CircleAlert, CircleX, Route, Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy, Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2, Satellite, MapPinOff, Pencil, Map as MapIcon, Bell } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
-  Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
-} from 'lucide-react';
+
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
@@ -1203,7 +1199,7 @@ export default function ShiftMode({ onChange }: Props) {
               Os totais do turno serão consolidados no histórico e dashboard. Esta ação não pode ser desfeita.
               {totals && (
                 <span className="block mt-2 text-xs">
-                  <Wallet aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Lucro: <b>{fmt(totals.lucro_total)}</b> · <Route aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.km_total.toFixed(1)} km · <Car aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.corridas_total} corridas
+                  <Wallet aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Lucro: <b>{fmt(totals.lucro_total)}</b> · <Route aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.km_total.toFixed(1)} km · <Car aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.corridas_total} corridas
                 </span>
               )}
             </AlertDialogDescription>

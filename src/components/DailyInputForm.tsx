@@ -1,4 +1,4 @@
-import { Lightbulb, ClipboardList, Fuel, Wrench } from 'lucide-react';
+import { Lightbulb, ClipboardList, Fuel, Wrench, AlertCircle, Plus, ChevronUp } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { calculateEntry, DailyEntry } from '@/lib/types';
 import { settingsService } from '@/lib/services/settingsService';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, Plus, ChevronUp } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { shouldShowFixedCostsHint, markFixedCostsHintShown } from '@/lib/engagement';
 
@@ -103,7 +103,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
   useEffect(() => {
     if (!sectionOpen && shouldShowFixedCostsHint()) {
       markFixedCostsHintShown();
-      toast('Você pode adicionar custos fixos para ter um cálculo mais preciso', { icon: <Lightbulb aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" /> });
+      toast('Você pode adicionar custos fixos para ter um cálculo mais preciso', { icon: <Lightbulb aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" /> });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -156,7 +156,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
   return (
     <div className="space-y-6 animate-slide-up">
       <div>
-        <h2 className="font-display text-lg font-semibold text-foreground mb-3"><ClipboardList aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Dados do Dia</h2>
+        <h2 className="font-display text-lg font-semibold text-foreground mb-3"><ClipboardList aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Dados do Dia</h2>
         <div className="bg-card rounded-lg p-4 space-y-3 shadow-sm border">
           <Field label="Horas trabalhadas" value={form.hoursWorked} onChange={set('hoursWorked')} placeholder="8" error={showError('hoursWorked')} required />
           <Field label="Km rodados" value={form.kmDriven} onChange={set('kmDriven')} placeholder="120" error={showError('kmDriven')} required />
@@ -190,7 +190,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
       </div>
 
       <div>
-        <h2 className="font-display text-lg font-semibold text-foreground mb-3"><Fuel aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Combustível</h2>
+        <h2 className="font-display text-lg font-semibold text-foreground mb-3"><Fuel aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Combustível</h2>
         <div className="bg-card rounded-lg p-4 space-y-3 shadow-sm border">
           <Field label="Preço do litro" value={form.fuelPrice} onChange={set('fuelPrice')} placeholder="5.89" prefix="R$" error={showError('fuelPrice')} required />
           <Field label="Consumo do veículo (km/l)" value={form.vehicleConsumption} onChange={set('vehicleConsumption')} placeholder="35" error={showError('vehicleConsumption')} required />
@@ -199,7 +199,7 @@ export default function DailyInputForm({ onCalculate }: Props) {
 
       {sectionOpen ? (
         <div>
-          <h2 className="font-display text-lg font-semibold text-foreground mb-3"><Wrench aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Custos Fixos Mensais <span className="text-xs text-muted-foreground font-normal">(opcional)</span></h2>
+          <h2 className="font-display text-lg font-semibold text-foreground mb-3"><Wrench aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Custos Fixos Mensais <span className="text-xs text-muted-foreground font-normal">(opcional)</span></h2>
           <div className="bg-card rounded-lg p-4 space-y-3 shadow-sm border">
             <Field label="Parcela do veículo" value={form.installment} onChange={set('installment')} placeholder="500" prefix="R$" error={showError('installment')} />
             <Field label="Manutenção média" value={form.maintenance} onChange={set('maintenance')} placeholder="150" prefix="R$" error={showError('maintenance')} />
