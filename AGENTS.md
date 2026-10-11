@@ -7,3 +7,4 @@
 - Keep history date labels in a presentation-only helper and existing history views; preserve service ordering, local calendar interpretation and shift operational dates so visual grouping never reassigns records.
 - Render achievement glyphs through the small ID-based AchievementIcon presentation component; keep the catalog and persisted achievement contracts untouched so icon changes cannot affect rewards or progression.
 - Reuse local Lucide-compatible vehicle glyphs for motorcycle and electric bicycle presentation so all vehicle selectors stay consistent without changing domain types.
+- Keep achievement card presentation shared by profile and modal; consume hook-provided progress without recomputing requirements or rewards so visual polish cannot change progression.
