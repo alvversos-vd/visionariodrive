@@ -89,12 +89,11 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
   step: ReturnType<typeof getTutorialSteps>[number]; number: number; total: number; screenReady: boolean;
   onNext: () => void; onBack?: () => void; onSkip: () => void;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   const [layout, setLayout] = useState<{ left: number; top: number; highlight: TutorialRect | null } | null>(null);
   const [fallback, setFallback] = useState(false);
 
   useLayoutEffect(() => {
-    const panel = panelRef.current;
     if (!panel) return;
     let frame = 0;
     let observed: HTMLElement | null = null;
@@ -137,7 +136,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
       window.visualViewport?.removeEventListener('resize', schedule);
       window.visualViewport?.removeEventListener('scroll', schedule);
     };
-  }, [step.target, screenReady]);
+  }, [step.target, screenReady, panel]);
 
   const highlight = layout?.highlight;
   return <DialogPrimitive.Root open onOpenChange={open => { if (!open) onSkip(); }}>
@@ -151,10 +150,10 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
           <div className="absolute rounded-lg border-2 border-primary" data-tutorial-highlight={step.target} style={{ top: highlight.top, left: highlight.left, width: highlight.width, height: highlight.height }} />
         </> : <div className="tutorial-dim absolute inset-0" />}
       </div>
-      <DialogPrimitive.Content ref={panelRef} aria-describedby="tutorial-description" onEscapeKeyDown={event => { event.preventDefault(); onSkip(); }} onPointerDownOutside={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="tutorial-panel fixed z-[61] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border border-primary/30 bg-popover p-5 text-popover-foreground shadow-premium" style={{ left: layout?.left ?? 16, top: layout?.top ?? 16 }}>
+      <DialogPrimitive.Content ref={setPanel} onEscapeKeyDown={event => { event.preventDefault(); onSkip(); }} onPointerDownOutside={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="tutorial-panel fixed z-[61] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border border-primary/30 bg-popover p-5 text-popover-foreground shadow-premium" style={{ left: layout?.left ?? 16, top: layout?.top ?? 16 }}>
         <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-primary" aria-live="polite">{number} de {total}</p><Button variant="ghost" size="icon" className="h-11 w-11 -mr-2 -mt-2" aria-label="Pular tutorial" onClick={onSkip}><X aria-hidden="true" /></Button></div>
         <DialogPrimitive.Title className="mt-1 font-display text-lg font-semibold">{step.title}</DialogPrimitive.Title>
-        <DialogPrimitive.Description id="tutorial-description" className="mt-2 text-sm leading-relaxed text-muted-foreground">{fallback ? step.alternative : step.description}</DialogPrimitive.Description>
+        <DialogPrimitive.Description className="mt-2 text-sm leading-relaxed text-muted-foreground">{fallback ? step.alternative : step.description}</DialogPrimitive.Description>
         <div className="mt-5 flex items-center justify-between gap-2">
           {onBack ? <Button variant="ghost" className="px-3" onClick={onBack}><ArrowLeft aria-hidden="true" />Voltar</Button> : <Button variant="ghost" className="px-3" onClick={onSkip}>Pular</Button>}
           <Button className="px-3" onClick={onNext}>{number === total ? <>Concluir<Check aria-hidden="true" /></> : <>Próximo<ArrowRight aria-hidden="true" /></>}</Button>
