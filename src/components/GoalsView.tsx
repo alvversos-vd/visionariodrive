@@ -151,7 +151,7 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
       </div>
 
       {/* Definir metas */}
-      <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-sm space-y-3">
+      <div data-tutorial="goals" className="bg-card rounded-2xl p-5 border border-border/60 shadow-sm space-y-3">
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-primary"/>
           <p className="font-display font-semibold">Definir metas</p>

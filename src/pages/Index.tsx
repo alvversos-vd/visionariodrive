@@ -211,7 +211,7 @@ function IndexInner() {
             tutorialReturnTab.current = null;
           }}
         />}
-        <div data-tutorial-screen={tab} data-tutorial={['financial', 'history', 'goals'].includes(tab) ? tab : undefined}>
+        <div data-tutorial-screen={tab}>
           <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
         </div>
       </main>
