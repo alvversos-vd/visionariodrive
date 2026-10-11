@@ -98,6 +98,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
     let frame = 0;
     let observed: HTMLElement | null = null;
     let scrolled: HTMLElement | null = null;
+    let scrolling = false;
     const measure = () => {
       const visual = window.visualViewport;
       const viewport: TutorialViewport = { left: visual?.offsetLeft ?? 0, top: visual?.offsetTop ?? 0, width: visual?.width ?? window.innerWidth, height: visual?.height ?? window.innerHeight };
@@ -112,15 +113,18 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
         scrolled = target;
         const bounds = target.getBoundingClientRect();
         if (bounds.top < viewport.top + 16 || bounds.bottom > viewport.top + viewport.height - 16) {
-          target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center', inline: 'nearest' });
+          const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          scrolling = !reduced;
+          target.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'center', inline: 'nearest' });
         }
       }
       const rect = target?.getBoundingClientRect();
-      const next = positionTutorial(rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null, { width: panel.offsetWidth, height: panel.offsetHeight }, viewport);
+      const next = positionTutorial(rect && !scrolling ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null, { width: panel.offsetWidth, height: panel.offsetHeight }, viewport);
       setFallback(!next.highlight);
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
+    const scrollEnd = () => { scrolling = false; schedule(); };
     const resize = new ResizeObserver(schedule);
     resize.observe(panel);
     const mutation = new MutationObserver(schedule);
@@ -128,6 +132,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
     if (screen) mutation.observe(screen, { childList: true, subtree: true });
     window.addEventListener('resize', schedule);
     window.addEventListener('scroll', schedule, true);
+    window.addEventListener('scrollend', scrollEnd, true);
     window.visualViewport?.addEventListener('resize', schedule);
     window.visualViewport?.addEventListener('scroll', schedule);
     measure();
@@ -136,6 +141,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
       resize.disconnect(); mutation.disconnect();
       window.removeEventListener('resize', schedule);
       window.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('scrollend', scrollEnd, true);
       window.visualViewport?.removeEventListener('resize', schedule);
       window.visualViewport?.removeEventListener('scroll', schedule);
     };
