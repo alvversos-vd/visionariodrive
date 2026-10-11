@@ -99,9 +99,9 @@ export default function RegisterRideFab({ onChange }: Props) {
     setOpen(false);
     onChange?.();
     const resultado = verdictToResultado(ride.analysis?.verdict);
-    if (resultado === 'boa') toast.success('🟢 Boa corrida 👊');
-    else if (resultado === 'aceitavel') toast('🟡 Lucro baixo nessa corrida');
-    else toast.error('🔴 Essa corrida reduziu seu lucro');
+    if (resultado === 'boa') toast.success('Boa corrida 👊');
+    else if (resultado === 'aceitavel') toast('Lucro baixo nessa corrida', { icon: <CircleAlert aria-hidden="true" size={20} className="text-warning" /> });
+    else toast.error('Essa corrida reduziu seu lucro');
   };
 
   const previewColor =

@@ -242,7 +242,8 @@ export default function ShiftMode({ onChange }: Props) {
     const key = `${shift.turno_id}:${gps}`;
     if ((gps === 'denied' || gps === 'unavailable') && fallbackShownRef.current !== key) {
       fallbackShownRef.current = key;
-      toast('⚠️ GPS indisponível — modo manual ativado automaticamente', {
+      toast('GPS indisponível — modo manual ativado automaticamente', {
+        icon: <CircleAlert aria-hidden="true" size={20} className="text-warning" />,
         description: 'O turno continua normalmente. Informe o km de cada corrida ao registrar.',
       });
     }
@@ -508,9 +509,9 @@ export default function ShiftMode({ onChange }: Props) {
     setRideOpen(false);
     refresh();
     const view = rideModelToShiftRide(ride);
-    if (view.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
-    else if (view.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
-    else toast.error('🔴 Corrida abaixo do custo ideal');
+    if (view.resultado === 'boa') toast.success('Boa corrida — acima do mínimo ideal');
+    else if (view.resultado === 'aceitavel') toast('Corrida aceitável — lucro baixo', { icon: <CircleAlert aria-hidden="true" size={20} className="text-warning" /> });
+    else toast.error('Corrida abaixo do custo ideal');
   };
 
   const openEdit = (r: ShiftRide) => {
@@ -772,13 +773,13 @@ export default function ShiftMode({ onChange }: Props) {
   const custoPct = t.ganho_total > 0 ? (t.custo_total / t.ganho_total) * 100 : 0;
   const smartAlerts: { key: string; msg: string }[] = [];
   if (thresholds.maxHorasTurno > 0 && horasOnline >= thresholds.maxHorasTurno) {
-    smartAlerts.push({ key: 'horas', msg: `⏰ Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
+    smartAlerts.push({ key: 'horas', msg: `Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
   }
   if (thresholds.minLucroHora > 0 && t.corridas_total >= 2 && lucroHora < thresholds.minLucroHora) {
-    smartAlerts.push({ key: 'lucroh', msg: `📉 Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
+    smartAlerts.push({ key: 'lucroh', msg: `Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
   }
   if (thresholds.maxCustoPct > 0 && t.ganho_total > 0 && custoPct > thresholds.maxCustoPct) {
-    smartAlerts.push({ key: 'custo', msg: `💸 Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
+    smartAlerts.push({ key: 'custo', msg: `Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
   }
 
   // Preview da corrida no modal
@@ -1019,7 +1020,7 @@ export default function ShiftMode({ onChange }: Props) {
         {smartAlerts.length > 0 && (
           <div className="relative space-y-1.5">
             {smartAlerts.map(a => (
-              <AlertBanner key={a.key} tone="warning" icon={<Target size={14} />} title="" body={a.msg} />
+              <AlertBanner key={a.key} tone="warning" icon={a.key === 'horas' ? <Clock aria-hidden="true" size={16} /> : a.key === 'lucroh' ? <Route aria-hidden="true" size={16} /> : <Wallet aria-hidden="true" size={16} />} title="" body={a.msg} />
             ))}
           </div>
         )}
