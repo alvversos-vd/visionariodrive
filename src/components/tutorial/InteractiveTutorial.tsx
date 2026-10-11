@@ -110,7 +110,10 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
       }
       if (target && target !== scrolled) {
         scrolled = target;
-        target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center', inline: 'nearest' });
+        const bounds = target.getBoundingClientRect();
+        if (bounds.top < viewport.top + 16 || bounds.bottom > viewport.top + viewport.height - 16) {
+          target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center', inline: 'nearest' });
+        }
       }
       const rect = target?.getBoundingClientRect();
       const next = positionTutorial(rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null, { width: panel.offsetWidth, height: panel.offsetHeight }, viewport);
