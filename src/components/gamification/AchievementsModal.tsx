@@ -1,28 +1,14 @@
-import { Trophy, Lock } from 'lucide-react';
-import AchievementIcon from './AchievementIcon';
+import { Trophy, Lock, CircleCheck } from 'lucide-react';
+import AchievementCard from './AchievementCard';
 /**
  * AchievementsModal — Sprint 6.3.
  * Modal "Todas as Conquistas". Consome apenas hooks/serviços.
  */
 import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 
 import { useAchievements } from '@/hooks/useAchievements';
 import { telemetry } from '@/lib/telemetry';
-import type { Rarity } from '@/lib/gamification/catalog';
-
-const RARITY_CLASS: Record<Rarity, string> = {
-  common: 'rarity-common',
-  rare: 'rarity-rare',
-  epic: 'rarity-epic',
-  legendary: 'rarity-legendary',
-};
-
-
-const RARITY_LABEL: Record<Rarity, string> = {
-  common: 'Comum', rare: 'Rara', epic: 'Épica', legendary: 'Lendária',
-};
 
 interface Props {
   open: boolean;
@@ -42,76 +28,36 @@ export default function AchievementsModal({ open, onOpenChange, accountCreatedAt
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display flex items-center gap-2">
-            <Trophy size={18} /> Todas as Conquistas
+      <DialogContent className="flex w-[calc(100%-2rem)] max-w-3xl max-h-[min(90dvh,56rem)] flex-col gap-0 overflow-hidden rounded-lg p-0 motion-reduce:animate-none [&>button]:right-2 [&>button]:top-2 [&>button]:h-11 [&>button]:w-11 [&>button]:flex [&>button]:items-center [&>button]:justify-center">
+        <DialogHeader className="shrink-0 border-b border-border/60 p-5 pr-14 text-left">
+          <DialogTitle className="font-display flex items-center gap-2.5 text-lg tracking-normal leading-snug">
+            <Trophy size={22} className="shrink-0 text-primary" aria-hidden="true" /> Todas as Conquistas
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pl-8 text-xs tabular-nums">
             {unlocked.length} de {all.length} desbloqueadas
           </DialogDescription>
         </DialogHeader>
 
-        <section className="space-y-3">
+        <section className="min-h-0 overflow-y-auto overscroll-contain space-y-6 p-4 sm:p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div>
-            <h4 className="text-caption font-display font-bold text-muted-foreground mb-2">Desbloqueadas</h4>
+            <h4 className="text-sm font-display font-semibold mb-3 flex items-center gap-2 tracking-normal"><CircleCheck size={16} className="text-primary" aria-hidden="true" />Desbloqueadas <span className="text-caption text-muted-foreground tabular-nums">{unlocked.length}</span></h4>
             {unlocked.length === 0 ? (
-              <p className="text-caption text-muted-foreground italic">Nenhuma ainda.</p>
+              <p className="text-xs text-muted-foreground py-2">Nenhuma ainda.</p>
             ) : (
-              <ul className="grid grid-cols-1 gap-1.5">
+              <ul className="grid grid-cols-1 min-[600px]:grid-cols-2 gap-3">
                 {unlocked.map(a => (
-                  <li key={a.def.id} className={`flex items-start gap-2 rounded-md px-2 py-2 ${RARITY_CLASS[a.def.rarity]}`}>
-                    <span className="text-xl leading-none mt-0.5"><AchievementIcon id={a.def.id} /></span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                        <Badge variant="outline" className="text-micro px-1 py-0 h-4">{RARITY_LABEL[a.def.rarity]}</Badge>
-                      </div>
-                      <p className="text-micro opacity-80">{a.def.description}</p>
-                      {a.unlockedAt && (
-                        <p className="text-micro opacity-70 mt-0.5">
-                          {new Date(a.unlockedAt).toLocaleDateString('pt-BR')}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-micro font-bold tabular-nums whitespace-nowrap">+{a.def.xp} XP</span>
-                  </li>
+                  <AchievementCard key={a.def.id} achievement={a} />
                 ))}
               </ul>
             )}
           </div>
 
           <div>
-            <h4 className="text-caption font-display font-bold text-muted-foreground mb-2 flex items-center gap-1">
-              <Lock size={12} /> Bloqueadas ({locked.length})
+            <h4 className="text-sm font-display font-semibold mb-3 flex items-center gap-2 tracking-normal">
+              <Lock size={16} className="text-muted-foreground" aria-hidden="true" /> Bloqueadas <span className="text-caption text-muted-foreground tabular-nums">{locked.length}</span>
             </h4>
-            <ul className="grid grid-cols-1 gap-1.5">
-              {locked.map(a => {
-                const pct = Math.round((a.progress ?? 0) * 100);
-                return (
-                  <li key={a.def.id} className="rarity-locked rounded-md px-2 py-2">
-                    <div className="flex items-start gap-2">
-                      <span className="text-xl leading-none opacity-50 mt-0.5"><AchievementIcon id={a.def.id} /></span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                          <Badge variant="outline" className="text-micro px-1 py-0 h-4">{RARITY_LABEL[a.def.rarity]}</Badge>
-                        </div>
-                        <p className="text-micro text-muted-foreground">{a.def.description}</p>
-                      </div>
-                      <span className="text-micro text-muted-foreground tabular-nums whitespace-nowrap">+{a.def.xp} XP</span>
-                    </div>
-                    {a.def.progress && (
-                      <>
-                        <div className="mt-1.5 h-1 w-full bg-background rounded-full overflow-hidden">
-                          <div className="h-full bg-primary/50 transition-[width]" style={{ width: `${pct}%` }} />
-                        </div>
-                        <p className="text-micro text-muted-foreground text-right mt-0.5 tabular-nums">{pct}%</p>
-                      </>
-                    )}
-                  </li>
-                );
-              })}
+            <ul className="grid grid-cols-1 min-[600px]:grid-cols-2 gap-3">
+              {locked.map(a => <AchievementCard key={a.def.id} achievement={a} />)}
             </ul>
           </div>
         </section>
