@@ -2,6 +2,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import InteractiveTutorial from './InteractiveTutorial';
 import { getTutorialStatus } from '@/lib/engagement';
+import { pushBlockingModal } from '@/lib/uiModalState';
+import { act } from '@testing-library/react';
 
 const props = { userId: 'a', eligible: true, suspended: false, activeShift: false, gps: false, currentTab: 'home', onNavigate: vi.fn(), onRestore: vi.fn() };
 beforeEach(() => {
@@ -64,5 +66,16 @@ describe('separate tutorial experience', () => {
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(getTutorialStatus('a')).toBe('skipped');
     expect(props.onRestore).toHaveBeenCalledTimes(1);
+  });
+  it('yields to existing blocking flows and resumes without starting an operation', () => {
+    render(<InteractiveTutorial {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Começar tutorial' }));
+    let release: (() => void) | undefined;
+    act(() => { release = pushBlockingModal(); });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    act(() => release?.());
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(props.onNavigate).toHaveBeenCalledTimes(1);
+    expect(getTutorialStatus('a')).toBe('in_progress');
   });
 });
