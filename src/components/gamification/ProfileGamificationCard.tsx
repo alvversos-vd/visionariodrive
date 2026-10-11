@@ -1,3 +1,4 @@
+import AchievementIcon from './AchievementIcon';
 /**
  * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 + Sprint 7.5 Onda 4.
  * Perfil Inteligente premium: XP hero, stats primárias (grid 2×3),
@@ -117,7 +118,7 @@ export default function ProfileGamificationCard({
             <ul className="grid grid-cols-1 gap-1.5">
               {unlockedList.slice(0, 5).map(a => (
                 <li key={a.def.id} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${RARITY_CLASS[a.def.rarity]}`}>
-                  <span className="text-lg leading-none">{a.def.icon}</span>
+                  <span className="text-lg leading-none"><AchievementIcon id={a.def.id} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
                     <p className="text-micro opacity-80 truncate">{a.def.description}</p>
@@ -152,7 +153,7 @@ export default function ProfileGamificationCard({
                 return (
                   <li key={a.def.id} className="rarity-locked rounded-md px-2 py-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg leading-none opacity-50">{a.def.icon}</span>
+                      <span className="text-lg leading-none opacity-50"><AchievementIcon id={a.def.id} /></span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
                         <p className="text-micro text-muted-foreground truncate">{a.def.description}</p>

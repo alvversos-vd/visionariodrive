@@ -1,3 +1,4 @@
+import { type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -5,14 +6,14 @@ import { X, Plus, Pencil, Check } from 'lucide-react';
 
 interface Props {
   title: string;
-  emoji?: string;
+  icon?: LucideIcon;
   description?: string;
   placeholder?: string;
   items: string[];
   onChange: (items: string[]) => void;
 }
 
-export default function TagListEditor({ title, emoji, description, placeholder, items, onChange }: Props) {
+export default function TagListEditor({ title, icon: Icon, description, placeholder, items, onChange }: Props) {
   const [draft, setDraft] = useState('');
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState('');
@@ -56,7 +57,7 @@ export default function TagListEditor({ title, emoji, description, placeholder, 
     <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
       <div>
         <p className="font-display font-semibold text-foreground">
-          {emoji && <span className="mr-1">{emoji}</span>}{title}
+          {Icon && <Icon aria-hidden="true" size={20} className="inline-block align-middle mr-1.5 text-primary" />}{title}
         </p>
         {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>

@@ -1,3 +1,4 @@
+import { Scale } from 'lucide-react';
 import { useMemo } from 'react';
 import { DailyEntry } from '@/lib/types';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -93,7 +94,7 @@ export default function PeriodComparison({ entries }: Props) {
   return (
     <div className="bg-card border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-display font-semibold text-foreground text-sm">⚖️ 7 dias vs 30 dias</p>
+        <p className="font-display font-semibold text-foreground text-sm"><Scale aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />7 dias vs 30 dias</p>
         <p className="text-micro text-muted-foreground">média/dia</p>
       </div>
       {week.days === 0 || month.days === 0 ? (

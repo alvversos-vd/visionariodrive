@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Satellite, Wrench, ChevronRight } from 'lucide-react';
 import {
@@ -71,7 +72,7 @@ export default function OperationalStatusBadge({ compact = false }: Props) {
         </span>
         <div className="min-w-0">
           <p className={`font-display font-semibold text-sm ${auto ? 'text-profit' : 'text-accent'}`}>
-            {auto ? '🟢 Automação ativa' : '🟡 Modo manual'}
+            {auto ? <CircleCheck aria-hidden="true" size={12} className="inline-block align-middle mr-1" /> : <CircleAlert aria-hidden="true" size={12} className="inline-block align-middle mr-1" />}{auto ? 'Automação ativa' : 'Modo manual'}
           </p>
           <p className="text-caption text-muted-foreground leading-tight mt-0.5">
             {auto

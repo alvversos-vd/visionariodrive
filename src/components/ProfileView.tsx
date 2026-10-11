@@ -1,3 +1,4 @@
+import { Banknote, Calculator, Shield, Target, ChartNoAxesCombined } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -158,11 +159,11 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
             <p className="text-caption text-muted-foreground">Personaliza o destaque e a ordem dos cards do painel.</p>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { key: 'ganhar_mais', label: '💰 Ganhar mais' },
-                { key: 'controlar_gastos', label: '🧮 Controlar gastos' },
-                { key: 'evitar_prejuizo', label: '🛡️ Evitar prejuízo' },
-                { key: 'bater_metas', label: '🎯 Bater metas' },
-                { key: 'organizar_ganhos', label: '📊 Organizar ganhos' },
+                { key: 'ganhar_mais', label: 'Ganhar mais', icon: Banknote },
+                { key: 'controlar_gastos', label: 'Controlar gastos', icon: Calculator },
+                { key: 'evitar_prejuizo', label: 'Evitar prejuízo', icon: Shield },
+                { key: 'bater_metas', label: 'Bater metas', icon: Target },
+                { key: 'organizar_ganhos', label: 'Organizar ganhos', icon: ChartNoAxesCombined },
               ] as const).map(opt => {
                 const active = profile?.objetivo_principal === opt.key;
                 return (
@@ -187,7 +188,7 @@ export default function ProfileView({ onReset }: { onReset?: () => void }) {
                         : 'bg-secondary text-foreground border-border hover:bg-accent hover:text-accent-foreground'
                     }`}
                   >
-                    {opt.label}
+                    <opt.icon aria-hidden="true" size={20} className="inline-block align-middle mr-1.5 shrink-0" />{opt.label}
                   </button>
                 );
               })}

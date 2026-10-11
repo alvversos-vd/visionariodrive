@@ -67,10 +67,10 @@ export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props
     : 'bad';
 
   const statusConfig = {
-    good: { bg: 'bg-profit', emoji: '🟢', label: 'Dia lucrativo' },
-    ok: { bg: 'bg-accent', emoji: '🟡', label: 'Lucro baixo' },
-    bad: { bg: 'bg-loss', emoji: '🔴', label: 'Prejuízo no dia' },
-    none: { bg: 'bg-muted', emoji: '📊', label: 'Sem dados de hoje' },
+    good: { bg: 'bg-profit', label: 'Dia lucrativo' },
+    ok: { bg: 'bg-accent', label: 'Lucro baixo' },
+    bad: { bg: 'bg-loss', label: 'Prejuízo no dia' },
+    none: { bg: 'bg-muted', label: 'Sem dados de hoje' },
   };
 
   const costPerKm = today && today.kmDriven > 0 ? today.totalCost / today.kmDriven : 0;

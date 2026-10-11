@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, X, Navigation, Zap, Pencil, Car, Smartphone, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -240,7 +241,7 @@ export default function RegisterRideFab({ onChange }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">Valor por km</span>
                 {preview && <span className="font-display font-bold">
-                  {preview.resultado === 'boa' ? '🟢 Boa' : preview.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                  {preview.resultado === 'boa' ? <CircleCheck aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : preview.resultado === 'aceitavel' ? <CircleAlert aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : <CircleX aria-hidden="true" size={14} className="inline-block align-middle mr-1" />}{preview.resultado === 'boa' ? 'Boa' : preview.resultado === 'aceitavel' ? 'Aceitável' : 'Ruim'}
                 </span>}
               </div>
               <p className="font-display font-bold text-2xl number-tabular mt-0.5">

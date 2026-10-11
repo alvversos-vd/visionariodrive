@@ -1,3 +1,4 @@
+import { Car, Fuel, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Trash2, Check, Bike, Car, Zap, Truck, X } from 'lucide-react';
@@ -45,7 +46,7 @@ export default function VehiclesView({ onChange, onClose, forceOnboarding }: Pro
     <div className="space-y-4 animate-slide-up">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-display font-bold text-lg">🚗 Meus veículos</h2>
+          <h2 className="font-display font-bold text-lg"><Car aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Meus veículos</h2>
           <p className="text-xs text-muted-foreground">Cada turno usa um veículo. Cálculos vêm daqui.</p>
         </div>
         {onClose && (
@@ -77,9 +78,9 @@ export default function VehiclesView({ onChange, onClose, forceOnboarding }: Pro
                       {v.placa ? ` · ${v.placa}` : ''}
                     </p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-caption text-muted-foreground">
-                      {v.km_por_litro && <span>⛽ {v.km_por_litro} km/L</span>}
+                      {v.km_por_litro && <span><Fuel aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{v.km_por_litro} km/L</span>}
                       {v.valor_combustivel_litro > 0 && <span>R$ {v.valor_combustivel_litro.toFixed(2)}/L</span>}
-                      {v.custo_fixo_mensal > 0 && <span>📅 R$ {v.custo_fixo_mensal.toFixed(0)}/mês</span>}
+                      {v.custo_fixo_mensal > 0 && <span><Calendar aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />R$ {v.custo_fixo_mensal.toFixed(0)}/mês</span>}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">

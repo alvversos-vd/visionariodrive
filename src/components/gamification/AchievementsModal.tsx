@@ -1,3 +1,4 @@
+import AchievementIcon from './AchievementIcon';
 /**
  * AchievementsModal — Sprint 6.3.
  * Modal "Todas as Conquistas". Consome apenas hooks/serviços.
@@ -59,7 +60,7 @@ export default function AchievementsModal({ open, onOpenChange, accountCreatedAt
               <ul className="grid grid-cols-1 gap-1.5">
                 {unlocked.map(a => (
                   <li key={a.def.id} className={`flex items-start gap-2 rounded-md px-2 py-2 ${RARITY_CLASS[a.def.rarity]}`}>
-                    <span className="text-xl leading-none mt-0.5">{a.def.icon}</span>
+                    <span className="text-xl leading-none mt-0.5"><AchievementIcon id={a.def.id} /></span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
@@ -89,7 +90,7 @@ export default function AchievementsModal({ open, onOpenChange, accountCreatedAt
                 return (
                   <li key={a.def.id} className="rarity-locked rounded-md px-2 py-2">
                     <div className="flex items-start gap-2">
-                      <span className="text-xl leading-none opacity-50 mt-0.5">{a.def.icon}</span>
+                      <span className="text-xl leading-none opacity-50 mt-0.5"><AchievementIcon id={a.def.id} /></span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs font-display font-bold truncate">{a.def.name}</p>

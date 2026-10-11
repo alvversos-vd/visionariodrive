@@ -1,3 +1,4 @@
+import { Smartphone } from 'lucide-react';
 import { MapPin, Shield, Navigation, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { pushBlockingModal } from '@/lib/uiModalState';
@@ -73,7 +74,7 @@ export default function GpsConsentDialog({ open, onAccept, onDecline }: Props) {
 
           {isIOS && (
             <div className="bg-secondary/40 rounded-lg p-3 text-caption text-muted-foreground">
-              <strong className="text-foreground">📱 iPhone:</strong> ao receber o pedido do sistema, escolha <strong>“Permitir uma vez”</strong> ou <strong>“Ao usar o app”</strong>.
+              <strong className="text-foreground"><Smartphone aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />iPhone:</strong> ao receber o pedido do sistema, escolha <strong>“Permitir uma vez”</strong> ou <strong>“Ao usar o app”</strong>.
             </div>
           )}
 

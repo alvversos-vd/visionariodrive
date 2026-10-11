@@ -1,3 +1,4 @@
+import { Lightbulb, Calculator, Banknote, TrendingUp } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { goalsService } from '@/lib/services/goalsService';
 import { settingsService } from '@/lib/services/settingsService';
@@ -102,7 +103,7 @@ export default function SimulatorView({ refresh }: Props) {
     <div className="space-y-4 animate-slide-up">
       {/* Estratégia */}
       <div className="space-y-2">
-        <p className="font-display font-semibold text-foreground px-1">💡 Estratégia</p>
+        <p className="font-display font-semibold text-foreground px-1"><Lightbulb aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Estratégia</p>
         {tips.map((t, i) => {
           const cfg = tipStyle[t.type];
           const Icon = cfg.icon;
@@ -118,7 +119,7 @@ export default function SimulatorView({ refresh }: Props) {
       {/* Simulador */}
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <div>
-          <p className="font-display font-semibold text-foreground">🧮 Simulador de jornada</p>
+          <p className="font-display font-semibold text-foreground"><Calculator aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Simulador de jornada</p>
           <p className="text-xs text-muted-foreground">Estime ganhos e lucro de uma jornada futura.</p>
         </div>
 
@@ -182,14 +183,14 @@ export default function SimulatorView({ refresh }: Props) {
       {sim.valid && (
         <div className="grid grid-cols-2 gap-3 animate-slide-up">
           <div className="bg-card rounded-lg p-4 border shadow-sm">
-            <p className="text-xs text-muted-foreground">💰 Ganho estimado</p>
+            <p className="text-xs text-muted-foreground"><Banknote aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Ganho estimado</p>
             <p className="text-xl font-display font-bold text-foreground">{fmt(sim.earn)}</p>
           </div>
           <div className={`rounded-lg p-4 border shadow-sm ${
             sim.profit > 0 ? 'bg-profit/10 border-profit/30' :
             sim.profit < 0 ? 'bg-loss/10 border-loss/30' : 'bg-card'
           }`}>
-            <p className="text-xs text-muted-foreground">📈 Lucro estimado</p>
+            <p className="text-xs text-muted-foreground"><TrendingUp aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Lucro estimado</p>
             <p className={`text-xl font-display font-bold ${
               sim.profit > 0 ? 'text-profit' : sim.profit < 0 ? 'text-loss' : 'text-foreground'
             }`}>{fmt(sim.profit)}</p>

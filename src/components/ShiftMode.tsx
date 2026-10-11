@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert, CircleX, Route } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -1090,7 +1091,7 @@ export default function ShiftMode({ onChange }: Props) {
                       {r.km.toFixed(1)} km
                     </span>
                     {r.edicoes && r.edicoes.length > 0 && (
-                      <span title="Corrida editada" className="text-micro text-warning">✎</span>
+                      <Pencil aria-label="Corrida editada" size={12} className="text-warning" />
                     )}
                     <span className="font-display font-bold font-mono-num text-caption ml-auto">{fmt(r.valor_por_km)}/km</span>
                     <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary press" title="Editar"><Pencil size={11} /></button>
@@ -1202,7 +1203,7 @@ export default function ShiftMode({ onChange }: Props) {
               Os totais do turno serão consolidados no histórico e dashboard. Esta ação não pode ser desfeita.
               {totals && (
                 <span className="block mt-2 text-xs">
-                  💰 Lucro: <b>{fmt(totals.lucro_total)}</b> · 🛣 {totals.km_total.toFixed(1)} km · 🚗 {totals.corridas_total} corridas
+                  <Wallet aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Lucro: <b>{fmt(totals.lucro_total)}</b> · <Route aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.km_total.toFixed(1)} km · <Car aria-hidden="true" size=14 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.corridas_total} corridas
                 </span>
               )}
             </AlertDialogDescription>
@@ -1294,7 +1295,7 @@ export default function ShiftMode({ onChange }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">R$ por km</span>
                 <span className="font-display font-bold">
-                  {previewClass.resultado === 'boa' ? '🟢 Boa' : previewClass.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                  {previewClass.resultado === 'boa' ? <CircleCheck aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : previewClass.resultado === 'aceitavel' ? <CircleAlert aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : <CircleX aria-hidden="true" size={14} className="inline-block align-middle mr-1" />}{previewClass.resultado === 'boa' ? 'Boa' : previewClass.resultado === 'aceitavel' ? 'Aceitável' : 'Ruim'}
                 </span>
               </div>
               <p className="font-display font-bold text-2xl number-tabular mt-0.5">{fmt(previewClass.valor_por_km)}/km</p>
@@ -1361,7 +1362,7 @@ export default function ShiftMode({ onChange }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">Novo R$/km</span>
                 <span className="font-display font-bold">
-                  {previewCls.resultado === 'boa' ? '🟢 Boa' : previewCls.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                  {previewCls.resultado === 'boa' ? <CircleCheck aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : previewCls.resultado === 'aceitavel' ? <CircleAlert aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : <CircleX aria-hidden="true" size={14} className="inline-block align-middle mr-1" />}{previewCls.resultado === 'boa' ? 'Boa' : previewCls.resultado === 'aceitavel' ? 'Aceitável' : 'Ruim'}
                 </span>
               </div>
               <p className="font-display font-bold text-xl number-tabular mt-0.5">{fmt(previewCls.valor_por_km)}/km</p>

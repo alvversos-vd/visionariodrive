@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert, CircleX, ChartNoAxesCombined, Zap } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { settingsService } from '@/lib/services/settingsService';
@@ -90,7 +91,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
     if (verdict === 'good') {
       toast.success('Essa corrida pode aumentar seu lucro');
     } else if (verdict === 'bad') {
-      toast('Essa corrida pode te dar prejuízo', { icon: '⚠️' });
+      toast('Essa corrida pode te dar prejuízo', { icon: <AlertCircle aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-warning" /> });
       // Micro-win: evitou prejuízo (anti-spam: 1x a cada 6h)
       const now = Date.now();
       if (now - getLastAvoidAt() > 6 * 60 * 60 * 1000) {
@@ -101,9 +102,9 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
   }, [verdict]);
 
   const verdictConfig = {
-    good: { bg: 'bg-profit', emoji: '🟢', label: 'Boa corrida — acima do mínimo ideal', text: 'text-profit' },
-    ok: { bg: 'bg-accent', emoji: '🟡', label: 'Corrida aceitável — lucro baixo', text: 'text-accent' },
-    bad: { bg: 'bg-loss', emoji: '🔴', label: 'Corrida ruim — prejuízo', text: 'text-loss' },
+    good: { bg: 'bg-profit', icon: CircleCheck, label: 'Boa corrida — acima do mínimo ideal', text: 'text-profit' },
+    ok: { bg: 'bg-accent', icon: CircleAlert, label: 'Corrida aceitável — lucro baixo', text: 'text-accent' },
+    bad: { bg: 'bg-loss', icon: CircleX, label: 'Corrida ruim — prejuízo', text: 'text-loss' },
   };
 
   const fmt = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`;
@@ -113,7 +114,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
       {/* Cost base info */}
       {costPerKm !== null && minIdealKm !== null ? (
         <div className="bg-card rounded-lg p-4 border shadow-sm">
-          <p className="text-xs text-muted-foreground mb-2">📊 Base do último cálculo</p>
+          <p className="text-xs text-muted-foreground mb-2"><ChartNoAxesCombined aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Base do último cálculo</p>
           <div className="flex gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Custo real/km</p>
@@ -127,14 +128,14 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
         </div>
       ) : (
         <div className="bg-secondary rounded-lg p-4 text-center">
-          <p className="text-sm text-muted-foreground">⚠️ Faça um cálculo diário primeiro para ter sua base de custo por km.</p>
+          <p className="text-sm text-muted-foreground"><AlertCircle aria-hidden="true" size=16 className="inline-block shrink-0 align-middle mr-1.5 text-warning" />Faça um cálculo diário primeiro para ter sua base de custo por km.</p>
         </div>
       )}
 
       {/* Quick input */}
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
         <div className="flex items-center justify-between">
-          <p className="font-display font-semibold text-foreground">🚀 Análise Rápida</p>
+          <p className="font-display font-semibold text-foreground"><Zap aria-hidden="true" size=20 className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Análise Rápida</p>
           <p className="text-micro text-muted-foreground uppercase tracking-wider">Tempo real</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -200,7 +201,7 @@ export default function RideAnalyzer({ refresh, onGoToUpgrade }: Props) {
       {verdict && details && (
         <div className="space-y-3 animate-slide-up">
           <div className={`rounded-xl p-6 text-center shadow-lg ${verdictConfig[verdict].bg}`}>
-            <p className="text-3xl mb-1">{verdictConfig[verdict].emoji}</p>
+            <p className="mb-1">{(() => { const Icon = verdictConfig[verdict].icon; return <Icon aria-hidden="true" size={32} className="mx-auto" />; })()}</p>
             <p className="text-lg font-display font-bold text-primary-foreground">{verdictConfig[verdict].label}</p>
           </div>
 
