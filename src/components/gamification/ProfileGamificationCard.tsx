@@ -53,7 +53,7 @@ export default function ProfileGamificationCard({
 
   return (
     <>
-    <Card variant="premium">
+    <Card variant="premium" data-tutorial="achievements">
       <CardHeader className="pb-3">
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil Inteligente</span>

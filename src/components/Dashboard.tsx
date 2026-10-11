@@ -210,7 +210,7 @@ export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props
           : 0;
         const profitNeg = !!(today && today.profit < 0);
         return (
-          <div className="relative rounded-2xl p-6 bg-card border border-border/70 shadow-premium overflow-hidden animate-fade-in-up">
+          <div data-tutorial="dashboard" className="relative rounded-2xl p-6 bg-card border border-border/70 shadow-premium overflow-hidden animate-fade-in-up">
             {/* Linha superior — accent muito sutil só quando há sinal real */}
             {today && (
               <div className={`absolute inset-x-0 top-0 h-px ${profitNeg ? 'bg-loss/70' : 'bg-primary/70'}`} />
@@ -307,7 +307,7 @@ export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props
 
       <OperationalStatusBadge />
 
-      <ShiftMode />
+      <div data-tutorial="shift"><ShiftMode /></div>
 
       {/* Insights (máx. 3) — Sprint 3 */}
       {entriesCount >= 3 && <InsightsCard insights={insights} />}

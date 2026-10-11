@@ -27,6 +27,8 @@ export default function InteractiveTutorial({ userId, eligible, suspended, activ
   const [index, setIndex] = useState(0);
   const [storageFailed, setStorageFailed] = useState(false);
   const helpRef = useRef<HTMLButtonElement>(null);
+  const [helpHost, setHelpHost] = useState<HTMLElement | null>(null);
+  useEffect(() => { setHelpHost(document.getElementById('tutorial-help-host')); }, []);
   const blocking = useSyncExternalStore(subscribeBlockingModal, isBlockingModalOpen, () => false);
   const available = eligible && !suspended && !blocking;
   const steps = useMemo(() => getTutorialSteps(activeShift, gps), [activeShift, gps]);
@@ -57,12 +59,12 @@ export default function InteractiveTutorial({ userId, eligible, suspended, activ
   };
 
   return <>
-    {createPortal(
+    {helpHost && createPortal(
       <Button ref={helpRef} variant="ghost" size="icon" className="h-11 w-11 shrink-0 rounded-lg" aria-label="Ajuda e tutorial" title="Ajuda e tutorial" disabled={!available} onClick={() => setHelpOpen(true)}>
         <CircleHelp aria-hidden="true" />
       </Button>,
       // The explicit host exists before this component mounts in Index.
-      document.getElementById('tutorial-help-host') ?? document.createDocumentFragment(),
+      helpHost,
     )}
     {available && !running && !helpOpen && status === null && currentTab === 'home' && <section aria-label="Apresentação do tutorial" className="mb-4 border-l-2 border-primary bg-primary/5 px-4 py-4">
       <div className="flex items-center gap-2 text-primary"><CircleHelp size={18} aria-hidden="true" /><h2 className="font-display text-base font-semibold">Conheça o Visionário Drive</h2></div>
@@ -149,7 +151,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
           <div className="absolute rounded-lg border-2 border-primary" data-tutorial-highlight={step.target} style={{ top: highlight.top, left: highlight.left, width: highlight.width, height: highlight.height }} />
         </> : <div className="tutorial-dim absolute inset-0" />}
       </div>
-      <DialogPrimitive.Content ref={panelRef} aria-describedby="tutorial-description" onEscapeKeyDown={onSkip} onPointerDownOutside={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="tutorial-panel fixed z-[61] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border border-primary/30 bg-popover p-5 text-popover-foreground shadow-premium" style={{ left: layout?.left ?? 16, top: layout?.top ?? 16 }}>
+      <DialogPrimitive.Content ref={panelRef} aria-describedby="tutorial-description" onEscapeKeyDown={event => { event.preventDefault(); onSkip(); }} onPointerDownOutside={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="tutorial-panel fixed z-[61] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border border-primary/30 bg-popover p-5 text-popover-foreground shadow-premium" style={{ left: layout?.left ?? 16, top: layout?.top ?? 16 }}>
         <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-primary" aria-live="polite">{number} de {total}</p><Button variant="ghost" size="icon" className="h-11 w-11 -mr-2 -mt-2" aria-label="Pular tutorial" onClick={onSkip}><X aria-hidden="true" /></Button></div>
         <DialogPrimitive.Title className="mt-1 font-display text-lg font-semibold">{step.title}</DialogPrimitive.Title>
         <DialogPrimitive.Description id="tutorial-description" className="mt-2 text-sm leading-relaxed text-muted-foreground">{fallback ? step.alternative : step.description}</DialogPrimitive.Description>
