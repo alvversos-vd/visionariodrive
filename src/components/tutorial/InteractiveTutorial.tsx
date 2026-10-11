@@ -103,7 +103,7 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
       const visual = window.visualViewport;
       const viewport: TutorialViewport = { left: visual?.offsetLeft ?? 0, top: visual?.offsetTop ?? 0, width: visual?.width ?? window.innerWidth, height: visual?.height ?? window.innerHeight };
       const candidates = screenReady ? document.querySelectorAll<HTMLElement>(`[data-tutorial="${step.target}"]`) : [];
-      const target = candidates.length === 1 && candidates[0].getClientRects().length > 0 ? candidates[0] : null;
+      const target = candidates.length === 1 && !candidates[0].querySelector('[data-tutorial-loading]') && candidates[0].getClientRects().length > 0 ? candidates[0] : null;
       if (target !== observed) {
         if (observed) resize.unobserve(observed);
         observed = target;

@@ -36,7 +36,7 @@ const UpgradeView = lazy(() => import('@/components/UpgradeView'));
 
 function ViewFallback() {
   return (
-    <div className="flex items-center justify-center py-16 text-muted-foreground">
+    <div data-tutorial-loading className="flex items-center justify-center py-16 text-muted-foreground">
       <Loader2 className="animate-spin" size={20} />
     </div>
   );
