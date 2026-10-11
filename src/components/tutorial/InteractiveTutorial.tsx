@@ -153,7 +153,10 @@ function TutorialSpotlight({ step, number, total, screenReady, onNext, onBack, o
       <DialogPrimitive.Content ref={setPanel} onEscapeKeyDown={event => { event.preventDefault(); onSkip(); }} onPointerDownOutside={event => event.preventDefault()} onCloseAutoFocus={event => event.preventDefault()} className="tutorial-panel fixed z-[61] w-[calc(100%-2rem)] max-w-sm overflow-y-auto rounded-xl border border-primary/30 bg-popover p-5 text-popover-foreground shadow-premium" style={{ left: layout?.left ?? 16, top: layout?.top ?? 16 }}>
         <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium text-primary" aria-live="polite">{number} de {total}</p><Button variant="ghost" size="icon" className="h-11 w-11 -mr-2 -mt-2" aria-label="Pular tutorial" onClick={onSkip}><X aria-hidden="true" /></Button></div>
         <DialogPrimitive.Title className="mt-1 font-display text-lg font-semibold">{step.title}</DialogPrimitive.Title>
-        <DialogPrimitive.Description className="mt-2 text-sm leading-relaxed text-muted-foreground">{fallback ? step.alternative : step.description}</DialogPrimitive.Description>
+        <DialogPrimitive.Description className="mt-2 grid text-sm leading-relaxed text-muted-foreground">
+          <span className={`col-start-1 row-start-1 ${fallback ? 'invisible' : ''}`} aria-hidden={fallback}>{step.description}</span>
+          <span className={`col-start-1 row-start-1 ${fallback ? '' : 'invisible'}`} aria-hidden={!fallback}>{step.alternative}</span>
+        </DialogPrimitive.Description>
         <div className="mt-5 flex items-center justify-between gap-2">
           {onBack ? <Button variant="ghost" className="px-3" onClick={onBack}><ArrowLeft aria-hidden="true" />Voltar</Button> : <Button variant="ghost" className="px-3" onClick={onSkip}>Pular</Button>}
           <Button className="px-3" onClick={onNext}>{number === total ? <>Concluir<Check aria-hidden="true" /></> : <>Próximo<ArrowRight aria-hidden="true" /></>}</Button>
