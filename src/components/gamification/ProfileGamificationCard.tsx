@@ -1,5 +1,5 @@
 import { Trophy, Lock, ChevronDown, ChevronUp, LineChart as LineChartIcon } from 'lucide-react';
-import AchievementIcon from './AchievementIcon';
+import AchievementCard from './AchievementCard';
 /**
  * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 + Sprint 7.5 Onda 4.
  * Perfil Inteligente premium: XP hero, stats primárias (grid 2×3),
@@ -18,14 +18,6 @@ import { useXp } from '@/hooks/useXp';
 import { useAchievements } from '@/hooks/useAchievements';
 import { achievementService } from '@/lib/services/achievementService';
 import { telemetry } from '@/lib/telemetry';
-import type { Rarity } from '@/lib/gamification/catalog';
-
-const RARITY_CLASS: Record<Rarity, string> = {
-  common: 'rarity-common',
-  rare: 'rarity-rare',
-  epic: 'rarity-epic',
-  legendary: 'rarity-legendary',
-};
 
 function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -65,9 +57,9 @@ export default function ProfileGamificationCard({
       <CardHeader className="pb-3">
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil Inteligente</span>
-          <Badge variant="outline" className="gap-1 cursor-pointer" onClick={openModal}>
+          <Button variant="ghost" className="gap-1 min-h-11 px-3 text-xs text-primary" aria-label="Abrir todas as conquistas" onClick={openModal}>
             <Trophy size={12} /> {unlockedList.length}/{all.length}
-          </Badge>
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -109,27 +101,20 @@ export default function ProfileGamificationCard({
             <h4 className="text-caption font-display font-bold text-muted-foreground">
               Conquistas desbloqueadas
             </h4>
-            <Button size="sm" variant="ghost" className="h-6 text-caption px-2" onClick={openModal}>
+            <Button size="sm" variant="ghost" className="min-h-11 text-xs px-3" onClick={openModal}>
               Ver todas
             </Button>
           </div>
           {unlockedList.length === 0 ? (
             <p className="text-caption text-muted-foreground italic">Nenhuma ainda — comece um turno para desbloquear.</p>
           ) : (
-            <ul className="grid grid-cols-1 gap-1.5">
+            <ul className="grid grid-cols-1 gap-3">
               {unlockedList.slice(0, 5).map(a => (
-                <li key={a.def.id} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${RARITY_CLASS[a.def.rarity]}`}>
-                  <span className="text-lg leading-none"><AchievementIcon id={a.def.id} /></span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                    <p className="text-micro opacity-80 truncate">{a.def.description}</p>
-                  </div>
-                  <span className="text-micro font-bold tabular-nums">+{a.def.xp} XP</span>
-                </li>
+                <AchievementCard key={a.def.id} achievement={a} />
               ))}
               {unlockedList.length > 5 && (
                 <li>
-                  <Button variant="ghost" size="sm" className="w-full text-caption h-7" onClick={openModal}>
+                  <Button variant="ghost" size="sm" className="w-full text-xs min-h-11" onClick={openModal}>
                     +{unlockedList.length - 5} conquistas
                   </Button>
                 </li>
@@ -139,39 +124,22 @@ export default function ProfileGamificationCard({
         </div>
 
         <div>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => setShowLocked(v => !v)}
-            className="w-full flex items-center justify-between text-caption font-display font-bold text-muted-foreground py-1.5"
+            aria-expanded={showLocked}
+            className="w-full min-h-11 h-auto flex items-center justify-between gap-2 whitespace-normal text-xs font-display font-semibold text-muted-foreground px-0 py-2"
           >
             <span className="flex items-center gap-1.5"><Lock size={12} /> Próximas conquistas ({lockedList.length})</span>
             {showLocked ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
+          </Button>
           {showLocked && (
-            <ul className="grid grid-cols-1 gap-1.5 mt-1">
-              {lockedList.slice(0, 6).map(a => {
-                const pct = Math.round((a.progress ?? 0) * 100);
-                return (
-                  <li key={a.def.id} className="rarity-locked rounded-md px-2 py-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg leading-none opacity-50"><AchievementIcon id={a.def.id} /></span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-display font-bold truncate">{a.def.name}</p>
-                        <p className="text-micro text-muted-foreground truncate">{a.def.description}</p>
-                      </div>
-                      <span className="text-micro text-muted-foreground tabular-nums">+{a.def.xp} XP</span>
-                    </div>
-                    {a.def.progress && (
-                      <div className="mt-1 h-1 w-full bg-background rounded-full overflow-hidden">
-                        <div className="h-full bg-primary/50" style={{ width: `${pct}%` }} />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+            <ul className="grid grid-cols-1 gap-3 mt-2">
+              {lockedList.slice(0, 6).map(a => <AchievementCard key={a.def.id} achievement={a} />)}
               {lockedList.length > 6 && (
                 <li>
-                  <Button variant="ghost" size="sm" className="w-full text-caption h-7" onClick={openModal}>
+                  <Button variant="ghost" size="sm" className="w-full text-xs min-h-11" onClick={openModal}>
                     Ver todas ({lockedList.length})
                   </Button>
                 </li>
