@@ -16,6 +16,10 @@ import BrandMark from '@/components/brand/BrandMark';
 import { SessionModeProvider, useSessionMode } from '@/components/session/SessionModeContext';
 import SessionOverlays from '@/components/session/SessionOverlays';
 import TabNavigation from '@/components/TabNavigation';
+import InteractiveTutorial from '@/components/tutorial/InteractiveTutorial';
+import { useActiveShift } from '@/hooks/useShift';
+import { useCapabilities } from '@/hooks/useCapabilities';
+import { useRef } from 'react';
 
 
 // Lazy-loaded heavy views — reduzem o bundle inicial (RC1 / Sprint 5.5).
@@ -32,7 +36,7 @@ const UpgradeView = lazy(() => import('@/components/UpgradeView'));
 
 function ViewFallback() {
   return (
-    <div className="flex items-center justify-center py-16 text-muted-foreground">
+    <div data-tutorial-loading className="flex items-center justify-center py-16 text-muted-foreground">
       <Loader2 className="animate-spin" size={20} />
     </div>
   );
@@ -46,17 +50,25 @@ const PRO_TABS: Tab[] = ['strategy'];
 export default function Index() {
   return (
     <SessionModeProvider>
-      <IndexInner />
+      <AccountIndex />
     </SessionModeProvider>
   );
+}
+
+function AccountIndex() {
+  const { user } = useAuth();
+  return <IndexInner key={user?.id ?? 'signed-out'} />;
 }
 
 function IndexInner() {
   const [tab, setTab] = useState<Tab>('home');
   const [result, setResult] = useState<DailyEntry | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const { isPro, dataVersion } = useAuth();
-  const { sessionMode } = useSessionMode();
+  const { isPro, dataVersion, user, profile, dataReady } = useAuth();
+  const { sessionMode, phase } = useSessionMode();
+  const activeShift = useActiveShift();
+  const { gps } = useCapabilities();
+  const tutorialReturnTab = useRef<Tab | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean>(() => !isOnboardingCompleted());
 
   useEffect(() => {
@@ -151,7 +163,8 @@ function IndexInner() {
               <p className="text-micro text-muted-foreground uppercase tracking-[0.12em] mt-1.5 truncate">{BRAND_TAGLINE}</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center shrink-0">
+          <div className="flex gap-1 items-center shrink-0">
+            <span id="tutorial-help-host" className="flex shrink-0" />
             <InstallAppButton />
             <button
               onClick={() => setTab('profile')}
@@ -172,7 +185,7 @@ function IndexInner() {
       </header>
 
       <main className="container max-w-lg mx-auto px-4 mt-4 space-y-4">
-        <TabNavigation<Tab>
+        <div data-tutorial="navigation"><TabNavigation<Tab>
           items={navigationItems}
           current={currentNavigation}
           dimSecondary={sessionMode}
@@ -180,9 +193,27 @@ function IndexInner() {
             setTab(key);
             if (key !== 'input') setResult(null);
           }}
-        />
+        /></div>
 
-        <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
+        {user && <InteractiveTutorial
+          userId={user.id}
+          eligible={dataReady && profile?.user_id === user.id && profile.onboarding_completo}
+          suspended={showOnboarding || phase !== 'off'}
+          activeShift={activeShift?.status === 'ativo'}
+          gps={gps}
+          currentTab={tab}
+          onNavigate={key => {
+            if (tutorialReturnTab.current === null) tutorialReturnTab.current = tab;
+            setTab(key);
+          }}
+          onRestore={() => {
+            if (tutorialReturnTab.current !== null) setTab(tutorialReturnTab.current);
+            tutorialReturnTab.current = null;
+          }}
+        />}
+        <div data-tutorial-screen={tab}>
+          <Suspense fallback={<ViewFallback />}>{renderContent()}</Suspense>
+        </div>
       </main>
       <RegisterRideFab onChange={triggerRefresh} />
       <SessionOverlays refresh={refresh} />

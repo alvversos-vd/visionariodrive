@@ -137,7 +137,7 @@ export default function FinancialView({ refresh, onChanged }: Props) {
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as FinancialType)}>
-        <TabsList aria-label="Tipo de movimentação" className="grid h-auto w-full grid-cols-3 gap-1 p-1">
+        <TabsList data-tutorial="financial" aria-label="Tipo de movimentação" className="grid h-auto w-full grid-cols-3 gap-1 p-1">
           <TabsTrigger value="bonus"   className="min-h-11 min-w-0 px-2">Bônus</TabsTrigger>
           <TabsTrigger value="expense" className="min-h-11 min-w-0 px-2">Despesas</TabsTrigger>
           <TabsTrigger value="income"  className="min-h-11 min-w-0 px-2">Receitas</TabsTrigger>

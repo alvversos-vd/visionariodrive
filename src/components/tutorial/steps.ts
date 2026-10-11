@@ -1,0 +1,15 @@
+export type TutorialTab = 'home' | 'financial' | 'history' | 'goals' | 'profile';
+export interface TutorialStep { tab: TutorialTab; target: string; title: string; description: string; alternative: string }
+
+export function getTutorialSteps(activeShift: boolean, gps: boolean): TutorialStep[] {
+  return [
+    { tab: 'home', target: 'dashboard', title: 'Seus resultados', description: 'No Início, acompanhe seu lucro real de hoje e o progresso da sua meta.', alternative: 'Os resultados ficam no Início, no quadro de lucro real de hoje.' },
+    { tab: 'home', target: 'navigation', title: 'Tudo ao seu alcance', description: 'No celular, abra o menu para escolher uma seção. Em telas maiores, as seções ficam visíveis lado a lado.', alternative: 'O menu de seções fica logo abaixo do cabeçalho.' },
+    { tab: 'home', target: 'shift', title: activeShift ? 'Seu turno em andamento' : 'Comece seu turno', description: activeShift ? 'Esta área reúne o turno em andamento e seus controles. O guia não pausa nem encerra seu turno.' : 'Toque em Iniciar turno quando for trabalhar. O fluxo permite escolher a data, o veículo e o aplicativo antes de confirmar.', alternative: 'A área do turno fica no Início. Se necessário, cadastre seu veículo pelo fluxo existente antes de começar.' },
+    { tab: 'home', target: activeShift ? 'register-ride' : 'shift', title: 'Registre suas corridas', description: activeShift ? (gps ? 'Use o botão + para informar o valor da corrida e conferir os quilômetros no formulário existente.' : 'Use o botão + para informar manualmente o valor recebido e os quilômetros da corrida.') : 'Depois de iniciar um turno, o botão + aparece para registrar o valor e os quilômetros de cada corrida. Não é preciso começar um turno agora.', alternative: 'O botão + fica disponível durante um turno ativo. O tutorial não abre o formulário nem salva corridas.' },
+    { tab: 'financial', target: 'financial', title: 'Organize seu financeiro', description: 'Consulte receitas, bônus e despesas em Financeiro. Use os filtros existentes para acompanhar cada tipo de lançamento.', alternative: 'Abra Financeiro pelo menu para consultar receitas, bônus e despesas.' },
+    { tab: 'history', target: 'history', title: 'Consulte seus registros', description: 'O Histórico reúne seus registros anteriores. Escolha um período para consultar os resultados e os turnos.', alternative: 'Abra Histórico pelo menu e escolha o período desejado. A consulta está disponível no START e no PRO.' },
+    { tab: 'goals', target: 'goals', title: 'Defina suas metas', description: 'Em Metas, organize seus objetivos de lucro e acompanhe o progresso com os registros reais do aplicativo.', alternative: 'As metas ficam na seção Metas do menu. O guia não altera seus objetivos.' },
+    { tab: 'profile', target: 'achievements', title: 'Acompanhe sua evolução', description: 'No Perfil, consulte seu XP e as conquistas. O botão de troféu abre os requisitos, o progresso e as conquistas desbloqueadas.', alternative: 'Abra Perfil no cabeçalho e consulte o quadro Perfil Inteligente para acompanhar XP e conquistas.' },
+  ];
+}

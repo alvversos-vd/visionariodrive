@@ -191,7 +191,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
         <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mb-4">
           <BarChart3 size={28} className="text-primary" />
         </div>
-        <p className="font-display font-semibold text-foreground text-base">Seu histórico começa aqui</p>
+        <p data-tutorial="history" className="font-display font-semibold text-foreground text-base">Seu histórico começa aqui</p>
         <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">
           Registre sua primeira corrida ou inicie um turno para acompanhar sua evolução por dia, semana e mês.
         </p>
@@ -221,7 +221,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
 
   return (
     <div className="min-w-0 space-y-6 animate-slide-up">
-      <header className="flex items-center gap-2"><Calendar size={20} className="text-primary" /><h2 className="font-display text-xl font-semibold tracking-normal">Histórico</h2></header>
+      <header data-tutorial="history" className="flex items-center gap-2"><Calendar size={20} className="text-primary" /><h2 className="font-display text-xl font-semibold tracking-normal">Histórico</h2></header>
       <ShiftHistoryView refresh={refresh} />
       {isPro ? (
         <Button variant="ghost"

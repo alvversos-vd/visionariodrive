@@ -1,5 +1,6 @@
 # Premium onboarding
 - [ ] Audit and implement separate interactive tutorial with user-scoped presentation preference and permanent help.
+- [ ] Reuse engagement storage without a new persistence layer; use explicit stable targets and clear visual state on account/session changes.
 - [ ] Verify tutorial navigation, account isolation, persistence, accessible target positioning and absence of operational writes; document physical-device limitations.
 - [x] Refine existing achievement cards and modal using real rarity, XP and progress; 147 tests and authenticated checks in five viewports passed; physical Android/iOS remain unverified.
 - [x] Correct motorcycle and electric bicycle glyphs in existing selectors; six regression tests and authenticated desktop/mobile rendering passed (physical Android/iOS not tested).

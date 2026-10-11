@@ -77,6 +77,7 @@
     /* Sprint 10.5 — glow reduzido ~40% (mais nitidez, menos brilho) */
     --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.21), 0 0 18px -4px hsl(var(--primary) / 0.24);
     --shadow-glow-sm: 0 0 12px -3px hsl(var(--primary) / 0.21);
+    --tutorial-scrim: hsl(var(--background) / 0.82);
 
     /* Sidebar (mantido) */
     --sidebar-background: 222 16% 9%;
@@ -302,4 +303,11 @@
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+.tutorial-dim { background: var(--tutorial-scrim); }
+.tutorial-panel {
+  max-height: calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  letter-spacing: 0;
 }

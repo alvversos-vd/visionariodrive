@@ -94,3 +94,38 @@ export function shouldShowFixedCostsHint(): boolean {
 export function markFixedCostsHintShown() {
   localStorage.setItem(K_FIXED_COSTS_HINT, '1');
 }
+
+// Tutorial preferences are visual, local to this device, and never part of domain sync.
+// Reuse the existing registered engagement key; isolate each authenticated account.
+export type TutorialStatus = 'deferred' | 'in_progress' | 'skipped' | 'completed';
+const TUTORIAL_KEY = 'lucro-delivery-engagement';
+const tutorialStatuses: TutorialStatus[] = ['deferred', 'in_progress', 'skipped', 'completed'];
+
+function readEngagement(): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(TUTORIAL_KEY) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown> : {};
+  } catch { return {}; }
+}
+
+export function getTutorialStatus(userId: string): TutorialStatus | null {
+  if (!userId) return null;
+  const users = readEngagement().tutorialUsers;
+  if (!users || typeof users !== 'object' || Array.isArray(users)) return null;
+  const status = (users as Record<string, unknown>)[userId];
+  return tutorialStatuses.includes(status as TutorialStatus) ? status as TutorialStatus : null;
+}
+
+export function saveTutorialStatus(userId: string, status: TutorialStatus): boolean {
+  if (!userId) return false;
+  try {
+    const current = readEngagement();
+    const users = current.tutorialUsers;
+    const previous = users && typeof users === 'object' && !Array.isArray(users) ? users : {};
+    localStorage.setItem(TUTORIAL_KEY, JSON.stringify({
+      ...current, tutorialUsers: { ...previous, [userId]: status },
+    }));
+    return true;
+  } catch { return false; }
+}

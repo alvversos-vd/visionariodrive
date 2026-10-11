@@ -57,7 +57,7 @@ export default function ProfileGamificationCard({
       <CardHeader className="pb-3">
         <CardTitle className="font-display flex items-center justify-between">
           <span>Perfil Inteligente</span>
-          <Button variant="ghost" className="gap-1 min-h-11 px-3 text-xs text-primary" aria-label="Abrir todas as conquistas" onClick={openModal}>
+          <Button data-tutorial="achievements" variant="ghost" className="gap-1 min-h-11 px-3 text-xs text-primary" aria-label="Abrir todas as conquistas" onClick={openModal}>
             <Trophy size={12} /> {unlockedList.length}/{all.length}
           </Button>
         </CardTitle>
