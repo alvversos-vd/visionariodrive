@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert, CircleX, Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { goalsService, type Goals } from '@/lib/services/goalsService';
@@ -7,7 +8,7 @@ import { rideService } from '@/lib/services/rideService';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Target, TrendingUp, Calendar, CalendarDays } from 'lucide-react';
+
 import SessionEntryCard from '@/components/session/SessionEntryCard';
 
 interface Props {
@@ -58,9 +59,9 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
     ? 'ok'
     : 'bad';
   const statusMsg = {
-    good: { emoji: '🟢', label: 'Meta batida — dia excelente', cls: 'text-profit' },
-    ok: { emoji: '🟡', label: 'Falta pouco para bater a meta', cls: 'text-accent' },
-    bad: { emoji: '🔴', label: 'Ajuste sua estratégia', cls: 'text-loss' },
+    good: { icon: CircleCheck, label: 'Meta batida — dia excelente', cls: 'text-profit' },
+    ok: { icon: CircleAlert, label: 'Falta pouco para bater a meta', cls: 'text-accent' },
+    bad: { icon: CircleX, label: 'Ajuste sua estratégia', cls: 'text-loss' },
   }[status];
 
   const handleSave = () => {
@@ -103,7 +104,7 @@ export default function GoalsView({ refresh, onSaved, onEnterSession }: Props) {
                 <p className="text-2xl font-display font-bold number-tabular leading-tight">{fmt(todayProfit)}</p>
                 <p className="text-caption text-muted-foreground number-tabular">de {fmt(goals.daily)}</p>
                 <p className={`text-caption font-display font-semibold mt-1 ${statusMsg.cls}`}>
-                  {statusMsg.emoji} {statusMsg.label}
+                  <statusMsg.icon aria-hidden="true" size={16} className="inline-block align-middle mr-1" /> {statusMsg.label}
                 </p>
               </>
             ) : (

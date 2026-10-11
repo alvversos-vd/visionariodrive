@@ -1,3 +1,4 @@
+import { type LucideIcon, AlertTriangle, CircleCheck, CircleAlert, CircleX, Flame, Search, Lightbulb, Package, Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles, BarChart3, Lock, Navigation, Smartphone, Car, Clock } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { goalsService } from '@/lib/services/goalsService';
@@ -5,7 +6,7 @@ import { metricsService, type AdjustedDailyEntry } from '@/lib/services/metricsS
 // Sprint 4: HistoryView consome apenas Services — zero repository direto.
 import type { RideModel, FinancialEntry } from '@/lib/domain/models';
 import { financialService } from '@/lib/services/financialService';
-import { Trash2, TrendingUp, TrendingDown, Trophy, Calendar, FileDown, Filter, Receipt, Sparkles, BarChart3 } from 'lucide-react';
+
 import { exportHistoryPdf } from '@/lib/exportPdf';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { toast } from 'sonner';
@@ -14,7 +15,7 @@ import PeriodComparison from './PeriodComparison';
 import ShiftHistoryView from './ShiftHistoryView';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useCapabilities } from '@/hooks/useCapabilities';
-import { Lock, Navigation, Smartphone, Car, Clock } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { historyDayKey, historyDayLabel } from './historyDatePresentation';
@@ -198,22 +199,22 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
     );
   }
 
-  const insights: { icon: string; text: string }[] = [];
+  const insights: { icon: LucideIcon; text: string }[] = [];
   if (stats.weekChangePct !== null) {
     const up = stats.weekChangePct >= 0;
     insights.push({
-      icon: up ? '📈' : '📉',
+      icon: up ? TrendingUp : TrendingDown,
       text: `Você ${up ? 'lucrou' : 'caiu'} ${Math.abs(stats.weekChangePct).toFixed(0)}% comparado à semana passada.`,
     });
   }
   if (stats.costChangePct !== null && Math.abs(stats.costChangePct) >= 5) {
     insights.push({
-      icon: stats.costChangePct > 0 ? '⚠️' : '✅',
+      icon: stats.costChangePct > 0 ? AlertTriangle : CircleCheck,
       text: `Seu custo ${stats.costChangePct > 0 ? 'aumentou' : 'reduziu'} ${Math.abs(stats.costChangePct).toFixed(0)}%.`,
     });
   }
   if (stats.bestDayOfWeek && entries.length >= 3) {
-    insights.push({ icon: '🔥', text: `Você lucra mais às ${stats.bestDayOfWeek.day}s.` });
+    insights.push({ icon: Flame, text: `Você lucra mais às ${stats.bestDayOfWeek.day}s.` });
   }
 
   const hasFilter = vehicleFilter !== ALL || rideTypeFilter !== ALL;
@@ -276,7 +277,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {/* Empty filter state */}
       {hasFilter && entries.length === 0 && rides.length === 0 && (
         <EmptyState
-          icon={<span className="text-2xl">🔍</span>}
+          icon={<Search aria-hidden="true" size={28} />}
           title="Nenhum dado para esse filtro"
           description={
             (vehicleFilter !== ALL ? `Veículo: ${vehicleFilter}. ` : '') +
@@ -356,7 +357,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
           <p className="font-display font-bold text-profit">{fmt(stats.recordProfit)}</p>
         </div>
         <div className="bg-card rounded-lg p-4 border shadow-sm text-center">
-          <p className="text-lg">🔥</p>
+          <Flame aria-hidden="true" size={24} className="text-primary" />
           <p className="text-xs text-muted-foreground">Sequência metas</p>
           <p className="font-display font-bold text-foreground">{stats.streak} dia{stats.streak !== 1 ? 's' : ''}</p>
         </div>
@@ -365,9 +366,9 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {/* Insights */}
       {insights.length > 0 && (
         <div className="bg-accent/10 border border-accent/40 rounded-lg p-4 space-y-2">
-          <p className="text-xs font-display font-semibold text-foreground uppercase tracking-wide">💡 Insights</p>
+          <p className="text-xs font-display font-semibold text-foreground uppercase tracking-wide"><Lightbulb aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Insights</p>
           {insights.map((i, idx) => (
-            <p key={idx} className="text-sm text-foreground">{i.icon} {i.text}</p>
+            <p key={idx} className="text-sm text-foreground"><i.icon aria-hidden="true" size={18} className="inline-block align-middle mr-1.5 text-primary" /> {i.text}</p>
           ))}
         </div>
       )}
@@ -375,7 +376,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
       {/* Breakdown by category */}
       {entries.length > 0 && (breakdown.byVehicle.length > 1 || breakdown.byRideType.length > 1 || hasFilter) && (
         <div className="bg-card rounded-lg p-4 border shadow-sm space-y-4">
-          <p className="font-display font-semibold text-foreground text-sm">📊 Resumo por categoria</p>
+          <p className="font-display font-semibold text-foreground text-sm"><BarChart3 aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Resumo por categoria</p>
 
           {breakdown.byVehicle.length > 0 && (
             <div className="space-y-2">
@@ -383,7 +384,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {breakdown.byVehicle.map(b => (
                 <div key={'v' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-display font-semibold text-foreground">🏍️ {b.name}</span>
+                    <span className="text-sm font-display font-semibold text-foreground"><Car aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
                     <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">
@@ -418,7 +419,7 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               {breakdown.byRideType.map(b => (
                 <div key={'t' + b.name} className="rounded-md bg-secondary/50 p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-display font-semibold text-foreground">📦 {b.name}</span>
+                    <span className="text-sm font-display font-semibold text-foreground"><Package aria-hidden="true" size={16} className="inline-block shrink-0 align-middle mr-1.5 text-muted-foreground" />{b.name}</span>
                     <span className="text-micro text-muted-foreground">{b.count} dia{b.count !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 text-center">
@@ -572,14 +573,14 @@ export default function HistoryView({ refresh, onRefresh }: Props) {
               const verdictColor =
                 verdict === 'good' ? 'text-profit' :
                 verdict === 'ok' ? 'text-foreground' : 'text-loss';
-              const verdictEmoji = verdict === 'good' ? '🟢' : verdict === 'ok' ? '🟡' : '🔴';
+              const VerdictIcon = verdict === 'good' ? CircleCheck : verdict === 'ok' ? CircleAlert : CircleX;
               return (
                 <Fragment key={ride.id}>
                   {(index === 0 || historyDayKey(rides[index - 1].date) !== historyDayKey(ride.date)) && <DayHeading date={ride.date} />}
                   <article className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_2.75rem] gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-4">
                     <Navigation size={18} className="mt-1 text-muted-foreground" aria-hidden="true" />
                     <div className="min-w-0">
-                      <p className="text-sm font-display font-semibold">Corrida analisada <span className="ml-1" title={verdict}>{verdictEmoji}</span></p>
+                      <p className="text-sm font-display font-semibold">Corrida analisada <span className="ml-1" title={verdict}><VerdictIcon aria-hidden="true" size={16} className={`inline-block align-middle ${verdictColor}`} /></span></p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {ride.app && <Badge variant="success" className="max-w-full whitespace-normal break-words"><Smartphone size={11} className="mr-1 shrink-0" />{ride.app}</Badge>}
                         {ride.vehicleName && <Badge variant="secondary" className="max-w-full whitespace-normal break-words"><Car size={11} className="mr-1 shrink-0" />{ride.vehicleName}</Badge>}

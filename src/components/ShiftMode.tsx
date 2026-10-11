@@ -1,10 +1,7 @@
+import { CircleCheck, CircleAlert, CircleX, Route, Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy, Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2, Satellite, MapPinOff, Pencil, Map as MapIcon, Bell } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import {
-  Play, Square, Plus, Clock, Wallet, Navigation, X, Trophy,
-  Car, Smartphone, Pause, Target, Zap, Maximize2, Minimize2,
-  Satellite, MapPinOff, Pencil, Map as MapIcon, Bell,
-} from 'lucide-react';
+
 import { shiftService, type Shift } from '@/lib/services/shiftService';
 import { rideService } from '@/lib/services/rideService';
 import { rideModelToShiftRide, type ShiftRide } from '@/lib/adapters/rideAdapters';
@@ -245,7 +242,8 @@ export default function ShiftMode({ onChange }: Props) {
     const key = `${shift.turno_id}:${gps}`;
     if ((gps === 'denied' || gps === 'unavailable') && fallbackShownRef.current !== key) {
       fallbackShownRef.current = key;
-      toast('⚠️ GPS indisponível — modo manual ativado automaticamente', {
+      toast('GPS indisponível — modo manual ativado automaticamente', {
+        icon: <CircleAlert aria-hidden="true" size={20} className="text-warning" />,
         description: 'O turno continua normalmente. Informe o km de cada corrida ao registrar.',
       });
     }
@@ -511,9 +509,9 @@ export default function ShiftMode({ onChange }: Props) {
     setRideOpen(false);
     refresh();
     const view = rideModelToShiftRide(ride);
-    if (view.resultado === 'boa') toast.success('🟢 Boa corrida — acima do mínimo ideal');
-    else if (view.resultado === 'aceitavel') toast('🟡 Corrida aceitável — lucro baixo');
-    else toast.error('🔴 Corrida abaixo do custo ideal');
+    if (view.resultado === 'boa') toast.success('Boa corrida — acima do mínimo ideal');
+    else if (view.resultado === 'aceitavel') toast('Corrida aceitável — lucro baixo', { icon: <CircleAlert aria-hidden="true" size={20} className="text-warning" /> });
+    else toast.error('Corrida abaixo do custo ideal');
   };
 
   const openEdit = (r: ShiftRide) => {
@@ -775,13 +773,13 @@ export default function ShiftMode({ onChange }: Props) {
   const custoPct = t.ganho_total > 0 ? (t.custo_total / t.ganho_total) * 100 : 0;
   const smartAlerts: { key: string; msg: string }[] = [];
   if (thresholds.maxHorasTurno > 0 && horasOnline >= thresholds.maxHorasTurno) {
-    smartAlerts.push({ key: 'horas', msg: `⏰ Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
+    smartAlerts.push({ key: 'horas', msg: `Você já está há ${horasOnline.toFixed(1)}h online — limite definido: ${thresholds.maxHorasTurno}h. Considere pausar.` });
   }
   if (thresholds.minLucroHora > 0 && t.corridas_total >= 2 && lucroHora < thresholds.minLucroHora) {
-    smartAlerts.push({ key: 'lucroh', msg: `📉 Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
+    smartAlerts.push({ key: 'lucroh', msg: `Lucro/hora atual ${fmt(lucroHora)} está abaixo do mínimo (${fmt(thresholds.minLucroHora)}).` });
   }
   if (thresholds.maxCustoPct > 0 && t.ganho_total > 0 && custoPct > thresholds.maxCustoPct) {
-    smartAlerts.push({ key: 'custo', msg: `💸 Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
+    smartAlerts.push({ key: 'custo', msg: `Custos consumindo ${custoPct.toFixed(0)}% do ganho (limite ${thresholds.maxCustoPct}%).` });
   }
 
   // Preview da corrida no modal
@@ -1022,7 +1020,7 @@ export default function ShiftMode({ onChange }: Props) {
         {smartAlerts.length > 0 && (
           <div className="relative space-y-1.5">
             {smartAlerts.map(a => (
-              <AlertBanner key={a.key} tone="warning" icon={<Target size={14} />} title="" body={a.msg} />
+              <AlertBanner key={a.key} tone="warning" icon={a.key === 'horas' ? <Clock aria-hidden="true" size={16} /> : a.key === 'lucroh' ? <Route aria-hidden="true" size={16} /> : <Wallet aria-hidden="true" size={16} />} title="" body={a.msg} />
             ))}
           </div>
         )}
@@ -1090,7 +1088,7 @@ export default function ShiftMode({ onChange }: Props) {
                       {r.km.toFixed(1)} km
                     </span>
                     {r.edicoes && r.edicoes.length > 0 && (
-                      <span title="Corrida editada" className="text-micro text-warning">✎</span>
+                      <Pencil aria-label="Corrida editada" size={12} className="text-warning" />
                     )}
                     <span className="font-display font-bold font-mono-num text-caption ml-auto">{fmt(r.valor_por_km)}/km</span>
                     <button onClick={() => openEdit(r)} className="text-muted-foreground hover:text-primary press" title="Editar"><Pencil size={11} /></button>
@@ -1202,7 +1200,7 @@ export default function ShiftMode({ onChange }: Props) {
               Os totais do turno serão consolidados no histórico e dashboard. Esta ação não pode ser desfeita.
               {totals && (
                 <span className="block mt-2 text-xs">
-                  💰 Lucro: <b>{fmt(totals.lucro_total)}</b> · 🛣 {totals.km_total.toFixed(1)} km · 🚗 {totals.corridas_total} corridas
+                  <Wallet aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Lucro: <b>{fmt(totals.lucro_total)}</b> · <Route aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.km_total.toFixed(1)} km · <Car aria-hidden="true" size={14} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />{totals.corridas_total} corridas
                 </span>
               )}
             </AlertDialogDescription>
@@ -1294,7 +1292,7 @@ export default function ShiftMode({ onChange }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">R$ por km</span>
                 <span className="font-display font-bold">
-                  {previewClass.resultado === 'boa' ? '🟢 Boa' : previewClass.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                  {previewClass.resultado === 'boa' ? <CircleCheck aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : previewClass.resultado === 'aceitavel' ? <CircleAlert aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : <CircleX aria-hidden="true" size={14} className="inline-block align-middle mr-1" />}{previewClass.resultado === 'boa' ? 'Boa' : previewClass.resultado === 'aceitavel' ? 'Aceitável' : 'Ruim'}
                 </span>
               </div>
               <p className="font-display font-bold text-2xl number-tabular mt-0.5">{fmt(previewClass.valor_por_km)}/km</p>
@@ -1361,7 +1359,7 @@ export default function ShiftMode({ onChange }: Props) {
               <div className="flex items-center justify-between text-xs">
                 <span className="font-display font-semibold uppercase tracking-wider">Novo R$/km</span>
                 <span className="font-display font-bold">
-                  {previewCls.resultado === 'boa' ? '🟢 Boa' : previewCls.resultado === 'aceitavel' ? '🟡 Aceitável' : '🔴 Ruim'}
+                  {previewCls.resultado === 'boa' ? <CircleCheck aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : previewCls.resultado === 'aceitavel' ? <CircleAlert aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> : <CircleX aria-hidden="true" size={14} className="inline-block align-middle mr-1" />}{previewCls.resultado === 'boa' ? 'Boa' : previewCls.resultado === 'aceitavel' ? 'Aceitável' : 'Ruim'}
                 </span>
               </div>
               <p className="font-display font-bold text-xl number-tabular mt-0.5">{fmt(previewCls.valor_por_km)}/km</p>

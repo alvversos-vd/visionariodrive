@@ -6,6 +6,7 @@
  * Repository, Supabase, storage ou regra de negócio aqui.
  */
 import { Card } from '@/components/ui/card';
+import { TrendingUp, Info, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type {
   CrmAnalytics,
@@ -311,7 +312,7 @@ export function CrmAlertsPanel({ data }: { data: CrmAnalytics }) {
         )}
         {data.alerts.map(a => (
           <Card key={a.id} className={`p-3 text-sm border ${alertTone(a.severity)}`}>
-            {a.severity === 'positive' ? '▲' : a.severity === 'info' ? 'ℹ' : '⚠'} {a.message}
+            {a.severity === 'positive' ? <TrendingUp aria-hidden="true" size={18} className="inline-block align-middle mr-1.5" /> : a.severity === 'info' ? <Info aria-hidden="true" size={18} className="inline-block align-middle mr-1.5" /> : <AlertTriangle aria-hidden="true" size={18} className="inline-block align-middle mr-1.5" />} {a.message}
           </Card>
         ))}
       </div>

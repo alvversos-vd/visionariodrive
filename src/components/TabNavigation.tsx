@@ -41,7 +41,7 @@ export default function TabNavigation<T extends string>({ items, current, onSele
           dimmed && !active && 'opacity-40',
         )}
       >
-        <item.icon aria-hidden="true" />
+        <item.icon aria-hidden="true" strokeWidth={2} className="h-5 w-5 shrink-0" />
         <span className={mobile ? 'flex-1 text-left whitespace-normal' : 'whitespace-normal'}>{item.label}</span>
         {mobile ? (
           <span className="flex min-w-11 shrink-0 items-center justify-end gap-2 text-micro text-muted-foreground">
@@ -66,7 +66,7 @@ export default function TabNavigation<T extends string>({ items, current, onSele
           aria-label={open ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
           className="h-12 w-full justify-start gap-3 rounded-xl border border-border/60 bg-card px-4 text-foreground hover:bg-secondary motion-reduce:transition-none"
         >
-          <current.icon className="text-primary" aria-hidden="true" />
+          <current.icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={2} aria-hidden="true" />
           <span className="flex-1 text-left font-display font-semibold">{current.label}</span>
           {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </Button>

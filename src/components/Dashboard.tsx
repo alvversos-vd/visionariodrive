@@ -1,3 +1,4 @@
+import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { rideService } from '@/lib/services/rideService';
 import { EXPENSE_CATEGORIES } from '@/lib/domain/models';
@@ -10,7 +11,7 @@ import {
   shouldShowUpgradePrompt,
 } from '@/lib/engagement';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, Trophy, Flame, Target, Wallet, Focus, Compass, Sparkles, Lock, BarChart3, Brain, ArrowRight, AlertTriangle, Banknote, Receipt, Route, Gauge } from 'lucide-react';
+
 import OperationalStatusBadge from './OperationalStatusBadge';
 import ShiftMode from './ShiftMode';
 import InsightsCard from './InsightsCard';
@@ -67,10 +68,10 @@ export default function Dashboard({ refresh, onGoToGoals, onGoToUpgrade }: Props
     : 'bad';
 
   const statusConfig = {
-    good: { bg: 'bg-profit', emoji: '🟢', label: 'Dia lucrativo' },
-    ok: { bg: 'bg-accent', emoji: '🟡', label: 'Lucro baixo' },
-    bad: { bg: 'bg-loss', emoji: '🔴', label: 'Prejuízo no dia' },
-    none: { bg: 'bg-muted', emoji: '📊', label: 'Sem dados de hoje' },
+    good: { bg: 'bg-profit', label: 'Dia lucrativo' },
+    ok: { bg: 'bg-accent', label: 'Lucro baixo' },
+    bad: { bg: 'bg-loss', label: 'Prejuízo no dia' },
+    none: { bg: 'bg-muted', label: 'Sem dados de hoje' },
   };
 
   const costPerKm = today && today.kmDriven > 0 ? today.totalCost / today.kmDriven : 0;

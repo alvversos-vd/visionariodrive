@@ -1,3 +1,6 @@
+import { Sparkles } from 'lucide-react';
+import AchievementIcon from './AchievementIcon';
+
 /**
  * AchievementToast — Sprint 6 · Fase 2.
  *
@@ -32,7 +35,8 @@ export default function AchievementToast() {
     lastSeenAchIdRef.current = last.id;
     const def = achievementService.get(last.id);
     if (!def) return;
-    toast.success(`${def.icon} ${def.name}`, {
+    toast.success(def.name, {
+      icon: <AchievementIcon id={def.id} size={20} className="text-primary" />,
       id: `achievement-${def.id}`,
       description: `${def.description} · +${def.xp} XP`,
       duration: 6000,
@@ -44,7 +48,8 @@ export default function AchievementToast() {
     if (lastSeenLevelRef.current === -1) { lastSeenLevelRef.current = p.level; return; }
     if (p.level > lastSeenLevelRef.current) {
       lastSeenLevelRef.current = p.level;
-      toast(`⭐ Nível ${p.level} alcançado!`, {
+      toast(`Nível ${p.level} alcançado!`, {
+        icon: <Sparkles aria-hidden="true" size={20} className="text-primary" />,
         id: `level-${p.level}`,
         description: 'Continue nesse ritmo — próximas conquistas estão perto.',
         duration: 5000,

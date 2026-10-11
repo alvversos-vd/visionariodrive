@@ -15,6 +15,7 @@
 - [x] Verify regressions and authenticated browser layout; document results and physical-device limitations in docs/release/financial-premium-audit.md.
 
 # Histórico premium · Gate 3
+- [x] Padronizar iconografia global com Lucide; relatório e limites em docs/release/iconography-premium-audit.md.
 - [x] Audit existing history sources, filters, optional fields and operational dates.
 - [x] Refine current history cards and day headings without changing ordering or domain behavior.
 - [x] Verify regression tests and browser interactions; document results and device limitations in docs/release/history-premium-audit.md.

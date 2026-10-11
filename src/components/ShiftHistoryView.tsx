@@ -1,3 +1,4 @@
+import { CircleCheck, CircleAlert, CircleX, type LucideIcon, ChartNoAxesCombined, Bike, Zap, ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ import { exportRouteGpx, exportRouteKml } from '@/lib/exportRoute';
 import { exportTelemetry } from '@/lib/exportTelemetry';
 import { goalsService } from '@/lib/services/goalsService';
 import { getVehiclesV2, getVehicleById, TIPO_LABEL, APPS, TipoVeiculo } from '@/lib/vehicles';
-import { ChevronDown, ChevronUp, Trophy, Clock, Wallet, Navigation, Car, Smartphone, Award, TrendingUp, Filter, X, Download, FileText, FileSpreadsheet, Map as MapIcon, Trash2, Lock } from 'lucide-react';
+
 
 
 type DayResult = 'excelente' | 'bom' | 'ruim';
@@ -26,10 +27,10 @@ function classifyDay(lucro: number, meta: number): DayResult {
   return 'ruim';
 }
 
-const RESULT_STYLE: Record<DayResult, { bg: string; label: string; emoji: string; text: string; ring: string }> = {
-  excelente: { bg: 'bg-profit', label: 'Excelente', emoji: '🟢', text: 'text-profit', ring: 'ring-profit/30' },
-  bom: { bg: 'bg-accent', label: 'Bom', emoji: '🟡', text: 'text-accent', ring: 'ring-accent/30' },
-  ruim: { bg: 'bg-loss', label: 'Ruim', emoji: '🔴', text: 'text-loss', ring: 'ring-loss/30' },
+const RESULT_STYLE: Record<DayResult, { bg: string; label: string; icon: LucideIcon; text: string; ring: string }> = {
+  excelente: { bg: 'bg-profit', label: 'Excelente', icon: CircleCheck, text: 'text-profit', ring: 'ring-profit/30' },
+  bom: { bg: 'bg-accent', label: 'Bom', icon: CircleAlert, text: 'text-accent', ring: 'ring-accent/30' },
+  ruim: { bg: 'bg-loss', label: 'Ruim', icon: CircleX, text: 'text-loss', ring: 'ring-loss/30' },
 };
 
 function inFilter(dataOp: string, filter: Filter): boolean {
@@ -167,19 +168,19 @@ export default function ShiftHistoryView({ refresh }: Props) {
     return { bestApp, bestVeh };
   }, [shifts, filter, ridesByShift]);
 
-  const filters: { key: Filter; label: string }[] = [
+  const filters: { key: Filter; label: string; icon?: LucideIcon }[] = [
     { key: 'hoje', label: 'Hoje' },
     { key: 'semana', label: 'Semana' },
     { key: 'mes', label: 'Mês' },
     { key: 'todos', label: 'Todos' },
   ];
 
-  const tipoOptions: { key: 'todos' | TipoVeiculo; label: string }[] = [
+  const tipoOptions: { key: 'todos' | TipoVeiculo; label: string; icon?: LucideIcon }[] = [
     { key: 'todos', label: 'Todos' },
-    { key: 'moto', label: '🏍️' },
-    { key: 'carro', label: '🚗' },
-    { key: 'bike', label: '🚲' },
-    { key: 'bike_eletrica', label: '⚡' },
+    { key: 'moto', label: 'Moto', icon: Bike },
+    { key: 'carro', label: 'Carro', icon: Car },
+    { key: 'bike', label: 'Bike', icon: Bike },
+    { key: 'bike_eletrica', label: 'Bike elétrica', icon: Zap },
   ];
 
   const hasActiveFilter = vehicleFilter !== 'todos' || appFilter !== 'todos';
@@ -188,7 +189,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
     <div className="min-w-0 space-y-4 animate-slide-up [&_.number-tabular]:font-mono-num [&_.number-tabular]:[overflow-wrap:anywhere]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display font-semibold text-base tracking-normal flex items-center gap-2">📊 Histórico de turnos</h2>
+          <h2 className="font-display font-semibold text-base tracking-normal flex items-center gap-2"><ChartNoAxesCombined aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Histórico de turnos</h2>
           <p className="text-xs text-muted-foreground">Cada turno mostra o que está valendo a pena.</p>
         </div>
         {isPro ? (
@@ -259,7 +260,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
               {tipoOptions.map(o => (
                 <Button variant="ghost" key={o.key} aria-label={o.key === 'todos' ? 'Todos os veículos' : TIPO_LABEL[o.key]} aria-pressed={vehicleFilter === o.key} onClick={() => setVehicleFilter(o.key)}
                   className={`h-auto min-h-11 min-w-11 flex-1 px-1 py-1 text-caption font-display font-semibold rounded transition-colors ${vehicleFilter === o.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-                  {o.label}
+                  {o.icon ? <o.icon aria-hidden="true" size={20} /> : o.label}
                 </Button>
               ))}
             </div>
@@ -384,7 +385,7 @@ export default function ShiftHistoryView({ refresh }: Props) {
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <p className="font-display font-bold text-sm">{shiftService.formatOperationalDate(s.data_operacional)}</p>
-                              <span className={`text-micro font-display font-semibold ${style.text}`}>{style.emoji} {style.label}</span>
+                              <span className={`text-micro font-display font-semibold ${style.text}`}><style.icon aria-hidden="true" size={14} className="inline-block align-middle mr-1" /> {style.label}</span>
                             </div>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {v && <Badge variant="secondary" className="max-w-full whitespace-normal break-words">{TIPO_LABEL[v.tipo_veiculo]} {v.nome_veiculo}</Badge>}

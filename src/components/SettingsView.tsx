@@ -1,3 +1,4 @@
+import { Settings, Clock, Bell, Coins, Package, AlertTriangle, MapPin, ShieldOff, Wrench, Settings2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { settingsService } from '@/lib/services/settingsService';
@@ -9,7 +10,7 @@ import { isForcedManual, setForcedManual, resetOnboarding } from '@/lib/permissi
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, MapPin, ShieldOff, Wrench, Settings2 } from 'lucide-react';
+
 import TagListEditor from './TagListEditor';
 import VehiclesView from './VehiclesView';
 
@@ -72,7 +73,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
   return (
     <div className="space-y-4 animate-slide-up">
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
-        <p className="font-display font-semibold text-foreground">⚙️ Margem de lucro</p>
+        <p className="font-display font-semibold text-foreground"><Settings aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Margem de lucro</p>
         <p className="text-xs text-muted-foreground">
           Quanto acima do custo por km você considera uma corrida boa. Padrão: 30%.
         </p>
@@ -94,7 +95,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
       </div>
 
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
-        <p className="font-display font-semibold text-foreground">⏱️ Jornada estimada</p>
+        <p className="font-display font-semibold text-foreground"><Clock aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Jornada estimada</p>
         <p className="text-xs text-muted-foreground">
           Quantas horas você planeja trabalhar por dia. Usado para calcular a previsão.
         </p>
@@ -120,7 +121,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
       </div>
 
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-3">
-        <p className="font-display font-semibold text-foreground">🚨 Alertas inteligentes</p>
+        <p className="font-display font-semibold text-foreground"><Bell aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Alertas inteligentes</p>
         <p className="text-xs text-muted-foreground">
           Personalize quando o app deve te avisar durante o turno. Use <strong>0</strong> para desativar cada alerta.
         </p>
@@ -152,7 +153,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
 
       <TagListEditor
         title="Tipos de corrida"
-        emoji="📦"
+        icon={Package}
         description="Apps ou categorias que você usa (iFood, Uber, particular...)."
         placeholder="Ex: iFood, Uber, 99"
         items={rideTypes}
@@ -160,7 +161,7 @@ export default function SettingsView({ refresh, onChanged }: Props) {
       />
 
       <div className="bg-card rounded-lg p-4 border shadow-sm space-y-2">
-        <p className="font-display font-semibold text-foreground">💱 Moeda</p>
+        <p className="font-display font-semibold text-foreground"><Coins aria-hidden="true" size={20} className="inline-block shrink-0 align-middle mr-1.5 text-primary" />Moeda</p>
         <p className="text-sm text-muted-foreground">Real brasileiro (R$) — padrão.</p>
       </div>
 

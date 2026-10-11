@@ -1,9 +1,11 @@
+import { Trophy, ArrowLeft } from 'lucide-react';
+import AchievementIcon from '../gamification/AchievementIcon';
 /**
  * SessionSummary — Sprint 10.1 (encerramento cinematográfico).
  * Resumo premium exibido ao encerrar a Sessão Visionária. Só apresentação.
  */
 import { useMemo } from 'react';
-import { Trophy, ArrowLeft } from 'lucide-react';
+
 import { useCountUp } from '@/hooks/useCountUp';
 import { achievementService } from '@/lib/services/achievementService';
 import { haptics } from '@/lib/haptics';
@@ -86,7 +88,7 @@ export default function SessionSummary({ data, lucroOntem, onClose }: Props) {
               const a = catalog.find(c => c.id === u.id);
               return (
                 <div key={u.id} className="flex items-center gap-2.5">
-                  <span className="text-base leading-none">{a?.icon ?? '★'}</span>
+                  <span className="text-base leading-none"><AchievementIcon id={u.id} /></span>
                   <p className="text-sm text-foreground">{a?.name ?? u.id}</p>
                 </div>
               );
