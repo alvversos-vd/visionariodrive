@@ -1,4 +1,4 @@
-import { Trophy, Lock, ChevronDown, ChevronUp, LineChart as LineChartIcon } from 'lucide-react';
+import { Trophy, Lock, ChevronDown, ChevronUp, GraduationCap, LineChart as LineChartIcon } from 'lucide-react';
 import AchievementCard from './AchievementCard';
 /**
  * ProfileGamificationCard — Sprint 6 · Fase 2 + Sprint 6.3 + Sprint 7.5 Onda 4.
@@ -18,6 +18,8 @@ import { useXp } from '@/hooks/useXp';
 import { useAchievements } from '@/hooks/useAchievements';
 import { achievementService } from '@/lib/services/achievementService';
 import { telemetry } from '@/lib/telemetry';
+import { useAuth } from '@/contexts/AuthContext';
+import { getTutorialStatus } from '@/lib/engagement';
 
 function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -38,6 +40,8 @@ export default function ProfileGamificationCard({
   const { all, unlocked } = useAchievements(accountCreatedAt);
   const [showLocked, setShowLocked] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const { user } = useAuth();
+  const tutorialCompleted = user ? getTutorialStatus(user.id) === 'completed' : false;
 
   const ctx = useMemo(() => achievementService.snapshotContext(accountCreatedAt),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +99,14 @@ export default function ProfileGamificationCard({
           </div>
           <MyEvolutionChart />
         </div>
+
+        {tutorialCompleted && <section aria-label="Badge do tutorial" className="flex items-start gap-3 border-l-2 border-primary bg-primary/5 px-3 py-3">
+          <GraduationCap size={24} className="shrink-0 text-primary" aria-hidden="true" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2"><h4 className="font-display text-sm font-semibold">Primeiros Passos</h4><Badge variant="outline" className="border-primary/30 text-primary">Concluído</Badge></div>
+            <p className="mt-1 text-xs text-muted-foreground">Tutorial concluído · Neste aparelho</p>
+          </div>
+        </section>}
 
         <div>
           <div className="flex items-center justify-between mb-2">

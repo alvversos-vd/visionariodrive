@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { ArrowLeft, ArrowRight, Check, CircleHelp, Play, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CircleHelp, GraduationCap, Play, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { getTutorialStatus, saveTutorialStatus, type TutorialStatus } from '@/lib/engagement';
@@ -27,6 +28,10 @@ export default function InteractiveTutorial({ userId, eligible, suspended, activ
   const [index, setIndex] = useState(0);
   const [storageFailed, setStorageFailed] = useState(false);
   const helpRef = useRef<HTMLButtonElement>(null);
+  const celebrationRef = useRef<string | number | null>(null);
+  useEffect(() => () => {
+    if (celebrationRef.current !== null) toast.dismiss(celebrationRef.current);
+  }, []);
   const [helpHost, setHelpHost] = useState<HTMLElement | null>(null);
   useEffect(() => { setHelpHost(document.getElementById('tutorial-help-host')); }, []);
   const blocking = useSyncExternalStore(subscribeBlockingModal, isBlockingModalOpen, () => false);
@@ -46,7 +51,15 @@ export default function InteractiveTutorial({ userId, eligible, suspended, activ
     onNavigate('home');
   };
   const finish = (next: 'skipped' | 'completed') => {
+    if (next === 'completed' && (!running || index !== steps.length - 1)) return;
+    const wasCompleted = getTutorialStatus(userId) === 'completed';
     remember(next);
+    if (next === 'completed' && !wasCompleted && getTutorialStatus(userId) === 'completed') {
+      celebrationRef.current = toast('Primeiros Passos', {
+        description: 'Badge desbloqueada · Tutorial concluído',
+        icon: <GraduationCap className="text-primary" size={20} aria-hidden="true" />,
+      });
+    }
     setRunning(false);
     onRestore();
     helpRef.current?.focus({ preventScroll: true });

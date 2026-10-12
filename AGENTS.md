@@ -1,6 +1,7 @@
 # Architecture rules
 
 - Keep tutorial presentation separate and account-keyed inside Index, using its existing navigation and explicit data-tutorial targets; reuse engagement.ts for per-user local visual preferences to avoid a new persistence layer or operational side effects.
+- Derive the tutorial badge from the account-scoped completed engagement status and preserve that status on replay; keep it outside the gamification catalog and XP engine to avoid duplicate rewards or persistence.
 
 - Keep responsive tab presentation in TabNavigation with local open state and a single supplied item list; Index owns selection and access rules so menu interactions cannot duplicate domain logic.
 - Keep onboarding presentation and ephemeral navigation in the existing Onboarding component; preserve service-backed completion and AuthContext gating to avoid a second persistence or routing mechanism.
