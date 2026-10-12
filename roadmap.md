@@ -1,5 +1,6 @@
 # Premium onboarding
-- [ ] Add local account-scoped Primeiros Passos badge derived from tutorial completion, with one-time confirmation, no XP, regression tests and device limitations.
+- [x] Add local account-scoped Primeiros Passos badge derived from tutorial completion, with one-time confirmation, no XP; 164 tests passed and limitations documented.
+- [ ] Verify badge completion/readback in an authenticated real browser and physical devices; current attempt blocked by unavailable authenticated tutorial flow.
 - [x] Audit and implement separate interactive tutorial with user-scoped presentation preference and permanent help.
 - [x] Reuse engagement storage without a new persistence layer; use explicit stable targets and clear visual state on account/session changes.
 - [x] Verify tutorial navigation, account isolation, persistence, accessible target positioning and absence of operational writes; 161 tests passed; results and physical-device limitations documented in docs/release/tutorial-premium-audit.md.

@@ -57,3 +57,16 @@ Alterados:
 ## Veredito
 
 Escopo de implementação e testes pendentes concluído, sem mudanças no domínio operacional. Validação física cross-platform continua necessária antes de afirmar compatibilidade integral em dispositivos reais.
+
+## Incremento — badge Primeiros Passos (12/10/2026)
+
+- Badge visual no Perfil, com `GraduationCap` Lucide e tokens verdes existentes; fora do catálogo e das contagens de conquistas da engine, sem XP, raridade ou recompensa nova.
+- Derivada exclusivamente de `tutorialUsers[userId] === 'completed'`, sem duplicar estado. Conclusões anteriores já persistidas também exibem a badge, sem celebração retroativa.
+- Somente o botão Concluir na última das oito etapas pode gravar a conclusão pelo guia. Agora não, Pular, Escape e desmontagem antes do fim não desbloqueiam.
+- Conclusão é irreversível durante reaberturas: recomeçar, pular ou abandonar novamente não remove a badge.
+- Confirmação Sonner existente somente na primeira transição persistida para completed; não aparece por simples visita, recarga ou repetição do tutorial. Desmontagem da conta descarta a confirmação ativa.
+- Persistência local por ID de usuário e aparelho. Sem sincronização entre dispositivos; limpar o armazenamento pode remover a badge. Falha de gravação não gera confirmação de desbloqueio persistido.
+- Arquivos deste incremento: `engagement.ts`, `engagement.test.ts`, `InteractiveTutorial.tsx`, `InteractiveTutorial.test.tsx`, `ProfileGamificationCard.tsx`, `AGENTS.md`, `roadmap.md` e este relatório.
+- Validação: 25 arquivos / **164 testes aprovados**; lint direcionado sem erros; compilação automática OK.
+- Cobertura inclui último passo ainda não concluído, abandono, adiamento, Escape, conclusão, reabertura/abandono posterior, confirmação única e isolamento por conta.
+- A tentativa autenticada de validação no navegador não concluiu: primeiro encontrou modal prioritário de nível e depois indisponibilidade da sessão/tela de ajuda. Não há confirmação end-to-end da badge no Perfil nesta etapa; Android/iOS físicos também não foram validados.
