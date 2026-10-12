@@ -119,6 +119,8 @@ export function getTutorialStatus(userId: string): TutorialStatus | null {
 
 export function saveTutorialStatus(userId: string, status: TutorialStatus): boolean {
   if (!userId) return false;
+  // Completion also represents the local tutorial badge: replay cannot revoke it.
+  if (getTutorialStatus(userId) === 'completed') return true;
   try {
     const current = readEngagement();
     const users = current.tutorialUsers;
