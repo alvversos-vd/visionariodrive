@@ -30,4 +30,12 @@ describe('account-scoped tutorial preferences', () => {
     expect(saveTutorialStatus('a', 'completed')).toBe(false);
     write.mockRestore();
   });
+  it('never revokes completed tutorial badge on replay, deferral or abandonment', () => {
+    saveTutorialStatus('a', 'completed');
+    for (const status of ['in_progress', 'deferred', 'skipped'] as const) {
+      saveTutorialStatus('a', status);
+      expect(getTutorialStatus('a')).toBe('completed');
+    }
+    expect(getTutorialStatus('b')).toBeNull();
+  });
 });
